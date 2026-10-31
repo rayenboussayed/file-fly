@@ -1,0 +1,3 @@
+Image (sharp) (libvips)
+Audio/Video (nodeav) (ffmpeg)
+Models (3D) glb/gltf/obj/....
