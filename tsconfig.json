@@ -17,6 +17,16 @@
     "skipLibCheck": true,
     "strict": true,
     "strictPropertyInitialization": false,
-    "types": ["vitest/globals", "node"]
+    "types": ["vitest/globals", "node"],
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strictNullChecks": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitAny": true,
+    "paths": {
+      "@": ["./src/*"]
+    }
   }
 }
