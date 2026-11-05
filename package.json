@@ -33,8 +33,13 @@
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-fastify": "^12.3.2",
     "@nestjs/swagger": "^12.0.5",
+    "file-type": "^22.3.0",
+    "jutilities": "^1.1.0",
+    "nestjs-cls": "^7.0.2",
+    "node-av": "^6.2.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sharp": "^0.35.5",
     "undici": "^8.12.3",
     "zod": "^4.6.7",
     "zod-openapi": "^6.0.2"
@@ -79,5 +84,8 @@
     "typescript-eslint": "^8.72.1",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.2"
+  },
+  "allowScripts": {
+    "node-av@6.2.0": true
   }
 }

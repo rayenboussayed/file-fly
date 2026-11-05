@@ -5,8 +5,12 @@
     "config": ["nest-cli.json", ".nestcli.json", ".nest-cli.json", "nest.json"]
   },
   "ignore": [
+    "src/resources/audio/audio.worker.ts",
+    "src/resources/audio/type.ts",
     "src/resources/image/image.worker.ts",
-    "src/resources/image/type.ts"
+    "src/resources/image/type.ts",
+    "src/resources/video/video.worker.ts",
+    "src/resources/video/type.ts"
   ],
   "ignoreDependencies": ["fastify"]
 }
