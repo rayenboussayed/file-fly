@@ -3,5 +3,10 @@
   "tags": ["-lintignore"],
   "nest": {
     "config": ["nest-cli.json", ".nestcli.json", ".nest-cli.json", "nest.json"]
-  }
+  },
+  "ignore": [
+    "src/resources/image/image.worker.ts",
+    "src/resources/image/type.ts"
+  ],
+  "ignoreDependencies": ["fastify"]
 }
