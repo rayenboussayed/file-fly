@@ -84,7 +84,7 @@ async function stats() {
   process.stdout.end(JSON.stringify(stats));
 }
 
-const data = workerData as ImageWorkerData;
+const data: ImageWorkerData = workerData;
 switch (data.operation) {
   case 'metadata':
     metadata();

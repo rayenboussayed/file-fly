@@ -11,7 +11,7 @@ import { workerData } from 'node:worker_threads';
 import type { AudioProcessorType } from './schema.js';
 import type { AudioWorkerData } from './type.js';
 
-const data = workerData as AudioWorkerData;
+const data: AudioWorkerData = workerData;
 const inputFormat = data.inputFormat;
 if (!inputFormat) { throw new Error('Unsupported input format'); }
 

@@ -12,9 +12,7 @@
     ]
   },
   "ignore": [
-    "src/constants/av-formats.ts",
-    "src/resources/image/image.worker.ts",
-    "src/resources/image/type.ts"
+    "src/constants/av-formats.ts"
   ],
   "ignoreDependencies": [
     "fastify",

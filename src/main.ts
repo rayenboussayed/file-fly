@@ -16,6 +16,7 @@ import {
   SwaggerModule,
 } from '@nestjs/swagger';
 import { supportedMimeTypes } from 'file-type';
+import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
 
 import * as AppHeaders from '@/constants/header.js';
@@ -85,7 +86,7 @@ function swagger(app: NestFastifyApplication) {
 
   const documentOptions: SwaggerDocumentOptions = {
     standardSchemaConverter: (schema, { schemaType }) => {
-      const converted = createSchema(schema as never, {
+      const converted = createSchema(schema as z.ZodType, {
         io: schemaType,
         openapiVersion: '3.0.0',
       });

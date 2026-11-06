@@ -6,6 +6,6 @@ import { z } from 'zod';
  * @returns Result.
  */
 export function trimmed<T extends z.ZodTypeAny>(schema: T) {
-  const piped = z.string().trim().pipe(schema as never);
-  return piped as unknown as z.ZodPipe<z.ZodString, T>;
+  const piped = z.string().trim().pipe(schema as z.ZodType<T, string>);
+  return piped as z.ZodPipe<z.ZodString, T>;
 }

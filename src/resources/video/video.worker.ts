@@ -1,3 +1,5 @@
+import type { NamedStages } from 'node-av/api';
+
 import { Decoder, Demuxer, Encoder, FilterAPI, Muxer, pipeline } from 'node-av/api';
 import {
   FF_ENCODER_AAC,
@@ -11,7 +13,7 @@ import { workerData } from 'node:worker_threads';
 import type { VideoProcessorType } from './schema.js';
 import type { VideoWorkerData } from './type.js';
 
-const data = workerData as VideoWorkerData;
+const data: VideoWorkerData = workerData;
 const inputFormat = data.inputFormat;
 if (!inputFormat) { throw new Error('Unsupported input format'); }
 
@@ -190,7 +192,7 @@ async function processMedia(payload: VideoProcessorType) {
 
   const videoStream = input.video();
   const audioStream = input.audio();
-  const stages: Record<string, unknown> = {};
+  const stages = {} as NamedStages<'audio' | 'video'>;
 
   const decoders: Decoder[] = [];
   const encoders: Encoder[] = [];
@@ -249,7 +251,7 @@ async function processMedia(payload: VideoProcessorType) {
     return;
   }
 
-  const control = pipeline(input, stages as never, output);
+  const control = pipeline(input, stages, output);
   await control.completion;
   decoders.forEach((item) => item.close());
   encoders.forEach((item) => item.close());
