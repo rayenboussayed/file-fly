@@ -107,6 +107,24 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 - Website - [https://nestjs.com](https://nestjs.com/)
 - Twitter - [@nestframework](https://twitter.com/nestframework)
 
+## Media streaming (audio / video)
+
+Supported output formats: `webm`, `matroska`, `mpegts`, `mp3`, `ogg`, `adts`,
+`flac`, and fragmented `mp4`. Plain `mp4`, `mov`, and `wav` output is rejected.
+Source media is streamed through node-av's demuxer, decoders, filters, encoders,
+and muxer, and the response uses chunked transfer encoding with backpressure.
+
+Hard limits:
+
+- No full input or output buffering.
+- No temporary media files.
+- Plain `mp4` / `mov` input with a trailing `moov` atom is rejected with a 4xx error.
+- Codec/container pairings are validated before streaming.
+- Worker input probing is bounded to 5MB.
+- Jobs abort on client disconnect or timeout; native resources are released when FFmpeg exits.
+- `UV_THREADPOOL_SIZE` should be raised when running many concurrent jobs; concurrency must be capped by the libuv thread pool.
+
+
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

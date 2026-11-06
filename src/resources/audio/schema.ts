@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import {
   DemuxerFormatSchema,
-  MuxerFormatSchema,
 } from '@/constants/av-formats.js';
+import { STREAMABLE_OUTPUT_FORMATS } from '@/resources/common/capabilities.js';
 import { SourceSchema } from '@/schema.js';
 import { trimmed } from '@/utils/zod.js';
 
@@ -17,7 +17,7 @@ export const AudioProcessorSchema = SourceSchema.extend({
   denoise: trimmed(z.stringbool()).default(false),
   fadeIn: z.coerce.number().min(0).max(30).optional(),
   fadeOut: z.coerce.number().min(0).max(30).optional(),
-  format: trimmed(MuxerFormatSchema).default('mp3'),
+  format: trimmed(z.enum(STREAMABLE_OUTPUT_FORMATS)).default('mp3'),
   gain: z.coerce.number().min(-20).max(20).optional(),
   inputFormat: trimmed(DemuxerFormatSchema).optional(),
   normalize: trimmed(z.stringbool()).default(false),

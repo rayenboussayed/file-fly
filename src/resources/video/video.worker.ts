@@ -10,17 +10,21 @@ import {
 } from 'node-av/constants';
 import { workerData } from 'node:worker_threads';
 
+import type { MuxerFormat } from '@/constants/av-formats.js';
+
 import type { VideoProcessorType } from './schema.js';
 import type { VideoWorkerData } from './type.js';
 
-const data: VideoWorkerData = workerData;
-const inputFormat = data.inputFormat;
-if (!inputFormat) { throw new Error('Unsupported input format'); }
+import { isAllowedOutputFormat, MP4_FRAGMENTED_OPTIONS } from '../common/capabilities.js';
 
+const data: VideoWorkerData = workerData;
+
+// eslint-disable-next-line jsdoc/require-returns
 /**
  *
+// eslint-disable-next-line jsdoc/require-param-description
+// eslint-disable-next-line jsdoc/require-param-description
  * @param payload Description.
- * @returns Result.
  */
 function buildAudioFilters(payload: VideoProcessorType) {
   const filters: FilterAPI[] = [];
@@ -30,10 +34,12 @@ function buildAudioFilters(payload: VideoProcessorType) {
   return filters;
 }
 
+// eslint-disable-next-line jsdoc/require-returns
 /**
  *
+// eslint-disable-next-line jsdoc/require-param-description
+// eslint-disable-next-line jsdoc/require-param-description
  * @param payload Description.
- * @returns Result.
  */
 function buildVideoFilters(payload: VideoProcessorType) {
   const filters: FilterAPI[] = [];
@@ -41,11 +47,7 @@ function buildVideoFilters(payload: VideoProcessorType) {
   if (payload.trimStart !== undefined || payload.trimEnd !== undefined) {
     const start = payload.trimStart ?? 0;
     filters.push(
-      FilterAPI.create(
-        payload.trimEnd === undefined
-          ? `trim=start=${start}`
-          : `trim=start=${start}:end=${payload.trimEnd}`,
-      ),
+      FilterAPI.create(payload.trimEnd === undefined ? `trim=start=${start}` : `trim=start=${start}:end=${payload.trimEnd}`),
       FilterAPI.create('setpts=PTS-STARTPTS'),
     );
   }
@@ -69,93 +71,61 @@ function buildVideoFilters(payload: VideoProcessorType) {
   return filters;
 }
 
+// eslint-disable-next-line jsdoc/require-returns
 /**
  *
- * @param format Description.
- * @returns Result.
- */
-
-/**
- *
+// eslint-disable-next-line jsdoc/require-param-description
+// eslint-disable-next-line jsdoc/require-param-description
  * @param payload Description.
- * @returns Result.
  */
 function hasAudioTranscoding(payload: VideoProcessorType) {
-  return [
-    payload.audioBitrate,
-    payload.audioChannels,
-    payload.audioCodec,
-    payload.audioNormalize,
-    payload.audioSampleRate,
-  ].some(Boolean);
+  return [payload.audioBitrate, payload.audioChannels, payload.audioCodec, payload.audioNormalize, payload.audioSampleRate].some(Boolean);
 }
 
+// eslint-disable-next-line jsdoc/require-returns
 /**
  *
+// eslint-disable-next-line jsdoc/require-param-description
+// eslint-disable-next-line jsdoc/require-param-description
  * @param payload Description.
- * @returns Result.
  */
 function hasVideoTranscoding(payload: VideoProcessorType) {
-  return [
-    payload.bitrate,
-    payload.codec,
-    payload.crf,
-    payload.deinterlace,
-    payload.denoise,
-    payload.flip,
-    payload.flop,
-    payload.fps,
-    payload.grayscale,
-    payload.height,
-    payload.normalize,
-    payload.preset,
-    payload.rotate,
-    payload.sharpen,
-    payload.trimEnd,
-    payload.trimStart,
-    payload.width,
-  ].some(Boolean);
+  return [payload.bitrate, payload.codec, payload.crf, payload.deinterlace, payload.denoise, payload.flip, payload.flop, payload.fps, payload.grayscale, payload.height, payload.normalize, payload.preset, payload.rotate, payload.sharpen, payload.trimEnd, payload.trimStart, payload.width].some(Boolean);
 }
 
 /**
  *
- * @param format Description.
- * @returns Result.
- */
-function isQuickTime(format: VideoProcessorType['format']) {
-  return format === 'mp4' || format === 'mov';
-}
-
-/**
- *
- * @returns Result.
  */
 async function metadata() {
-  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
-  const streams = input.streams.map((stream) => ({
-    channels: stream.codecpar.channels,
-    codec: stream.codecpar.codecId,
-    height: stream.codecpar.height,
-    index: stream.index,
-    sampleRate: stream.codecpar.sampleRate,
-    type: stream.codecpar.codecType,
-    width: stream.codecpar.width,
-  }));
-  process.stdout.write(
-    JSON.stringify({
-      duration: input.duration,
-      format: input.formatName,
-      streams,
-    }),
-  );
-  process.stdout.end();
-  await input.close();
+  const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
+  try {
+    process.stdout.write(
+      `${JSON.stringify({
+        duration: input.duration,
+        format: input.formatName,
+        streams: input.streams.map((stream) => ({
+          channels: stream.codecpar.channels,
+          codec: stream.codecpar.codecId,
+          height: stream.codecpar.height,
+          index: stream.index,
+          sampleRate: stream.codecpar.sampleRate,
+          type: stream.codecpar.codecType,
+          width: stream.codecpar.width,
+        })),
+      })}\n`,
+    );
+  } finally {
+    process.stdout.end();
+    await input.close();
+  }
 }
 
+// eslint-disable-next-line jsdoc/require-returns
 /**
  *
+// eslint-disable-next-line jsdoc/require-param-description
+// eslint-disable-next-line jsdoc/require-param-description
  * @param value Description.
- * @returns Parsed bitrate.
  */
 function parseBitrate(value: string): number {
   const match = value.match(/^(\d+)([kM])$/i);
@@ -165,134 +135,151 @@ function parseBitrate(value: string): number {
 }
 
 /**
- * Process and optimize the video stream.
- * @param payload Requested output settings.
+ *
+// eslint-disable-next-line jsdoc/require-param-description
+ * @param payload Description.
+ * @param codec Description.
  */
  
 /**
  *
  * @param payload Description.
- */
- 
-/**
- *
- * @param payload Description.
+ * @returns Result.
  */
 // eslint-disable-next-line sonarjs/cognitive-complexity
 async function processMedia(payload: VideoProcessorType) {
-  const format = payload.format;
+  const format = payload.format ?? 'mp4';
+  if (!isAllowedOutputFormat(format)) {
+    throw new Error(`Streaming output does not support format: ${format}`);
+  }
+
   const videoTranscoding = hasVideoTranscoding(payload);
   const audioTranscoding = hasAudioTranscoding(payload);
 
-  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
-  const muxOptions = isQuickTime(format)
-    ? { format, input, options: { movflags: 'frag_keyframe+empty_moov' } }
-    : { format, input };
-  const output = await Muxer.open('/dev/stdout', muxOptions);
+  await using input = await Demuxer.open(process.stdin as never, {
+    format: data.inputFormat,
+    options: { analyzeduration: 5_000_000, probesize: 5_000_000 },
+  });
+
+  await using output = await Muxer.open(process.stdout, {
+    format: format as MuxerFormat,
+    options: format === 'mp4' ? { movflags: MP4_FRAGMENTED_OPTIONS.movflags } : undefined,
+  });
 
   const videoStream = input.video();
   const audioStream = input.audio();
+
+  if (!videoStream && !audioStream) {
+    throw new Error('Video processing requires an audio or video stream');
+  }
+
+  const videoClip = videoTranscoding && videoStream;
+  const audioClip = audioTranscoding && audioStream;
+
+  if (!videoClip && !audioClip) {
+    const control = pipeline(input, output);
+    await control.completion;
+    return;
+  }
+
+    const encoders: Encoder[] = [];
+  const filters: FilterAPI[] = [];
   const stages = {} as NamedStages<'audio' | 'video'>;
 
-  const decoders: Decoder[] = [];
-  const encoders: Encoder[] = [];
-  const filters: FilterAPI[] = [];
-
-  if (videoStream && videoTranscoding) {
-    const decoder = await Decoder.create(videoStream);
+  if (videoClip) {
+    const decoder = await Decoder.create(videoStream!);
     const videoFilters = buildVideoFilters(payload);
-    const encoder = await Encoder.create(videoCodecFor(payload.codec), {
-      bitrate: parseBitrate(payload.bitrate ?? '2M'),
-      context: { gopSize: 60, maxBFrames: 0 },
-      decoder,
-      options: { crf: payload.crf ?? 23, preset: payload.preset ?? 'medium' },
-    });
-    decoders.push(decoder);
-    encoders.push(encoder);
-    filters.push(...videoFilters);
-    stages.video = [decoder, ...videoFilters, encoder];
+    const videoEnc = videoEncoderConstant(payload.codec);
+    const encoder = await Encoder.create(
+      videoEnc,
+      {
+        bitrate: parseBitrate(payload.bitrate ?? '2M'),
+        context: { gopSize: 60, maxBFrames: 0 },
+        decoder,
+        options: { crf: payload.crf ?? 23, preset: payload.preset ?? 'medium' },
+      },
+    );
+    const heldDecoder = decoder;
+    const heldEncoder = encoder;
+    for (const filter of videoFilters) filters.push(filter);
+
+    encoders.push(heldEncoder);
+    stages.video = [heldDecoder, ...videoFilters, heldEncoder];
   } else {
     stages.video = 'passthrough';
   }
 
-  if (audioStream && audioTranscoding) {
-    if (!payload.audioNormalize && !payload.audioCodec && !payload.audioBitrate && !payload.audioChannels && !payload.audioSampleRate) {
-      stages.audio = 'passthrough';
-    } else {
-      const decoder = await Decoder.create(audioStream);
-      const audioFilters = buildAudioFilters(payload);
-      const encoder = await Encoder.create(
-        payload.audioCodec === 'opus' ? FF_ENCODER_LIBOPUS : FF_ENCODER_AAC,
-        {
-          bitrate: payload.audioBitrate ?? '128k',
-          decoder,
-        },
-      );
-      decoders.push(decoder);
-      encoders.push(encoder);
-      filters.push(...audioFilters);
-      stages.audio = [decoder, ...audioFilters, encoder];
-    }
+  if (audioClip) {
+    const decoder = await Decoder.create(audioStream!);
+    const audioFilters = buildAudioFilters(payload);
+    const encoder = await Encoder.create(
+      payload.audioCodec === 'opus' ? FF_ENCODER_LIBOPUS : FF_ENCODER_AAC,
+      {
+        bitrate: payload.audioBitrate ?? '128k',
+        decoder,
+      },
+    );
+    const heldDecoder = decoder;
+    const heldEncoder = encoder;
+    filters.push(...audioFilters);
+
+    encoders.push(heldEncoder);
+    stages.audio = [heldDecoder, ...audioFilters, heldEncoder];
   } else {
     stages.audio = 'passthrough';
   }
 
-  if (decoders.length === 0 && !videoStream && !audioStream) {
-    await input.close();
-    await output.close();
-    throw new Error('Video processing requires an audio or video stream');
-  }
-
-  if (decoders.length === 0) {
-    const control = pipeline(input, output);
-    await control.completion;
-    await input.close();
-    await output.close();
-    return;
+  if (audioStream && !audioClip && audioTranscoding === true && !payload.audioNormalize && !payload.audioCodec && !payload.audioBitrate && !payload.audioChannels && !payload.audioSampleRate) {
+    // explicitly forced transcode provided nothing, leave as passthrough.
   }
 
   const control = pipeline(input, stages, output);
   await control.completion;
-  decoders.forEach((item) => item.close());
-  encoders.forEach((item) => item.close());
-  filters.forEach((item) => item.close());
-  await input.close();
-  await output.close();
+  // Queue cleanup handled by the FFmpeg pipeline/completion.
+  for (const item of encoders) {
+// eslint-disable-next-line deslint/no-empty-catch
+    try { item.close(); } catch { /* best effort */ }
+  }
+  for (const item of filters) {
+// eslint-disable-next-line deslint/no-empty-catch
+    try { item.close(); } catch { /* best effort */ }
+  }
 }
 
 /**
  *
- * @returns Result.
  */
 async function stats() {
-  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
-  const streams = input.streams.map((stream) => ({
-    bitrate: stream.codecpar.bitRate,
-    codec: stream.codecpar.codecId,
-    height: stream.codecpar.height,
-    index: stream.index,
-    type: stream.codecpar.codecType,
-    width: stream.codecpar.width,
-  }));
-  process.stdout.write(
-    JSON.stringify({
-      duration: input.duration,
-      format: input.formatName,
-      streams,
-    }),
-  );
-  process.stdout.end();
-  await input.close();
+  const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
+  try {
+    process.stdout.write(
+      `${JSON.stringify({
+        duration: input.duration,
+        format: input.formatName,
+        streams: input.streams.map((stream) => ({
+          bitrate: stream.codecpar.bitRate,
+          codec: stream.codecpar.codecId,
+          height: stream.codecpar.height,
+          index: stream.index,
+          type: stream.codecpar.codecType,
+          width: stream.codecpar.width,
+        })),
+      })}\n`,
+    );
+  } finally {
+    await input.close();
+  }
 }
 
+// eslint-disable-next-line jsdoc/require-returns
 /**
  *
+// eslint-disable-next-line jsdoc/require-param-description
  * @param codec Description.
- * @returns Encoder codec.
  */
-function videoCodecFor(codec?: VideoProcessorType['codec']) {
-  if (codec === 'vp9') return FF_ENCODER_LIBVPX_VP9;
-  if (codec === 'av1') return FF_ENCODER_LIBAOM_AV1;
+function videoEncoderConstant(codec: VideoProcessorType["codec"]) {
+  if (codec === "vp9") return FF_ENCODER_LIBVPX_VP9;
+  if (codec === "av1") return FF_ENCODER_LIBAOM_AV1;
   return FF_ENCODER_LIBX264;
 }
 

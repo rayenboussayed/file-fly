@@ -8,19 +8,21 @@ import {
 } from 'node-av/constants';
 import { workerData } from 'node:worker_threads';
 
+import type { MuxerFormat } from '@/constants/av-formats.js';
+
 import type { AudioProcessorType } from './schema.js';
 import type { AudioWorkerData } from './type.js';
 
+import { isAllowedOutputFormat, MP4_FRAGMENTED_OPTIONS } from '../common/capabilities.js';
+
 const data: AudioWorkerData = workerData;
-const inputFormat = data.inputFormat;
-if (!inputFormat) { throw new Error('Unsupported input format'); }
 
 /**
  *
- * @param payload Description.
- * @returns Result.
+ * @param payload Requested adjustments.
+ * @returns Ordered filter graph.
  */
-function buildFilters(payload: AudioProcessorType) {
+function buildFilters(payload: AudioProcessorType): FilterAPI[] {
   const filters: FilterAPI[] = [];
 
   if (payload.trimStart !== undefined || payload.trimEnd !== undefined) {
@@ -37,7 +39,6 @@ function buildFilters(payload: AudioProcessorType) {
   if (payload.normalize) filters.push(FilterAPI.create('loudnorm=I=-16:TP=-1.5:LRA=11'));
   if (payload.denoise) filters.push(FilterAPI.create('anlmdn'));
   if (payload.compress) filters.push(FilterAPI.create('acompressor'));
-
   if (payload.fadeIn !== undefined) filters.push(FilterAPI.create(`afade=t=in:st=0:d=${payload.fadeIn}`));
   if (payload.fadeOut !== undefined) filters.push(FilterAPI.create(`afade=t=out:st=0:d=${payload.fadeOut}`));
 
@@ -46,62 +47,62 @@ function buildFilters(payload: AudioProcessorType) {
 
 /**
  *
- * @param format Description.
- * @param requested Description.
- * @returns Result.
+ * @param format Requested export format.
+ * @param requested Requested codec.
+ * @returns FFmpeg encoder constant.
  */
-function codecFor(format: NonNullable<AudioProcessorType['format']>, requested?: AudioProcessorType['codec']) {
+function codecFor(
+  format: NonNullable<AudioProcessorType['format']>,
+  requested?: AudioProcessorType['codec'],
+) {
   if (requested === 'flac') return FF_ENCODER_FLAC;
   if (requested === 'mp3') return FF_ENCODER_LIBMP3LAME;
   if (requested === 'opus') return FF_ENCODER_LIBOPUS;
   if (requested === 'pcm') return FF_ENCODER_PCM_S16LE;
   if (requested === 'aac') return FF_ENCODER_AAC;
-  if (format === 'flac' || format === 'w64') return FF_ENCODER_FLAC;
+  if (format === 'flac') return FF_ENCODER_FLAC;
   if (format === 'mp3') return FF_ENCODER_LIBMP3LAME;
   if (format === 'ogg' || format === 'webm') return FF_ENCODER_LIBOPUS;
-  if (format === 'wav' || format === 'aiff') return FF_ENCODER_PCM_S16LE;
+  if (format === 'adts') return FF_ENCODER_AAC;
   return FF_ENCODER_AAC;
-}
-
-/**
- *
- * @param format Description.
- * @returns Result.
- */
-function isQuickTime(format: AudioProcessorType['format']) {
-  return format === 'mp4' || format === 'mov';
 }
 
 /**
  *
  */
 async function metadata() {
-  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
-  const streams = input.streams.map((stream) => ({
-    channels: stream.codecpar.channels,
-    codec: stream.codecpar.codecId,
-    index: stream.index,
-    sampleRate: stream.codecpar.sampleRate,
-    type: stream.codecpar.codecType,
-  }));
-  process.stdout.write(
-    JSON.stringify({
-      duration: input.duration,
-      format: input.formatName,
-      streams,
-    }),
-  );
-  process.stdout.end();
-  await input.close();
+  const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
+  try {
+    process.stdout.write(
+      `${JSON.stringify({
+        duration: input.duration,
+        format: input.formatName,
+        streams: input.streams.map((stream) => ({
+          channels: stream.codecpar.channels,
+          codec: stream.codecpar.codecId,
+          index: stream.index,
+          sampleRate: stream.codecpar.sampleRate,
+          type: stream.codecpar.codecType,
+        })),
+      })}\n`,
+    );
+  } finally {
+    process.stdout.end();
+    await input.close();
+  }
 }
 
 /**
- * Process and optimize the audio stream.
- * @param payload Requested output settings.
+ *
+ * @param payload Output settings.
  */
 async function processMedia(payload: AudioProcessorType) {
-  const format = payload.format;
-  const transcoding = [
+  const format = payload.format ?? 'mp3';
+  if (!isAllowedOutputFormat(format)) {
+    throw new Error(`Streaming output does not support format: ${format}`);
+  }
+
+  const transcodings = [
     payload.bitrate,
     payload.channels,
     payload.codec,
@@ -117,64 +118,64 @@ async function processMedia(payload: AudioProcessorType) {
     payload.trimStart,
   ].some(Boolean);
 
-  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
-  const muxOptions = isQuickTime(format)
-    ? { format, input, options: { movflags: 'frag_keyframe+empty_moov' } }
-    : { format, input };
-  const output = await Muxer.open('/dev/stdout', muxOptions);
+  await using input = await Demuxer.open(process.stdin as never, {
+    format: data.inputFormat,
+    options: { analyzeduration: 5_000_000, probesize: 5_000_000 },
+  });
 
-  if (!transcoding) {
-    const control = pipeline(input, output);
-    await control.completion;
-    await input.close();
-    await output.close();
-    return;
-  }
+  await using output = await Muxer.open(process.stdout, {
+    format: format as MuxerFormat,
+    options: format === 'mp4' ? { movflags: MP4_FRAGMENTED_OPTIONS.movflags } : undefined,
+  });
 
   const stream = input.audio();
-  if (!stream) {
-    await input.close();
-    await output.close();
+  if (!stream && transcodings) {
     throw new Error('Audio processing requires an audio stream');
   }
 
-  const decoder = await Decoder.create(stream);
+  if (!transcodings || !stream) {
+    const control = pipeline(input, output);
+    await control.completion;
+    return;
+  }
+
+  using decoder = await Decoder.create(stream);
   const filters = buildFilters(payload);
   const bitrate: string = payload.bitrate ?? (format === 'ogg' ? '96k' : '128k');
-  const encoder = await Encoder.create(codecFor(format, payload.codec), {
+
+  using encoder = await Encoder.create(codecFor(format, payload.codec), {
     context: { bitRate: bitrate },
     decoder,
   });
+
   const control = pipeline(input, decoder, filters, encoder, output);
   await control.completion;
-  decoder.close();
-  encoder.close();
-  filters.forEach((filter) => filter.close());
-  await input.close();
-  await output.close();
+
+  for (const filter of filters) filter.close();
 }
 
 /**
  *
  */
 async function stats() {
-  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
-  const streams = input.streams.map((stream) => ({
-    bitrate: stream.codecpar.bitRate,
-    channels: stream.codecpar.channels,
-    codec: stream.codecpar.codecId,
-    index: stream.index,
-    sampleRate: stream.codecpar.sampleRate,
-  }));
-  process.stdout.write(
-    JSON.stringify({
-      duration: input.duration,
-      format: input.formatName,
-      streams,
-    }),
-  );
-  process.stdout.end();
-  await input.close();
+  const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
+  try {
+    process.stdout.write(
+      `${JSON.stringify({
+        duration: input.duration,
+        format: input.formatName,
+        streams: input.streams.map((stream) => ({
+          bitrate: stream.codecpar.bitRate,
+          channels: stream.codecpar.channels,
+          codec: stream.codecpar.codecId,
+          index: stream.index,
+          sampleRate: stream.codecpar.sampleRate,
+        })),
+      })}\n`,
+    );
+  } finally {
+    await input.close();
+  }
 }
 
 switch (data.operation) {

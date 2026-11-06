@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import {
   DemuxerFormatSchema,
-  MuxerFormatSchema,
 } from '@/constants/av-formats.js';
+import { STREAMABLE_OUTPUT_FORMATS } from '@/resources/common/capabilities.js';
 import { SourceSchema } from '@/schema.js';
 import { trimmed } from '@/utils/zod.js';
 
@@ -22,7 +22,7 @@ export const VideoProcessorSchema = SourceSchema.extend({
   denoise: trimmed(z.stringbool()).default(false),
   flip: trimmed(z.stringbool()).default(false),
   flop: trimmed(z.stringbool()).default(false),
-  format: trimmed(MuxerFormatSchema).default('mp4'),
+  format: trimmed(z.enum(STREAMABLE_OUTPUT_FORMATS)).default('mp4'),
   fps: z.coerce.number().min(1).max(120).optional(),
   grayscale: trimmed(z.stringbool()).default(false),
   height: z.coerce.number().int().min(16).max(3840).optional(),

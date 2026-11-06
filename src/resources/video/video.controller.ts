@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { pipeline } from 'node:stream/promises';
 
+import { OUTPUT_CONTENT_TYPE } from '../common/capabilities.js';
 import { VideoProcessorSchema, type VideoProcessorType } from './schema.js';
 import { VideoService } from './video.service.js';
 
@@ -29,7 +30,7 @@ export class VideoController {
       payload: query,
       signal: request.signal,
     });
-    response.type('application/octet-stream');
+    response.type(OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
     return pipeline(processed, response.raw, { signal: request.signal });
   }
 
