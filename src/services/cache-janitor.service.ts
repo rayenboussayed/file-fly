@@ -1,3 +1,5 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
+
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import fs from 'node:fs';
 import path from 'node:path';

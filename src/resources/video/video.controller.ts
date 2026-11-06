@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { pipeline } from 'node:stream/promises';
 
-import { VideoService } from './video.service.js';
 import { VideoProcessorSchema, type VideoProcessorType } from './schema.js';
+import { VideoService } from './video.service.js';
 
 @Controller('video')
 export class VideoController {

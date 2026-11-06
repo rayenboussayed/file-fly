@@ -1,3 +1,5 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
+
 import type { Readable } from 'node:stream';
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -31,8 +33,9 @@ export class WorkerService {
   /**
    * Returns the processed output. Served from CACHE_DIR when possible,
    * otherwise produced by a worker thread (and cached while streaming).
-   * @param filename
-   * @param options
+   * @param filename Worker entry file to run in a worker thread.
+   * @param options Worker and cache options.
+   * @returns Processed output stream.
    */
   async createWorker(
     filename: string,
@@ -68,7 +71,8 @@ export class WorkerService {
 
   /**
    * True when a finished, non-empty cache entry exists for this key.
-   * @param file
+   * @param file Cache file path.
+   * @returns Whether the cache entry is usable.
    */
   async hasCache(file: string): Promise<boolean> {
     try {
@@ -93,8 +97,9 @@ export class WorkerService {
   /**
    * Opens the fd first, so a concurrent eviction (unlink) can't break an
    * in-progress read, and bumps mtime so eviction is LRU-ish.
-   * @param file
-   * @param signal
+   * @param file Cache entry path.
+   * @param signal Request abort signal.
+   * @returns Readable stream for an existing cache entry, or undefined.
    */
   private async openCache(
     file: string,
@@ -121,10 +126,10 @@ export class WorkerService {
    * Writes to a unique temp file and renames it into place only after BOTH the
    * stream finished and the worker exited cleanly, so readers never see a
    * partial/corrupt entry. Failures never affect the client response.
-   * @param file
-   * @param branch
-   * @param succeeded
-   * @param signal
+   * @param file Target cache path.
+   * @param branch Source stream to persist.
+   * @param succeeded Worker exit status.
+   * @param signal Request abort signal.
    */
   private persist(
     file: string,

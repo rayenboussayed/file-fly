@@ -1,12 +1,19 @@
-import { workerData } from 'node:worker_threads';
-
 import { Demuxer, Muxer, pipeline } from 'node-av/api';
+import type { DemuxerFormat } from 'node-av/constants';
+import { workerData } from 'node:worker_threads';
 
 import type { VideoProcessorType } from './schema.js';
 import type { VideoWorkerData } from './type.js';
 
+const data = workerData as VideoWorkerData;
+const inputFormat = data.inputFormat;
+if (!inputFormat) { throw new Error('Unsupported input format'); }
+
+/**
+ *
+ */
 async function metadata() {
-  const input = await Demuxer.open('/dev/stdin');
+  const input = await Demuxer.open(process.stdin, { format: inputFormat as DemuxerFormat });
   const streams = input.streams.map((stream) => ({
     channels: stream.codecpar.channels,
     codec: stream.codecpar.codecId,
@@ -27,8 +34,29 @@ async function metadata() {
   await input.close();
 }
 
+/**
+ *
+ * @param payload
+ */
+/**
+ * Process and remux the input stream to the requested output container.
+ * @param payload Requested output settings.
+ */
+async function processMedia(payload: VideoProcessorType) {
+  const format = payload.format?.trim() || 'mp4';
+  const input = await Demuxer.open(process.stdin, { format: inputFormat as DemuxerFormat });
+  const output = await Muxer.open('/dev/stdout', { format });
+  const control = pipeline(input, output);
+  await control.completion;
+  await input.close();
+  await output.close();
+}
+
+/**
+ *
+ */
 async function stats() {
-  const input = await Demuxer.open('/dev/stdin');
+  const input = await Demuxer.open(process.stdin, { format: inputFormat as DemuxerFormat });
   const streams = input.streams.map((stream) => ({
     bitrate: stream.codecpar.bitRate,
     codec: stream.codecpar.codecId,
@@ -48,17 +76,6 @@ async function stats() {
   await input.close();
 }
 
-async function processMedia(payload: VideoProcessorType) {
-  const format = payload.format?.trim() || 'mp4';
-  const input = await Demuxer.open('/dev/stdin');
-  const output = await Muxer.open('/dev/stdout', { format });
-  const control = pipeline(input, output);
-  await control.completion;
-  await input.close();
-  await output.close();
-}
-
-const data = workerData as VideoWorkerData;
 switch (data.operation) {
   case 'metadata':
     void metadata();
