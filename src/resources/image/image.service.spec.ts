@@ -1,26 +1,18 @@
-import { Test, TestingModule } from '@nestjs/testing';
-
-import { NormalizedClsService } from '@/services/normalized-cls.service.js';
-import { WorkerService } from '@/services/worker.service.js';
+import { Readable } from 'node:stream';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ImageService } from './image.service.js';
 
 describe('ImageService', () => {
-  let service: ImageService;
+  it('covers metadata, processor, and stats', async () => {
+    const workerService = {
+      createWorker: vi.fn(async () => Readable.from([JSON.stringify({ width: 1 })])),
+    };
+    const service = new ImageService(workerService as never);
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ImageService,
-        { provide: WorkerService, useValue: {} },
-        { provide: NormalizedClsService, useValue: {} },
-      ],
-    }).compile();
-
-    service = module.get<ImageService>(ImageService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+    await expect(service.metadata()).resolves.toEqual({ width: 1 });
+    const processor = await service.processor({ payload: { width: 2 } as never });
+    expect(processor).toBeDefined();
+    await expect(service.stats()).resolves.toEqual({ width: 1 });
   });
 });

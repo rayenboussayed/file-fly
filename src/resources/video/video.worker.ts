@@ -1,4 +1,4 @@
-import { Demuxer, Decoder, Encoder, FilterAPI, Muxer, pipeline } from 'node-av/api';
+import { Decoder, Demuxer, Encoder, FilterAPI, Muxer, pipeline } from 'node-av/api';
 import {
   FF_ENCODER_AAC,
   FF_ENCODER_LIBAOM_AV1,
@@ -17,6 +17,116 @@ if (!inputFormat) { throw new Error('Unsupported input format'); }
 
 /**
  *
+ * @param payload Description.
+ * @returns Result.
+ */
+function buildAudioFilters(payload: VideoProcessorType) {
+  const filters: FilterAPI[] = [];
+  if (payload.audioChannels === '1') filters.push(FilterAPI.create('pan=mono|c0=.5*c0+.5*c1'));
+  if (payload.audioSampleRate) filters.push(FilterAPI.create(`aresample=${payload.audioSampleRate}`));
+  if (payload.audioNormalize) filters.push(FilterAPI.create('loudnorm=I=-16:TP=-1.5:LRA=11'));
+  return filters;
+}
+
+/**
+ *
+ * @param payload Description.
+ * @returns Result.
+ */
+function buildVideoFilters(payload: VideoProcessorType) {
+  const filters: FilterAPI[] = [];
+
+  if (payload.trimStart !== undefined || payload.trimEnd !== undefined) {
+    const start = payload.trimStart ?? 0;
+    filters.push(
+      FilterAPI.create(
+        payload.trimEnd === undefined
+          ? `trim=start=${start}`
+          : `trim=start=${start}:end=${payload.trimEnd}`,
+      ),
+      FilterAPI.create('setpts=PTS-STARTPTS'),
+    );
+  }
+
+  if (payload.deinterlace) filters.push(FilterAPI.create('yadif'));
+  if (payload.width !== undefined || payload.height !== undefined) {
+    filters.push(FilterAPI.create(`scale=${payload.width ?? -1}:${payload.height ?? -1}`));
+  }
+  if (payload.fps !== undefined) filters.push(FilterAPI.create(`fps=${payload.fps}`));
+  if (payload.rotate === '90') filters.push(FilterAPI.create('transpose=1'));
+  if (payload.rotate === '180') filters.push(FilterAPI.create('transpose=1,transpose=1'));
+  if (payload.rotate === '270') filters.push(FilterAPI.create('transpose=2'));
+  if (payload.flip) filters.push(FilterAPI.create('hflip'));
+  if (payload.flop) filters.push(FilterAPI.create('vflip'));
+  if (payload.normalize) filters.push(FilterAPI.create('eq=contrast=1.1:brightness=0.04:saturation=1.05'));
+  if (payload.denoise) filters.push(FilterAPI.create('hqdn3d'));
+  if (payload.sharpen) filters.push(FilterAPI.create('unsharp=5:5:1.0:5:5:0.0'));
+  if (payload.grayscale) filters.push(FilterAPI.create('hue=s=0'));
+  filters.push(FilterAPI.create('format=yuv420p'));
+
+  return filters;
+}
+
+/**
+ *
+ * @param format Description.
+ * @returns Result.
+ */
+
+/**
+ *
+ * @param payload Description.
+ * @returns Result.
+ */
+function hasAudioTranscoding(payload: VideoProcessorType) {
+  return [
+    payload.audioBitrate,
+    payload.audioChannels,
+    payload.audioCodec,
+    payload.audioNormalize,
+    payload.audioSampleRate,
+  ].some(Boolean);
+}
+
+/**
+ *
+ * @param payload Description.
+ * @returns Result.
+ */
+function hasVideoTranscoding(payload: VideoProcessorType) {
+  return [
+    payload.bitrate,
+    payload.codec,
+    payload.crf,
+    payload.deinterlace,
+    payload.denoise,
+    payload.flip,
+    payload.flop,
+    payload.fps,
+    payload.grayscale,
+    payload.height,
+    payload.normalize,
+    payload.preset,
+    payload.rotate,
+    payload.sharpen,
+    payload.trimEnd,
+    payload.trimStart,
+    payload.width,
+  ].some(Boolean);
+}
+
+/**
+ *
+ * @param format Description.
+ * @returns Result.
+ */
+function isQuickTime(format: VideoProcessorType['format']) {
+  return format === 'mp4' || format === 'mov';
+}
+
+/**
+ *
+ * @returns Result.
  */
 async function metadata() {
   const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
@@ -41,37 +151,36 @@ async function metadata() {
 }
 
 /**
+ *
+ * @param value Description.
+ * @returns Parsed bitrate.
+ */
+function parseBitrate(value: string): number {
+  const match = value.match(/^(\d+)([kM])$/i);
+  if (!match) return 2_000_000;
+  const [, amount, unit] = match;
+  return (Number(amount) || 0) * (unit?.toLowerCase() === 'k' ? 1000 : 1_000_000);
+}
+
+/**
  * Process and optimize the video stream.
  * @param payload Requested output settings.
  */
+ 
+/**
+ *
+ * @param payload Description.
+ */
+ 
+/**
+ *
+ * @param payload Description.
+ */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 async function processMedia(payload: VideoProcessorType) {
   const format = payload.format;
-  const videoTranscoding = [
-    payload.bitrate,
-    payload.codec,
-    payload.crf,
-    payload.deinterlace,
-    payload.denoise,
-    payload.flip,
-    payload.flop,
-    payload.fps,
-    payload.grayscale,
-    payload.height,
-    payload.normalize,
-    payload.preset,
-    payload.rotate,
-    payload.sharpen,
-    payload.trimEnd,
-    payload.trimStart,
-    payload.width,
-  ].some(Boolean);
-  const audioTranscoding = [
-    payload.audioBitrate,
-    payload.audioChannels,
-    payload.audioCodec,
-    payload.audioNormalize,
-    payload.audioSampleRate,
-  ].some(Boolean);
+  const videoTranscoding = hasVideoTranscoding(payload);
+  const audioTranscoding = hasAudioTranscoding(payload);
 
   const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
   const muxOptions = isQuickTime(format)
@@ -126,7 +235,7 @@ async function processMedia(payload: VideoProcessorType) {
     stages.audio = 'passthrough';
   }
 
-  if (decoders.length === 0 && !(videoStream || audioStream)) {
+  if (decoders.length === 0 && !videoStream && !audioStream) {
     await input.close();
     await output.close();
     throw new Error('Video processing requires an audio or video stream');
@@ -149,67 +258,9 @@ async function processMedia(payload: VideoProcessorType) {
   await output.close();
 }
 
-function parseBitrate(value: string): number {
-  const match = value.match(/^(\d+)(k|M)$/i);
-  if (!match) return 2_000_000;
-  const [, amount, unit] = match;
-  return Number(amount) * ((unit?.toLowerCase() ?? 'M') === 'k' ? 1000 : 1_000_000);
-}
-
-function videoCodecFor(codec?: VideoProcessorType['codec']) {
-  if (codec === 'vp9') return FF_ENCODER_LIBVPX_VP9;
-  if (codec === 'av1') return FF_ENCODER_LIBAOM_AV1;
-  return FF_ENCODER_LIBX264;
-}
-
-function buildVideoFilters(payload: VideoProcessorType) {
-  const filters: FilterAPI[] = [];
-
-  if (payload.trimStart !== undefined || payload.trimEnd !== undefined) {
-    const start = payload.trimStart ?? 0;
-    filters.push(
-      FilterAPI.create(
-        payload.trimEnd === undefined
-          ? `trim=start=${start}`
-          : `trim=start=${start}:end=${payload.trimEnd}`,
-      ),
-      FilterAPI.create('setpts=PTS-STARTPTS'),
-    );
-  }
-
-  if (payload.deinterlace) filters.push(FilterAPI.create('yadif'));
-  if (payload.width !== undefined || payload.height !== undefined) {
-    filters.push(FilterAPI.create(`scale=${payload.width ?? -1}:${payload.height ?? -1}`));
-  }
-  if (payload.fps !== undefined) filters.push(FilterAPI.create(`fps=${payload.fps}`));
-  if (payload.rotate === '90') filters.push(FilterAPI.create('transpose=1'));
-  if (payload.rotate === '180') filters.push(FilterAPI.create('transpose=1,transpose=1'));
-  if (payload.rotate === '270') filters.push(FilterAPI.create('transpose=2'));
-  if (payload.flip) filters.push(FilterAPI.create('hflip'));
-  if (payload.flop) filters.push(FilterAPI.create('vflip'));
-  if (payload.normalize) filters.push(FilterAPI.create('eq=contrast=1.1:brightness=0.04:saturation=1.05'));
-  if (payload.denoise) filters.push(FilterAPI.create('hqdn3d'));
-  if (payload.sharpen) filters.push(FilterAPI.create('unsharp=5:5:1.0:5:5:0.0'));
-  if (payload.grayscale) filters.push(FilterAPI.create('hue=s=0'));
-  filters.push(FilterAPI.create('format=yuv420p'));
-
-  return filters;
-}
-
-function buildAudioFilters(payload: VideoProcessorType) {
-  const filters: FilterAPI[] = [];
-  if (payload.audioChannels === '1') filters.push(FilterAPI.create('pan=mono|c0=.5*c0+.5*c1'));
-  if (payload.audioSampleRate) filters.push(FilterAPI.create(`aresample=${payload.audioSampleRate}`));
-  if (payload.audioNormalize) filters.push(FilterAPI.create('loudnorm=I=-16:TP=-1.5:LRA=11'));
-  return filters;
-}
-
-function isQuickTime(format: VideoProcessorType['format']) {
-  return format === 'mp4' || format === 'mov';
-}
-
 /**
  *
+ * @returns Result.
  */
 async function stats() {
   const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
@@ -230,6 +281,17 @@ async function stats() {
   );
   process.stdout.end();
   await input.close();
+}
+
+/**
+ *
+ * @param codec Description.
+ * @returns Encoder codec.
+ */
+function videoCodecFor(codec?: VideoProcessorType['codec']) {
+  if (codec === 'vp9') return FF_ENCODER_LIBVPX_VP9;
+  if (codec === 'av1') return FF_ENCODER_LIBAOM_AV1;
+  return FF_ENCODER_LIBX264;
 }
 
 switch (data.operation) {

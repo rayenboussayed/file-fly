@@ -33,7 +33,9 @@ export class AudioService {
   ): Promise<Readable> {
     return this.workerService.createWorker('./audio.worker.js', {
       workerData: {
-        inputFormat: DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
+        inputFormat:
+          options.payload.inputFormat ??
+          DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
         operation: 'processor',
         payload: options.payload,
       },

@@ -1,18 +1,31 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "tags": ["-lintignore"],
+  "tags": [
+    "-lintignore"
+  ],
   "nest": {
-    "config": ["nest-cli.json", ".nestcli.json", ".nest-cli.json", "nest.json"]
+    "config": [
+      "nest-cli.json",
+      ".nestcli.json",
+      ".nest-cli.json",
+      "nest.json"
+    ]
   },
   "ignore": [
-    "scripts/union-to-enum.js",
     "src/constants/av-formats.ts",
-    "src/resources/audio/audio.worker.ts",
-    "src/resources/audio/type.ts",
     "src/resources/image/image.worker.ts",
-    "src/resources/image/type.ts",
-    "src/resources/video/video.worker.ts",
-    "src/resources/video/type.ts"
+    "src/resources/image/type.ts"
   ],
-  "ignoreDependencies": ["fastify", "node-av"]
+  "ignoreDependencies": [
+    "fastify",
+    "@commitlint/cli",
+    "@nestjs/mau",
+    "@types/eslint-plugin-security",
+    "source-map-support",
+    "supertest",
+    "@types/supertest"
+  ],
+  "ignoreBinaries": [
+    "husky"
+  ]
 }

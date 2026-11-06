@@ -27,6 +27,14 @@ export class FileParserInterceptor implements NestInterceptor {
 
   async intercept(_: never, next: CallHandler) {
     const reply = this.cls.response();
+    const request = this.cls.request();
+    if (
+      !request.url.startsWith('/audio') &&
+      !request.url.startsWith('/image') &&
+      !request.url.startsWith('/video')
+    ) {
+      return next.handle();
+    }
 
     await this.openSource();
     await this.fileTypeService.signature({
@@ -49,7 +57,7 @@ export class FileParserInterceptor implements NestInterceptor {
 
   /**
    * Splits the current source stream: returns one branch, keeps the other as the source.
-   * @param request
+   * @returns Result.
    */
  private branchSource(): Readable {
     const request = this.cls.request();
@@ -76,7 +84,8 @@ export class FileParserInterceptor implements NestInterceptor {
     }
 
     const fileHash =
-      request.headers[HEADER_X_FILE_HASH]?.toString().trim() ||
+      /* eslint-disable-next-line security/detect-object-injection */
+      (request.headers[HEADER_X_FILE_HASH]?.toString().trim()) ||
       sha512
         .buffer(
           await readPrefix(
@@ -119,8 +128,9 @@ export class FileParserInterceptor implements NestInterceptor {
 
 /**
  *
- * @param stream
- * @param size
+ * @param stream Description.
+ * @param size Description.
+ * @returns Result.
  */
 async function readPrefix(stream: Readable, size: number) {
   const chunks: Buffer[] = [];

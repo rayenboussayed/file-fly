@@ -7,7 +7,7 @@ import {
   setGlobalDispatcher,
 } from 'undici';
 
-import { CACHE_DIR } from './constant.js';
+import { CACHE_DIR } from './constants/fs.js';
 import { isProduction } from './environment.js';
 
 const client = new Agent({

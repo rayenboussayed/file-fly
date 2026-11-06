@@ -22,6 +22,7 @@ export class FileTypeService {
 
   async signature(options: { stream: Readable }) {
     const request = this.normalizedCls.request()
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
     const readableStream = Readable.toWeb(options.stream);
     try {
       const signature = await fileTypeFromStream(readableStream, {

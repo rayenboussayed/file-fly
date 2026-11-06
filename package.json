@@ -25,7 +25,8 @@
     "test:full": "npm run test && npm run test:e2e",
     "knip": "knip --cache",
     "knip:fix": "knip -f --cache",
-    "prepare": "husky"
+    "prepare": "husky",
+    "script:union-to-enum": "node scripts/union-to-enum.js --file node_modules/node-av/dist/constants/formats.d.ts --types DemuxerFormat MuxerFormat --output src/constants/av-formats.ts"
   },
   "dependencies": {
     "@fastify/static": "^10.1.8",

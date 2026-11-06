@@ -2,10 +2,12 @@ import path from 'node:path';
 
 /**
  *
- * @param name
- * @param fallback
+ * @param name Description.
+ * @param fallback Description.
+ * @returns Result.
  */
 function numberFromEnv(name: string, fallback: number): number {
+  /* eslint-disable-next-line security/detect-object-injection */
   const raw = process.env[name];
   if (!raw) return fallback;
   const value = Number(raw);

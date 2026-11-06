@@ -1,3 +1,4 @@
+// eslint-disable-next-line n/no-extraneous-import
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { Module } from '@nestjs/common';
@@ -29,7 +30,7 @@ import { WorkerService } from './services/worker.service.js';
           const http = context.switchToHttp();
           const request = http.getRequest<FastifyRequest>();
           cls.setIfUndefined(CLS_REQ, request);
-          const response = http.getRequest<FastifyReply>();
+          const response = http.getResponse<FastifyReply>();
           cls.setIfUndefined(CLS_RES, response);
         },
       },

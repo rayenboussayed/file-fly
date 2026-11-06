@@ -25,12 +25,13 @@ const JS_FILES = '**/*.{ts,mts,cts}';
 const TS_FILES = '**/*.{ts,mts,cts}';
 
 export default defineConfig([
-  globalIgnores(['node_modules', 'dist']),
+  globalIgnores(['node_modules', 'dist', 'package-lock.json', 'test/results/**']),
   {
     files: [JS_FILES, TS_FILES],
     plugins: { js, unicorn, depend, deprecate, n: node, '@stylistic': stylistic },
     extends: [
       'js/recommended',
+      "n/recommended-module",
       deslint.configs.recommended,
       deMorgan.configs.recommended,
       sonarjs.configs.recommended,

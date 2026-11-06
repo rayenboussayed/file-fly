@@ -1,3 +1,4 @@
+// eslint-disable-next-line n/no-extraneous-import
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Readable } from 'node:stream';
 

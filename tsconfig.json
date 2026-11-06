@@ -26,7 +26,7 @@
     "useUnknownInCatchVariables": true,
     "noImplicitAny": true,
     "paths": {
-      "@": ["./src/*"]
+      "@/*": ["./src/*"]
     }
   }
 }

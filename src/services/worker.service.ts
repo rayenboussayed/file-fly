@@ -229,9 +229,9 @@ export class WorkerService {
         setImmediate(() => {
           if (code !== 0) {
             fail(
-              new Error(`worker ${filename} exited with code ${code}`, {
-                cause: Buffer.concat(stderrChunks).toString() || undefined,
-              }),
+              new Error(
+                `worker ${filename} exited with code ${code}: ${Buffer.concat(stderrChunks).toString()}`,
+              ),
             );
           }
           settle(code === 0);
