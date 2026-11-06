@@ -4,6 +4,7 @@ import type { Readable } from 'node:stream';
 
 import { Injectable } from '@nestjs/common';
 import { FileTypeResult } from 'file-type';
+import { withCacheSync } from "jutilities/cache"
 import { CLS_REQ, CLS_RES, ClsService } from 'nestjs-cls';
 
 import {
@@ -16,6 +17,14 @@ import {
 
 @Injectable()
 export class NormalizedClsService {
+  private readonly mange = withCacheSync(<T>(key: symbol) => {
+    return {
+      get: () => this.cls.get<T>(key),
+      set: (value: T) => this.cls.set(key, value),
+      unset: () => this.cls.set(key, undefined),
+    };
+  });
+
   constructor(private readonly cls: ClsService) {}
 
   cacheKey() {
@@ -45,12 +54,4 @@ export class NormalizedClsService {
   sourceStream() {
     return this.mange<Readable>(CLS_SOURCE_STREAM);
   }
-
-  private readonly mange = <T>(key: symbol) => {
-    return {
-      get: () => this.cls.get<T>(key),
-      set: (value: T) => this.cls.set(key, value),
-      unset: () => this.cls.set(key, undefined),
-    };
-  };
 }
