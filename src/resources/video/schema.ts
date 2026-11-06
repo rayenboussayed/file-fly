@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
+import { MuxerFormatSchema } from '@/constants/av-formats.js';
 import { SourceSchema } from '@/schema.js';
 
 export const VideoProcessorSchema = SourceSchema.extend({
-  format: z.enum(['mp4', 'mov', 'mkv', 'webm']).optional(),
+  format: MuxerFormatSchema.optional(),
 });
 
 export type VideoProcessorType = z.infer<typeof VideoProcessorSchema>;

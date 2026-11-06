@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
+import { MuxerFormatSchema } from '@/constants/av-formats.js';
 import { SourceSchema } from '@/schema.js';
 
 export const AudioProcessorSchema = SourceSchema.extend({
-  format: z.enum(['aac', 'flac', 'mp3', 'ogg', 'wav']).optional(),
+  format: MuxerFormatSchema.optional(),
 });
 
 export type AudioProcessorType = z.infer<typeof AudioProcessorSchema>;

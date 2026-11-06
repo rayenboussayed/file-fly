@@ -1,5 +1,4 @@
 import { Demuxer, Muxer, pipeline } from 'node-av/api';
-import type { DemuxerFormat } from 'node-av/constants';
 import { workerData } from 'node:worker_threads';
 
 import type { AudioProcessorType } from './schema.js';
@@ -13,7 +12,7 @@ if (!inputFormat) { throw new Error('Unsupported input format'); }
  *
  */
 async function metadata() {
-  const input = await Demuxer.open(process.stdin, { format: inputFormat as DemuxerFormat });
+  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
   const streams = input.streams.map((stream) => ({
     channels: stream.codecpar.channels,
     codec: stream.codecpar.codecId,
@@ -38,7 +37,7 @@ async function metadata() {
  */
 async function processMedia(payload: AudioProcessorType) {
   const format = payload.format?.trim() || 'mp3';
-  const input = await Demuxer.open(process.stdin, { format: inputFormat as DemuxerFormat });
+  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
   const output = await Muxer.open('/dev/stdout', { format });
   const control = pipeline(input, output);
   await control.completion;
@@ -50,7 +49,7 @@ async function processMedia(payload: AudioProcessorType) {
  *
  */
 async function stats() {
-  const input = await Demuxer.open(process.stdin, { format: inputFormat as DemuxerFormat });
+  const input = await Demuxer.open(process.stdin as never, { format: inputFormat });
   const streams = input.streams.map((stream) => ({
     bitrate: stream.codecpar.bitRate,
     channels: stream.codecpar.channels,

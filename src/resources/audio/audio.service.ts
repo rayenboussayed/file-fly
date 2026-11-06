@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { stream2buffer } from 'jutilities/node-stream';
 import { WithSignal } from 'jutilities/types/with';
 
+import { DemuxerFormatSchema } from '@/constants/av-formats.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { WorkerService } from '@/services/worker.service.js';
 
@@ -19,7 +20,7 @@ export class AudioService {
   async metadata(options: WithSignal = {}): Promise<unknown> {
     const stdout = await this.workerService.createWorker('./audio.worker.js', {
       workerData: {
-        inputFormat: this.cls.fileSignature().get()?.ext,
+        inputFormat: DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
         operation: 'metadata',
       },
     });
@@ -32,7 +33,7 @@ export class AudioService {
   ): Promise<Readable> {
     return this.workerService.createWorker('./audio.worker.js', {
       workerData: {
-        inputFormat: this.cls.fileSignature().get()?.ext,
+        inputFormat: DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
         operation: 'processor',
         payload: options.payload,
       },
@@ -42,7 +43,7 @@ export class AudioService {
   async stats(options: WithSignal = {}): Promise<unknown> {
     const stdout = await this.workerService.createWorker('./audio.worker.js', {
       workerData: {
-        inputFormat: this.cls.fileSignature().get()?.ext,
+        inputFormat: DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
         operation: 'stats',
       },
     });

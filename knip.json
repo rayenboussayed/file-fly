@@ -5,6 +5,8 @@
     "config": ["nest-cli.json", ".nestcli.json", ".nest-cli.json", "nest.json"]
   },
   "ignore": [
+    "scripts/union-to-enum.js",
+    "src/constants/av-formats.ts",
     "src/resources/audio/audio.worker.ts",
     "src/resources/audio/type.ts",
     "src/resources/image/image.worker.ts",
@@ -12,5 +14,5 @@
     "src/resources/video/video.worker.ts",
     "src/resources/video/type.ts"
   ],
-  "ignoreDependencies": ["fastify"]
+  "ignoreDependencies": ["fastify", "node-av"]
 }
