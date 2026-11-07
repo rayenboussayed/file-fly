@@ -256,10 +256,12 @@ export class WorkerService {
 
   private waitFor(promise: Promise<void>, signal: AbortSignal) {
     return new Promise<void>((resolve, reject) => {
-      const onAbort = () => reject(signal.reason);
-      signal.addEventListener('abort', onAbort, { once: true });
+      const remove = abort({
+        onAbort: () => reject(signal.reason),
+        signal,
+      });
       void promise.then(() => {
-        signal.removeEventListener('abort', onAbort);
+        remove?.();
         resolve();
         return undefined;
       });

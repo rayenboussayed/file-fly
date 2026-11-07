@@ -22,7 +22,7 @@ const data: AudioWorkerData = workerData;
  * @param payload Requested adjustments.
  * @returns Ordered filter graph.
  */
-function buildFilters(payload: AudioProcessorType): FilterAPI[] {
+export function buildFilters(payload: AudioProcessorType): FilterAPI[] {
   const filters: FilterAPI[] = [];
 
   if (payload.trimStart !== undefined || payload.trimEnd !== undefined) {
@@ -51,7 +51,7 @@ function buildFilters(payload: AudioProcessorType): FilterAPI[] {
  * @param requested Requested codec.
  * @returns FFmpeg encoder constant.
  */
-function codecFor(
+export function codecFor(
   format: NonNullable<AudioProcessorType['format']>,
   requested?: AudioProcessorType['codec'],
 ) {
@@ -69,34 +69,11 @@ function codecFor(
 
 /**
  *
- */
-async function metadata() {
-  const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
-  try {
-    process.stdout.write(
-      `${JSON.stringify({
-        duration: input.duration,
-        format: input.formatName,
-        streams: input.streams.map((stream) => ({
-          channels: stream.codecpar.channels,
-          codec: stream.codecpar.codecId,
-          index: stream.index,
-          sampleRate: stream.codecpar.sampleRate,
-          type: stream.codecpar.codecType,
-        })),
-      })}\n`,
-    );
-  } finally {
-    process.stdout.end();
-    await input.close();
-  }
-}
-
-/**
- *
  * @param payload Output settings.
+// eslint-disable-next-line jsdoc/require-param-description
+ * @param inputData Description.
  */
-async function processMedia(payload: AudioProcessorType) {
+export async function processMedia(payload: AudioProcessorType, inputData: AudioWorkerData = data) {
   const format = payload.format ?? 'mp3';
   if (!isAllowedOutputFormat(format)) {
     throw new Error(`Streaming output does not support format: ${format}`);
@@ -119,7 +96,7 @@ async function processMedia(payload: AudioProcessorType) {
   ].some(Boolean);
 
   await using input = await Demuxer.open(process.stdin as never, {
-    format: data.inputFormat,
+    format: inputData.inputFormat,
     options: { analyzeduration: 5_000_000, probesize: 5_000_000 },
   });
 
@@ -144,25 +121,72 @@ async function processMedia(payload: AudioProcessorType) {
   const bitrate: string = payload.bitrate ?? (format === 'ogg' ? '96k' : '128k');
 
   using encoder = await Encoder.create(codecFor(format, payload.codec), {
+    autoResample: true,
     context: { bitRate: bitrate },
     decoder,
   });
 
   const control = pipeline(input, decoder, filters, encoder, output);
   await control.completion;
-
-  for (const filter of filters) filter.close();
 }
 
 /**
  *
+// eslint-disable-next-line jsdoc/require-param-description
+ * @param inputData Description.
  */
-async function stats() {
-  const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
+export async function runAudioWorker(inputData: AudioWorkerData = data) {
+  switch (inputData.operation) {
+  case 'metadata':
+    await metadata(inputData);
+    break;
+  case 'processor':
+    await processMedia(inputData.payload, inputData);
+    break;
+  case 'stats':
+    await stats(inputData);
+    break;
+  }
+}
+
+/**
+ *
+// eslint-disable-next-line jsdoc/require-param-description
+ * @param inputData Description.
+ */
+async function metadata(inputData: AudioWorkerData = data) {
+  const input = await Demuxer.open(process.stdin as never, { format: inputData.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
   try {
     process.stdout.write(
       `${JSON.stringify({
-        duration: input.duration,
+        duration: Number(input.duration),
+        format: input.formatName,
+        streams: input.streams.map((stream) => ({
+          channels: stream.codecpar.channels,
+          codec: stream.codecpar.codecId,
+          index: stream.index,
+          sampleRate: stream.codecpar.sampleRate,
+          type: stream.codecpar.codecType,
+        })),
+      }, (_k, v) => (typeof v === 'bigint' ? Number(v) : v))}\n`,
+    );
+  } finally {
+    process.stdout.end();
+    await input.close();
+  }
+}
+
+/**
+ *
+// eslint-disable-next-line jsdoc/require-param-description
+ * @param inputData Description.
+ */
+async function stats(inputData: AudioWorkerData = data) {
+  const input = await Demuxer.open(process.stdin as never, { format: inputData.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
+  try {
+    process.stdout.write(
+      `${JSON.stringify({
+        duration: Number(input.duration),
         format: input.formatName,
         streams: input.streams.map((stream) => ({
           bitrate: stream.codecpar.bitRate,
@@ -171,21 +195,12 @@ async function stats() {
           index: stream.index,
           sampleRate: stream.codecpar.sampleRate,
         })),
-      })}\n`,
+      }, (_k, v) => (typeof v === 'bigint' ? Number(v) : v))}\n`,
     );
   } finally {
+    process.stdout.end();
     await input.close();
   }
 }
 
-switch (data.operation) {
-  case 'metadata':
-    void metadata();
-    break;
-  case 'processor':
-    void processMedia(data.payload);
-    break;
-  case 'stats':
-    void stats();
-    break;
-}
+void runAudioWorker(data);

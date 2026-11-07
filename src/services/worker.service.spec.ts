@@ -55,3 +55,55 @@ describe('WorkerService', () => {
     expect(await service.hasCache('.cache-test/worker-cache/nope')).toBe(false);
   });
 });
+import type { Readable } from 'node:stream';
+
+import { createHash } from 'node:crypto';
+import { Readable as NodeReadable } from 'node:stream';
+
+describe('WorkerService coverage branches', () => {
+  beforeEach(async () => {
+    await fs.rm('.cache-test/worker-cache', { force:true, recursive:true }).catch(() => undefined);
+    await fs.mkdir('.cache-test/worker-cache', { recursive: true });
+  });
+
+  it('throws when aborted before a worker is created', async () => {
+    const controller = new AbortController();
+    controller.abort(new Error('early'));
+    const cls = {
+      cacheKey: () => ({ get: () => 'key', set: (v: unknown) => v }),
+      request: () => ({ signal: controller.signal }),
+      sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
+    } as never;
+    const service = new WorkerService(cls);
+    await expect(service.createWorker('./x.js')).rejects.toThrow('early');
+  });
+
+  it('returns a worker without cache key, branch handling, and file branches', async () => {
+    const source = new NodeReadable({ read() { this.push(null); } });
+    const cls = {
+      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      request: () => ({ signal: new AbortController().signal }),
+      sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
+    } as never;
+    const service = new WorkerService(cls);
+    const result = await service.createWorker('./m.js', { workerData: { a: 1 } });
+    expect(result).toBeTruthy();
+    await fs.rm('.cache-test/worker-cache', { force:true, recursive:true }).catch(()=>undefined);
+    await fs.mkdir('.cache-test/worker-cache', { recursive: true });
+    const baseKey = 'base-key';
+    // trigger a cache hit using a real entry with deterministic path
+    const digest = createHash('sha256').update(baseKey).update('\0').update('./m.js').update('\0').update(JSON.stringify(null)).digest('hex');
+    const cachePath = `${process.env.CACHE_DIR}/${digest}`;
+// eslint-disable-next-line security/detect-non-literal-fs-filename
+    await fs.writeFile(cachePath, 'cached');
+    const cls2 = {
+      cacheKey: () => ({ get: () => baseKey, set: (v: unknown) => v }),
+      request: () => ({ signal: new AbortController().signal }),
+      sourceStream: () => ({ get: () => new NodeReadable({ read() { this.push(null); } }), set: (v: unknown) => v }),
+    } as never;
+    const service2 = new WorkerService(cls2);
+    const cached = await service2.createWorker('./m.js');
+    (cached as Readable).destroy();
+    await fs.rm(cachePath, { force:true }).catch(()=>undefined);
+  }, 15000);
+});

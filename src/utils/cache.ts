@@ -1,12 +1,11 @@
+import { djb2 } from 'jutilities/hash';
 import { superjson } from 'jutilities/json';
 
-import { sha512 } from './hash.js';
-
 /**
- *
+ * Hashes an arbitrary value into a deterministic, filesystem-safe cache key.
  * @param options Description.
  * @returns Result.
  */
 export function generateCacheKey(options: unknown) {
-  return sha512.buffer(superjson.stringify(options)).toString('base64');
+  return djb2(superjson.stringify(options)).toString();
 }

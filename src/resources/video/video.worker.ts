@@ -101,7 +101,7 @@ async function metadata() {
   try {
     process.stdout.write(
       `${JSON.stringify({
-        duration: input.duration,
+        duration: Number(input.duration),
         format: input.formatName,
         streams: input.streams.map((stream) => ({
           channels: stream.codecpar.channels,
@@ -112,7 +112,7 @@ async function metadata() {
           type: stream.codecpar.codecType,
           width: stream.codecpar.width,
         })),
-      })}\n`,
+      }, (_k, v) => (typeof v === 'bigint' ? Number(v) : v))}\n`,
     );
   } finally {
     process.stdout.end();
@@ -254,7 +254,7 @@ async function stats() {
   try {
     process.stdout.write(
       `${JSON.stringify({
-        duration: input.duration,
+        duration: Number(input.duration),
         format: input.formatName,
         streams: input.streams.map((stream) => ({
           bitrate: stream.codecpar.bitRate,
@@ -264,9 +264,10 @@ async function stats() {
           type: stream.codecpar.codecType,
           width: stream.codecpar.width,
         })),
-      })}\n`,
+      }, (_k, v) => (typeof v === 'bigint' ? Number(v) : v))}\n`,
     );
   } finally {
+    process.stdout.end();
     await input.close();
   }
 }

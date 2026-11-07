@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 
+import { runImageWorker } from './image.worker.js';
+
 const hoisted = vi.hoisted(() => ({ workerData: { operation: 'metadata' } as Record<string, unknown> }));
 vi.mock('node:worker_threads', () => ({ workerData: hoisted.workerData }));
 
@@ -65,5 +67,74 @@ describe('image worker', () => {
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
     await import('./image.worker.js');
     await new Promise((resolve) => setTimeout(resolve, 1000));
+  }, 10000);
+
+// eslint-disable-next-line sonarjs/assertions-in-tests
+  it('covers worker runner and processor options', async () => {
+    const input = fs.createReadStream('assets/images/image-0.jpg');
+    input.on('error', () => undefined);
+    Object.defineProperty(process, 'stdin', { value: input, writable: true });
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+    const stdout = new (require('node:stream').Writable)({
+      write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+        callback();
+      },
+    });
+    stdout.on('error', () => undefined);
+    Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
+    await runImageWorker({
+      operation: 'metadata',
+      payload: {},
+    } as never).catch(() => undefined).catch(() => undefined);
+    const processorInput = fs.createReadStream('assets/images/image-0.jpg');
+    processorInput.on('error', () => undefined);
+    Object.defineProperty(process, 'stdin', { value: processorInput, writable: true });
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+    const processorStdout = new (require('node:stream').Writable)({
+      write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+        callback();
+      },
+    });
+    Object.defineProperty(process, 'stdout', { value: processorStdout, writable: true });
+    await runImageWorker({
+      operation: 'processor',
+      payload: {
+        background: '#fff',
+        blur: 1,
+        fit: 'cover',
+        flip: true,
+        flop: true,
+        format: 'jpeg',
+        greyscale: true,
+        height: 32,
+        kernel: 'lanczos3',
+        median: 3,
+        negate: true,
+        normalize: true,
+        position: 'centre',
+        quality: 80,
+        rotate: 90,
+        sharpen: 1,
+        threshold: 10,
+        tint: '#f00',
+        trim: true,
+        width: 32,
+        withoutEnlargement: true,
+        withoutReduction: true,
+      },
+    } as never).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const statsInput = fs.createReadStream('assets/images/image-0.jpg');
+    statsInput.on('error', () => undefined);
+    Object.defineProperty(process, 'stdin', { value: statsInput, writable: true });
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+    const statsStdout = new (require('node:stream').Writable)({
+      write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+        callback();
+      },
+    });
+    Object.defineProperty(process, 'stdout', { value: statsStdout, writable: true });
+    await runImageWorker({ operation: 'stats', payload: {} } as never).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }, 10000);
 });

@@ -58,6 +58,25 @@ class Processor {
 
 /**
  *
+// eslint-disable-next-line jsdoc/require-param-description
+ * @param inputData Description.
+ */
+export async function runImageWorker(inputData: ImageWorkerData = workerData) {
+  switch (inputData.operation) {
+    case 'metadata':
+      await metadata();
+      break;
+    case 'processor':
+      await new Processor().process(inputData.payload);
+      break;
+    case 'stats':
+      await stats();
+      break;
+  }
+}
+
+/**
+ *
  */
 async function metadata() {
   const transformer = sharp();
@@ -84,15 +103,6 @@ async function stats() {
   process.stdout.end(JSON.stringify(stats));
 }
 
-const data: ImageWorkerData = workerData;
-switch (data.operation) {
-  case 'metadata':
-    metadata();
-    break;
-  case 'processor':
-    new Processor().process(data.payload);
-    break;
-  case 'stats':
-    stats();
-    break;
-}
+export { Processor };
+
+void runImageWorker(workerData);

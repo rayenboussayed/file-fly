@@ -6,6 +6,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { tee } from 'jutilities/node-stream';
+import { createHash } from 'node:crypto';
 import { mergeMap } from 'rxjs';
 import { request as netRequest } from 'undici';
 
@@ -84,16 +85,12 @@ export class FileParserInterceptor implements NestInterceptor {
     }
 
     const fileHash =
-      /* eslint-disable-next-line security/detect-object-injection */
+// eslint-disable-next-line security/detect-object-injection
       (request.headers[HEADER_X_FILE_HASH]?.toString().trim()) ||
-      sha512
-        .buffer(
-          await readPrefix(
-            this.branchSource(),
-            environment.FILE_HASH_HEADER_SIZE,
-          ),
-        )
-        .toString('base64');
+      (await prefixHash(
+        this.branchSource(),
+        environment.FILE_HASH_HEADER_SIZE,
+      ));
 
     this.cls.cacheKey().set(
       generateCacheKey({
@@ -132,17 +129,24 @@ export class FileParserInterceptor implements NestInterceptor {
  * @param size Description.
  * @returns Result.
  */
-async function readPrefix(stream: Readable, size: number) {
-  const chunks: Buffer[] = [];
+async function prefixHash(stream: Readable, size: number) {
+  const hash = createHash('sha512');
   let length = 0;
   try {
     for await (const chunk of stream) {
-      chunks.push(chunk);
-      length += chunk.length;
+      const buffer = Buffer.isBuffer(chunk)
+        ? chunk
+        : Buffer.from(chunk as Uint8Array);
+      const remaining = size - length;
+      if (remaining <= 0) break;
+      hash.update(
+        remaining >= buffer.length ? buffer : buffer.subarray(0, remaining),
+      );
+      length += buffer.length;
       if (length >= size) break;
     }
   } finally {
     stream.destroy();
   }
-  return Buffer.concat(chunks).subarray(0, size);
+  return hash.digest().toString('base64');
 }
