@@ -1,14 +1,15 @@
 import type { Readable } from 'node:stream';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnsupportedMediaTypeException } from '@nestjs/common';
 import { stream2buffer } from 'jutilities/node-stream';
 import { WithSignal } from 'jutilities/types/with';
 
-import { DemuxerFormatSchema } from '@/constants/av-formats.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { WorkerService } from '@/services/worker.service.js';
 
 import type { AudioProcessorType } from './schema.js';
+
+import { toDemuxerFormat } from '../common/input-format.js';
 
 @Injectable()
 export class AudioService {
@@ -18,9 +19,11 @@ export class AudioService {
   ) {}
 
   async metadata(options: WithSignal = {}): Promise<unknown> {
+    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
+    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported audio input');
     const stdout = await this.workerService.createWorker('./audio.worker.js', {
       workerData: {
-        inputFormat: DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
+        inputFormat,
         operation: 'metadata',
       },
     });
@@ -31,11 +34,11 @@ export class AudioService {
   async processor(
     options: WithSignal<{ payload: AudioProcessorType }>,
   ): Promise<Readable> {
+    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
+    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported audio input');
     return this.workerService.createWorker('./audio.worker.js', {
       workerData: {
-        inputFormat:
-          options.payload.inputFormat ??
-          DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
+        inputFormat,
         operation: 'processor',
         payload: options.payload,
       },
@@ -43,9 +46,11 @@ export class AudioService {
   }
 
   async stats(options: WithSignal = {}): Promise<unknown> {
+    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
+    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported audio input');
     const stdout = await this.workerService.createWorker('./audio.worker.js', {
       workerData: {
-        inputFormat: DemuxerFormatSchema.safeParse(this.cls.fileSignature().get()?.ext).data,
+        inputFormat,
         operation: 'stats',
       },
     });

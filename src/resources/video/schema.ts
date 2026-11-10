@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-import {
-  DemuxerFormatSchema,
-} from '@/constants/av-formats.js';
 import { STREAMABLE_OUTPUT_FORMATS } from '@/resources/common/capabilities.js';
 import { SourceSchema } from '@/schema.js';
 import { trimmed } from '@/utils/zod.js';
@@ -26,7 +23,6 @@ export const VideoProcessorSchema = SourceSchema.extend({
   fps: z.coerce.number().min(1).max(120).optional(),
   grayscale: trimmed(z.stringbool()).default(false),
   height: z.coerce.number().int().min(16).max(3840).optional(),
-  inputFormat: trimmed(DemuxerFormatSchema).optional(),
   normalize: trimmed(z.stringbool()).default(false),
   preset: trimmed(z.enum(['ultrafast', 'fast', 'medium'])).optional(),
   rotate: trimmed(z.enum(['90', '180', '270'])).optional(),

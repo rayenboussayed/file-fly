@@ -1,15 +1,13 @@
-import type { DemuxerFormat } from '@/constants/av-formats.js';
-
 import type { VideoProcessorType as SchemaVideoProcessorType } from './schema.js';
 
 export type VideoWorkerData =
   | {
-      inputFormat?: DemuxerFormat;
+      inputFormat: string;
       operation: 'metadata' | 'stats';
       payload?: never;
     }
   | {
-      inputFormat?: DemuxerFormat;
+      inputFormat: string;
       operation: 'processor';
       payload: SchemaVideoProcessorType;
     };
