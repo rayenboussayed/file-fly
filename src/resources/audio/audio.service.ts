@@ -6,10 +6,9 @@ import { WithSignal } from 'jutilities/types/with';
 
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { WorkerService } from '@/services/worker.service.js';
+import { toDemuxerFormat } from '@/utils/input-format.js';
 
 import type { AudioProcessorType } from './schema.js';
-
-import { toDemuxerFormat } from '../common/input-format.js';
 
 @Injectable()
 export class AudioService {

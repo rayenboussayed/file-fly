@@ -2,8 +2,6 @@ import type { FileTypeResult } from 'file-type';
 
 import { demuxerFormats } from '@/constants/av-formats.js';
 
-const DEMUXER_FORMATS = new Set<string>(demuxerFormats);
-
 /**
  * Maps a detected file signature to an FFmpeg demuxer format name.
  *
@@ -96,21 +94,25 @@ const MIME_TO_DEMUXER: Readonly<Record<string, string>> = {
   'video/x-ms-asf': 'asf',
 };
 
+const DEMUXER_FORMATS = new Set<string>(demuxerFormats);
+
 /**
  * Resolve a detected file signature to an FFmpeg demuxer format name.
  * @param signature Description.
  * @returns Result.
  */
-export function toDemuxerFormat(signature: FileTypeResult | undefined): string | undefined {
+export function toDemuxerFormat(
+  signature: FileTypeResult | undefined,
+): string | undefined {
   if (!signature) return undefined;
   const ext = signature.ext?.toLowerCase();
   if (ext) {
     // eslint-disable-next-line security/detect-object-injection
-    if (Object.prototype.hasOwnProperty.call(EXT_TO_DEMUXER, ext)) return EXT_TO_DEMUXER[ext];
+    if (ext in EXT_TO_DEMUXER) return EXT_TO_DEMUXER[ext];
     if (DEMUXER_FORMATS.has(ext)) return ext;
   }
   const mime = signature.mime?.toLowerCase();
   // eslint-disable-next-line security/detect-object-injection
-  if (mime && Object.prototype.hasOwnProperty.call(MIME_TO_DEMUXER, mime)) return MIME_TO_DEMUXER[mime];
+  if (mime in MIME_TO_DEMUXER) return MIME_TO_DEMUXER[mime];
   return undefined;
 }
