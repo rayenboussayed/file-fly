@@ -14,7 +14,7 @@ describe('dbg', () => {
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
     const w = new (require('node:stream').Writable)({ write(_c:any,_e:any,cb:any){cb();} });
     Object.defineProperty(process, 'stdout', { value: w, writable: true });
-    await import('./audio.worker.js');
+    await import('./worker/index.js');
     console.log('IMPORT DONE');
 // eslint-disable-next-line promise/param-names
     await new Promise((r) => setTimeout(r, 1000));

@@ -11,6 +11,7 @@ import { isProduction } from './environment.js';
 import { FileParserInterceptor } from './interceptors/file-parser.interceptor.js';
 import { AudioModule } from './resources/audio/audio.module.js';
 import { ImageModule } from './resources/image/image.module.js';
+import { OcrModule } from './resources/ocr/ocr.module.js';
 import { VideoModule } from './resources/video/video.module.js';
 import { CacheJanitorService } from './services/cache-janitor.service.js';
 import { FileTypeService } from './services/file-type.service.js';
@@ -38,6 +39,7 @@ import { WorkerService } from './services/worker.service.js';
     AudioModule,
     ImageModule,
     VideoModule,
+    OcrModule,
   ],
   providers: [
     {

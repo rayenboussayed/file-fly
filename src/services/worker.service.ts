@@ -4,10 +4,10 @@ import type { Readable } from 'node:stream';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { tee } from 'jutilities/node-stream';
-import { abort } from 'jutilities/signal';
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import { pipeline } from 'node:stream/promises';
+import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
 
 import { CACHE_DIR } from '@/constants/fs.js';
@@ -41,10 +41,6 @@ export class WorkerService {
     filename: string,
     options: CreateWorkerOptions = {},
   ): Promise<Readable> {
-    const request = this.cls.request();
-    const { signal } = request;
-    signal.throwIfAborted();
-
     const source = this.cls.sourceStream().get() ;
     const baseKey = this.cls.cacheKey().get();
     // Hashing makes the key filesystem-safe (no "/" from base64, no traversal)
@@ -54,11 +50,11 @@ export class WorkerService {
       : undefined;
 
     if (file) {
-      let cached = await this.openCache(file, signal);
+      let cached = await this.openCache(file);
       if (!cached && this.inflight.has(file)) {
         // Same request is already being produced: wait, then read its result.
-        await this.waitFor(this.inflight.get(file)!, signal);
-        cached = await this.openCache(file, signal);
+        await this.inflight.get(file)!;
+        cached = await this.openCache(file);
       }
       if (cached) {
         source?.destroy(); // nobody will read it: free socket / request body
@@ -66,7 +62,7 @@ export class WorkerService {
       }
     }
 
-    return this.spawn(filename, options, source, file, signal);
+    return this.spawn(filename, options, source, file);
   }
 
   /**
@@ -98,12 +94,10 @@ export class WorkerService {
    * Opens the fd first, so a concurrent eviction (unlink) can't break an
    * in-progress read, and bumps mtime so eviction is LRU-ish.
    * @param file Cache entry path.
-   * @param signal Request abort signal.
    * @returns Readable stream for an existing cache entry, or undefined.
    */
   private async openCache(
     file: string,
-    signal: AbortSignal,
   ): Promise<Readable | undefined> {
     let handle: fs.promises.FileHandle;
     try {
@@ -119,7 +113,7 @@ export class WorkerService {
     }
     const now = new Date();
     void handle.utimes(now, now).catch(() => undefined);
-    return handle.createReadStream({ signal });
+    return handle.createReadStream();
   }
 
   /**
@@ -129,13 +123,11 @@ export class WorkerService {
    * @param file Target cache path.
    * @param branch Source stream to persist.
    * @param succeeded Worker exit status.
-   * @param signal Request abort signal.
    */
   private persist(
     file: string,
     branch: Readable,
     succeeded: Promise<boolean>,
-    signal: AbortSignal,
   ) {
     const tmp = `${file}.${randomUUID()}.tmp`;
     let release!: () => void;
@@ -152,7 +144,6 @@ export class WorkerService {
           fs.createWriteStream(tmp, {
             highWaterMark: branch.readableHighWaterMark,
           }),
-          { signal },
         ),
         succeeded,
       ]);
@@ -166,6 +157,8 @@ export class WorkerService {
 
     void run()
       .catch(async (error: unknown) => {
+        // The worker has already settled here, so its stdout has ended;
+        // destroying this branch cannot stall the tee's other branch.
         branch.destroy();
         await fs.promises.rm(tmp, { force: true });
         this.logger.debug(`not cached (${file}): ${String(error)}`);
@@ -181,9 +174,9 @@ export class WorkerService {
     options: CreateWorkerOptions,
     source: Readable | undefined,
     file: string | undefined,
-    signal: AbortSignal,
   ): Readable {
     const worker = new Worker(filename, {
+      env: { ...process.env, FILE_FLY_WORKER: '1' },
       stderr: true,
       stdin: true,
       stdout: true,
@@ -193,14 +186,10 @@ export class WorkerService {
     // Never `throw` from an event handler: it becomes an uncaught exception.
     // Destroying stdout propagates the error to whoever consumes the stream.
     const fail = (error: Error) => {
+      this.logger.warn(`worker ${filename} failed: ${error.message}`);
       if (!worker.stdout.destroyed) worker.stdout.destroy(error);
       void worker.terminate();
     };
-
-    const stopAbortListener = abort({
-      onAbort: () => void worker.terminate(),
-      signal,
-    });
 
     const stderrChunks: Buffer[] = [];
     let stderrSize = 0;
@@ -217,7 +206,6 @@ export class WorkerService {
       const settle = (ok: boolean) => {
         if (settled) return;
         settled = true;
-        stopAbortListener();
         resolve(ok);
       };
       worker.once('error', (error: Error) => {
@@ -240,31 +228,36 @@ export class WorkerService {
     });
 
     if (source) {
-      void pipeline(source, worker.stdin!, { signal }).catch((error: unknown) =>
-        fail(error instanceof Error ? error : new Error(String(error))),
-      );
+      // NOTE: the request signal fires as soon as the client finishes sending
+      // (IncomingMessage closes), which would kill the pipeline mid-upload —
+      // it is intentionally not used here.
+      void pipeline(source, worker.stdin!).catch((error: unknown) => {
+        // The worker may stop reading once it has what it needs (e.g. just the
+        // container header): drop the branch instead of failing the worker output.
+        this.logger.debug(`worker stdin closed: ${String(error)}`);
+        if (!source.destroyed) source.destroy();
+      });
     } else {
       worker.stdin!.end();
     }
 
     if (!file) return worker.stdout;
 
-    const [cacheBranch, output] = tee({ signal, source: worker.stdout });
-    this.persist(file, cacheBranch, succeeded, signal);
+    const [cacheBranch, output] = tee({ source: worker.stdout });
+    this.persist(file, cacheBranch, succeeded);
     return output;
   }
+}
 
-  private waitFor(promise: Promise<void>, signal: AbortSignal) {
-    return new Promise<void>((resolve, reject) => {
-      const remove = abort({
-        onAbort: () => reject(signal.reason),
-        signal,
-      });
-      void promise.then(() => {
-        remove?.();
-        resolve();
-        return undefined;
-      });
-    });
-  }
+/**
+ * Resolves a worker filename relative to the calling module's location.
+ *
+ * Services pass `'./name.worker.js'` to mean "same folder"; `new Worker(path)`
+ * would otherwise resolve it against the process cwd and fail in production.
+ * @param filename - Worker filename as declared by the caller (e.g. `'./worker/index.js'`).
+ * @param metaUrl - `import.meta.url` of the module that declared the filename.
+ * @returns Absolute path to the worker file.
+ */
+export function workerPath(filename: string, metaUrl: string): string {
+  return fileURLToPath(new URL(filename, metaUrl));
 }

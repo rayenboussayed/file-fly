@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildFilters, codecFor, processMedia, runAudioWorker } from './audio.worker.js';
+import { codecFor } from './worker/codecs.js';
+import { buildFilters } from './worker/filters.js';
+import { runAudioWorker } from './worker/index.js';
+import { processMedia } from './worker/processor.js';
 const hoisted = vi.hoisted(() => ({ workerData: {} as Record<string, unknown> }));
 vi.mock('node:worker_threads', () => ({ workerData: hoisted.workerData }));
 
@@ -39,7 +42,7 @@ describe('audio worker', () => {
     });
     stdout.on('error', () => undefined);
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
-    await import('./audio.worker.js');
+    await import('./worker/index.js');
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }, 10000);
 
@@ -77,7 +80,7 @@ describe('audio worker', () => {
     });
     stdout.on('error', () => undefined);
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
-    await import('./audio.worker.js');
+    await import('./worker/index.js');
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }, 10000);
 

@@ -17,6 +17,8 @@ export class VideoSignatureInterceptor implements NestInterceptor {
   ) {}
 
   intercept(_: never, next: CallHandler) {
+    const request = this.cls.request();
+    if (!request.url.startsWith('/video')) return next.handle();
     const signature = this.cls.fileSignature().get();
     if (signature && !this.fileTypeService.isVideo(signature.mime)) {
       throw new UnsupportedMediaTypeException('File is not video');

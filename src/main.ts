@@ -5,6 +5,7 @@ import './undici.js';
 // eslint-disable-next-line n/no-extraneous-import
 import type { FastifyInstance } from 'fastify';
 
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -23,6 +24,16 @@ import * as AppHeaders from '@/constants/header.js';
 
 import { AppModule } from './app.module.js';
 import { environment, isProduction } from './environment.js';
+
+const logger = new Logger('bootstrap');
+
+// A stray rejection must never kill the media streaming process.
+process.on('unhandledRejection', (reason) => {
+  logger.error(`unhandledRejection: ${String(reason)}`);
+});
+process.on('uncaughtException', (error) => {
+  logger.error(`uncaughtException: ${error.stack ?? String(error)}`);
+});
 
 /**
  *

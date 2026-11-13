@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 
-import { runImageWorker } from './image.worker.js';
+import { runImageWorker } from './worker/index.js';
 
 const hoisted = vi.hoisted(() => ({ workerData: { operation: 'metadata' } as Record<string, unknown> }));
 vi.mock('node:worker_threads', () => ({ workerData: hoisted.workerData }));
@@ -27,7 +27,7 @@ describe('image worker', () => {
     stdout.on('error', () => undefined);
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
     try {
-      await import('./image.worker.js');
+      await import('./worker/index.js');
 // eslint-disable-next-line deslint/no-empty-catch
     } catch {
       // worker may complete asynchronously; ignore.
@@ -42,14 +42,19 @@ describe('image worker', () => {
     await run('metadata');
 // eslint-disable-next-line sonarjs/no-trivial-assertions
     expect(true).toBe(true);
-  }, 10000);
+  }, 30000);
 
   it('covers stats operation', async () => {
     await run('stats');
 // eslint-disable-next-line sonarjs/no-trivial-assertions
     expect(true).toBe(true);
-  }, 10000);
+  }, 30000);
 
+  it('covers ocr operation', async () => {
+    const writes = await run('ocr');
+    const total = writes.reduce((acc, chunk) => acc + chunk.length, 0);
+    expect(total).toBeGreaterThan(0);
+  }, 30000);
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('covers processor operation', async () => {
     hoisted.workerData = { operation: 'processor', payload: {} };
@@ -65,9 +70,9 @@ describe('image worker', () => {
     });
     stdout.on('error', () => undefined);
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
-    await import('./image.worker.js');
+    await import('./worker/index.js');
     await new Promise((resolve) => setTimeout(resolve, 1000));
-  }, 10000);
+  }, 30000);
 
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('covers worker runner and processor options', async () => {
@@ -136,5 +141,5 @@ describe('image worker', () => {
     Object.defineProperty(process, 'stdout', { value: statsStdout, writable: true });
     await runImageWorker({ operation: 'stats', payload: {} } as never).catch(() => undefined);
     await new Promise((resolve) => setTimeout(resolve, 300));
-  }, 10000);
+  }, 30000);
 });

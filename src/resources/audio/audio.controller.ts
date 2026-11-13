@@ -1,17 +1,18 @@
 // eslint-disable-next-line n/no-extraneous-import
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply } from 'fastify';
 
 import {
   Controller,
   Get,
   Post,
   Query,
-  Request,
   Response,
+  StandardSchemaValidationPipe,
 } from '@nestjs/common';
-import { pipeline } from 'node:stream/promises';
 
-import { OUTPUT_CONTENT_TYPE } from '../common/capabilities.js';
+import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
+
+import { pipeToReply } from '../../utils/pipe.js';
 import { AudioService } from './audio.service.js';
 import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 
@@ -19,46 +20,72 @@ import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 export class AudioController {
   constructor(private readonly audioService: AudioService) {}
 
-  @Get()
-  @Post()
+  @Get('dna')
+  async dnaGet() {
+    return this.dna();
+  }
+
+  @Post('dna')
+  async dnaPost() {
+    return this.dna();
+  }
+
   async main(
-    @Request() request: FastifyRequest,
-    @Response({ passthrough: false }) response: FastifyReply,
-    @Query({ schema: AudioProcessorSchema }) query: AudioProcessorType,
+    response: FastifyReply,
+    query: AudioProcessorType,
   ) {
     const processed = await this.audioService.processor({
       payload: query,
-      signal: request.signal,
     });
-    response.type(OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
-    return pipeline(processed, response.raw, { signal: request.signal });
+    response.raw.setHeader('content-type', OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
+    return pipeToReply(processed, response);
+  }
+
+  @Get()
+  async mainGet(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: AudioProcessorSchema }) query: AudioProcessorType,
+  ) {
+    return this.main(response, query);
+  }
+
+  @Post()
+  async mainPost(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: AudioProcessorSchema }) query: AudioProcessorType,
+  ) {
+    return this.main(response, query);
   }
 
   @Get('metadata')
-  async metadataGet(@Request() request: FastifyRequest) {
-    return this.metadata(request);
+  async metadataGet() {
+    return this.metadata();
   }
 
   @Post('metadata')
-  async metadataPost(@Request() request: FastifyRequest) {
-    return this.metadata(request);
+  async metadataPost() {
+    return this.metadata();
   }
 
   @Get('stats')
-  async statsGet(@Request() request: FastifyRequest) {
-    return this.stats(request);
+  async statsGet() {
+    return this.stats();
   }
 
   @Post('stats')
-  async statsPost(@Request() request: FastifyRequest) {
-    return this.stats(request);
+  async statsPost() {
+    return this.stats();
   }
 
-  private async metadata(request: FastifyRequest) {
-    return this.audioService.metadata({ signal: request.signal });
+  private async dna() {
+    return this.audioService.dna();
   }
 
-  private async stats(request: FastifyRequest) {
-    return this.audioService.stats({ signal: request.signal });
+  private async metadata() {
+    return this.audioService.metadata();
+  }
+
+  private async stats() {
+    return this.audioService.stats();
   }
 }

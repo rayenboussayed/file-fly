@@ -1,64 +1,127 @@
 // eslint-disable-next-line n/no-extraneous-import
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply } from 'fastify';
 
 import {
   Controller,
   Get,
   Post,
   Query,
-  Request,
   Response,
+  StandardSchemaValidationPipe,
 } from '@nestjs/common';
-import { pipeline } from 'node:stream/promises';
 
-import { OUTPUT_CONTENT_TYPE } from '../common/capabilities.js';
-import { VideoProcessorSchema, type VideoProcessorType } from './schema.js';
+import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
+
+import { pipeToReply } from '../../utils/pipe.js';
+import { screenshotBoundary } from './multipart.js';
+import {
+  parseFrames,
+  ScreenshotSchema,
+  type ScreenshotType,
+  VideoProcessorSchema,
+  type VideoProcessorType,
+} from './schema.js';
 import { VideoService } from './video.service.js';
 
 @Controller('video')
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 
-  @Get()
-  @Post()
+  @Get('dna')
+  async dnaGet() {
+    return this.dna();
+  }
+
+  @Post('dna')
+  async dnaPost() {
+    return this.dna();
+  }
+
   async main(
-    @Request() request: FastifyRequest,
-    @Response({ passthrough: false }) response: FastifyReply,
-    @Query({ schema: VideoProcessorSchema }) query: VideoProcessorType,
+    response: FastifyReply,
+    query: VideoProcessorType,
   ) {
     const processed = await this.videoService.processor({
       payload: query,
-      signal: request.signal,
     });
-    response.type(OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
-    return pipeline(processed, response.raw, { signal: request.signal });
+    response.raw.setHeader('content-type', OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
+    return pipeToReply(processed, response);
+  }
+
+  @Get()
+  async mainGet(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: VideoProcessorSchema }) query: VideoProcessorType,
+  ) {
+    return this.main(response, query);
+  }
+
+  @Post()
+  async mainPost(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: VideoProcessorSchema }) query: VideoProcessorType,
+  ) {
+    return this.main(response, query);
   }
 
   @Get('metadata')
-  async metadataGet(@Request() request: FastifyRequest) {
-    return this.metadata(request);
+  async metadataGet() {
+    return this.metadata();
   }
 
   @Post('metadata')
-  async metadataPost(@Request() request: FastifyRequest) {
-    return this.metadata(request);
+  async metadataPost() {
+    return this.metadata();
+  }
+
+  async screenshot(
+    response: FastifyReply,
+    query: ScreenshotType,
+  ) {
+    const frames = parseFrames(query.frames);
+    const boundary = screenshotBoundary(frames);
+    response.raw.setHeader('content-type', `multipart/mixed; boundary="${boundary}"`);
+    const processed = await this.videoService.screenshot({
+      payload: query,
+    });
+    return pipeToReply(processed, response);
+  }
+
+  @Get('screenshot')
+  async screenshotGet(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: ScreenshotSchema }) query: ScreenshotType,
+  ) {
+    return this.screenshot(response, query);
+  }
+
+  @Post('screenshot')
+  async screenshotPost(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: ScreenshotSchema }) query: ScreenshotType,
+  ) {
+    return this.screenshot(response, query);
   }
 
   @Get('stats')
-  async statsGet(@Request() request: FastifyRequest) {
-    return this.stats(request);
+  async statsGet() {
+    return this.stats();
   }
 
   @Post('stats')
-  async statsPost(@Request() request: FastifyRequest) {
-    return this.stats(request);
+  async statsPost() {
+    return this.stats();
   }
 
-  private async metadata(request: FastifyRequest) {
-    return this.videoService.metadata({ signal: request.signal });
+  private async dna() {
+    return this.videoService.dna();
   }
 
-  private async stats(request: FastifyRequest) {
-    return this.videoService.stats({ signal: request.signal });
+  private async metadata() {
+    return this.videoService.metadata();
+  }
+
+  private async stats() {
+    return this.videoService.stats();
   }
 }

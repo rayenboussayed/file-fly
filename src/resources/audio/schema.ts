@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-import { STREAMABLE_OUTPUT_FORMATS } from '@/resources/common/capabilities.js';
 import { SourceSchema } from '@/schema.js';
+import { STREAMABLE_OUTPUT_FORMATS } from '@/utils/capabilities.js';
 import { trimmed } from '@/utils/zod.js';
 
 const trim = z.coerce.number().finite().min(0).max(24 * 60 * 60);
 
-export const AudioProcessorSchema = SourceSchema.extend({
+export const AudioProcessorSchema = SourceSchema.partial().extend({
   bitrate: trimmed(z.enum(['96k', '128k', '192k', '256k', '320k'])).optional(),
   channels: trimmed(z.enum(['1', '2'])).optional(),
   codec: trimmed(z.enum(['aac', 'flac', 'mp3', 'opus', 'pcm'])).optional(),

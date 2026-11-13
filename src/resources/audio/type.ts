@@ -3,7 +3,7 @@ import type { AudioProcessorType as SchemaAudioProcessorType } from './schema.js
 export type AudioWorkerData =
   | {
       inputFormat: string;
-      operation: 'metadata' | 'stats';
+      operation: 'dna' | 'metadata' | 'stats';
       payload?: never;
     }
   | {

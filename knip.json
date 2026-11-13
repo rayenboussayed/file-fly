@@ -19,9 +19,7 @@
     "@commitlint/cli",
     "@nestjs/mau",
     "@types/eslint-plugin-security",
-    "source-map-support",
-    "supertest",
-    "@types/supertest"
+    "source-map-support"
   ],
   "ignoreBinaries": [
     "husky"

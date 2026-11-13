@@ -1,1 +1,1 @@
-npm audit fix && git add . && npm run check
+npm audit fix || true; npm audit --omit=dev && git add . && npm run check

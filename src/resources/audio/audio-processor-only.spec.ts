@@ -18,7 +18,7 @@ describe('audio processor only', () => {
       },
     });
     Object.defineProperty(process, 'stdout', { value: w, writable: true });
-    await import('./audio.worker.js');
+    await import('./worker/index.js');
 // eslint-disable-next-line promise/param-names
     await new Promise((r) => setTimeout(r, 1000));
   });

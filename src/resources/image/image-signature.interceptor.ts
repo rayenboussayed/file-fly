@@ -17,9 +17,12 @@ export class ImageSignatureInterceptor implements NestInterceptor {
   ) {}
 
   intercept(_: never, next: CallHandler) {
+    const request = this.cls.request();
+    if (!request.url.startsWith('/image')) return next.handle();
     const signature = this.cls.fileSignature().get();
-    if (this.fileTypeService.isImage(signature.mime))
+    if (signature && !this.fileTypeService.isImage(signature.mime)) {
       throw new UnsupportedMediaTypeException('File is not an image');
+    }
     return next.handle();
   }
 }

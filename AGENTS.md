@@ -8,11 +8,13 @@
 - Lint with auto-fix: `npm run lint`; lint uses `--max-warnings=0`
 - Type check: `npm run typecheck`
 - Build: `npm run build`
+- Perf/memory suites (opt-in, not in `npm run check`): `npm run test:perf` (benchmarks), `npm run test:mem` (GC memory regressions); see `docs/performance.md`
 
 ## Structure
-- NestJS app; media endpoints under `/image`, `/audio`, `/video`.
+- NestJS app; media endpoints under `/image`, `/audio`, `/video`, plus `/image/dna`, `/audio/dna`, `/video/dna`.
 - Uploaded/downloaded media streams enter through `FileParserInterceptor`, then `WorkerService`.
-- Heavy work runs in workers: `src/resources/*/...worker.ts`.
+- PDQ/Chromaprint fingerprints are computed via `pdq-wasm` loaded through `createRequire` CJS (ESM entry broken under Node) and node-av's `chromaprint` muxer (`algorithm: 1`); see `docs/dna.md`.
+- Heavy work runs in workers: `src/resources/*/worker/index.ts` (with helpers in sibling `{util}.ts` files).
 - `node_modules/node-av` is the media backend.
 - Generated format enums live in `src/constants/av-formats.ts`; regenerate with `npm run script:union-to-enum`. Do not edit manually.
 
@@ -31,7 +33,7 @@
 - `NODE_ENV` must be `development` or `production`; production enables restrictive security headers / CSRF.
 
 ## Testing
-- Unit specs match `**/*.spec.ts`; E2E specs match `**/*.e2e-spec.ts`.
+- Unit specs match `**/*.spec.ts`; E2E specs match `**/*.e2e-spec.ts`. Benchmark files match `test/perf/*.bench.ts`; memory specs live in `test/mem/*.spec.ts` and are excluded from the unit config.
 - Do not run tests in parallel; `fileParallelism: false`.
 - Real worker smoke tests use files under `assets/`.
 - Store generated test output under `test/results`.

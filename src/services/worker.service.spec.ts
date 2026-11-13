@@ -66,18 +66,6 @@ describe('WorkerService coverage branches', () => {
     await fs.mkdir('.cache-test/worker-cache', { recursive: true });
   });
 
-  it('throws when aborted before a worker is created', async () => {
-    const controller = new AbortController();
-    controller.abort(new Error('early'));
-    const cls = {
-      cacheKey: () => ({ get: () => 'key', set: (v: unknown) => v }),
-      request: () => ({ signal: controller.signal }),
-      sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
-    } as never;
-    const service = new WorkerService(cls);
-    await expect(service.createWorker('./x.js')).rejects.toThrow('early');
-  });
-
   it('returns a worker without cache key, branch handling, and file branches', async () => {
     const source = new NodeReadable({ read() { this.push(null); } });
     const cls = {

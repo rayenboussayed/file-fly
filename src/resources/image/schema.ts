@@ -11,7 +11,7 @@ const kernelKeys = Object.keys(sharp.kernel) as Array<keyof KernelEnum>;
 
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
 
-export const ImageProcessorSchema = SourceSchema.extend({
+export const ImageProcessorSchema = SourceSchema.partial().extend({
   background: color.optional(),
   blur: z.coerce.number().int().positive().optional(),
   fit: z.enum(fitKeys).optional(),

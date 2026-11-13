@@ -4,7 +4,10 @@ import { VideoSignatureInterceptor } from './video-signature.interceptor.js';
 
 describe('VideoSignatureInterceptor', () => {
   it('allows video and rejects non-video', () => {
-    const cls = { fileSignature: () => ({ get: () => ({ mime: 'video/mp4' }) }) };
+    const cls = {
+      fileSignature: () => ({ get: () => ({ mime: 'video/mp4' }) }),
+      request: () => ({ url: '/video' }),
+    };
 
     const allowing = new VideoSignatureInterceptor({ isVideo: () => true } as never, cls as never);
     expect((allowing as unknown as { intercept(...args: never[]): 'next' }).intercept(undefined as never, { handle: () => 'next' } as never)).toBe('next');

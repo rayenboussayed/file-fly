@@ -1,12 +1,7 @@
-import { workerData } from 'node:worker_threads';
+import { pipeline } from 'node:stream/promises';
 import sharp from 'sharp';
-import { pipeline } from 'stream/promises';
 
-import { ImageProcessorType } from './schema.js';
-import { ImageWorkerData } from './type.js';
-
-export type ImageMetadata = Awaited<ReturnType<typeof metadata>>;
-export type ImageStats = Awaited<ReturnType<typeof stats>>;
+import type { ImageProcessorType } from '../schema.js';
 
 class Processor {
   buildTransformer(payload: ImageProcessorType) {
@@ -50,59 +45,10 @@ class Processor {
     return transformer;
   }
 
-  process(payload: ImageProcessorType) {
+  async process(payload: ImageProcessorType): Promise<void> {
     const transformer = this.buildTransformer(payload);
-    void pipeline(process.stdin, transformer, process.stdout);
+    await pipeline(process.stdin, transformer, process.stdout);
   }
-}
-
-/**
- *
-// eslint-disable-next-line jsdoc/require-param-description
- * @param inputData Description.
- */
-export async function runImageWorker(inputData: ImageWorkerData = workerData) {
-  switch (inputData.operation) {
-    case 'metadata':
-      await metadata();
-      break;
-    case 'processor':
-      await new Processor().process(inputData.payload);
-      break;
-    case 'stats':
-      await stats();
-      break;
-  }
-}
-
-/**
- *
- */
-async function metadata() {
-  const transformer = sharp();
-  const metadataPromise = transformer.metadata();
-
-  const pipePromise = pipeline(process.stdin, transformer, process.stdout);
-  transformer.resume();
-
-  const metadata = await pipePromise.then(() => metadataPromise);
-  process.stdout.end(JSON.stringify(metadata));
-}
-
-/**
- *
- */
-async function stats() {
-  const transformer = sharp();
-  const statsPromise = transformer.stats();
-
-  const pipePromise = pipeline(process.stdin, transformer, process.stdout);
-  transformer.resume();
-
-  const stats = await pipePromise.then(() => statsPromise);
-  process.stdout.end(JSON.stringify(stats));
 }
 
 export { Processor };
-
-void runImageWorker(workerData);

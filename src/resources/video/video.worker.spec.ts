@@ -16,7 +16,7 @@ describe('video worker metadata', () => {
       const stdout = new (require('node:stream').Writable)({ write(_c: any, _e: any, cb: any) { cb(); } });
       stdout.on('error', () => undefined);
       Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
-      await import('./video.worker.js');
+      await import('./worker/index.js');
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 2000);
       });
