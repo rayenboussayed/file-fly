@@ -55,7 +55,7 @@ demand into `TESSERACT_DIR` (default `<CACHE_DIR>/tesseract`) and preloaded per
 ```text
 request (raw body or source= download)
   → FileParserInterceptor (buffer, probe signature, 20 MiB cap)
-  → ImageSignatureInterceptor (must be an image; else 415)
+  → ImageSignatureInterceptor (detected non-image → 415; undecodable signature → 403)
   → image is re-decoded in-process: auto-orient, ≤2000 px inside resize,
     greyscale, normalize, sharpen (limitInputPixels: 100_000_000)
   → TesseractService worker pool (bounded, recycled, timeout-terminated)

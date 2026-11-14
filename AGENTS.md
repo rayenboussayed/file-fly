@@ -14,7 +14,7 @@
 - NestJS app; media endpoints under `/image`, `/audio`, `/video`, plus `/image/dna`, `/audio/dna`, `/video/dna`, and `/image/ocr` (tesseract.js text extraction; JSON payload).
 - Uploaded/downloaded media streams enter through `FileParserInterceptor` — `WorkerService` for the media pipeline, `bufferStream` for buffering OCR input.
 - PDQ/Chromaprint fingerprints are computed via `pdq-wasm` loaded through `createRequire` CJS (ESM entry broken under Node) and node-av's `chromaprint` muxer (`algorithm: 1`); see `docs/dna.md`.
-- Heavy media work runs in workers (`src/resources/*/worker/index.ts`, helpers in sibling `{util}.ts` files); OCR runs in-process via sharp + a tesseract.js worker pool — see `docs/ocr.md`.
+- Heavy media work runs in workers (`src/resources/*/worker/index.ts`, helpers in sibling files); OCR runs in-process via sharp + a tesseract.js worker pool — see `docs/ocr.md`.
 - `node_modules/node-av` is the media backend.
 - Generated format enums live in `src/constants/av-formats.ts`; regenerate with `npm run script:union-to-enum`. Do not edit manually.
 
@@ -30,6 +30,7 @@
 
 ## Environment
 - Cache and worker behavior are controlled by `CACHE_DIR`, `CACHE_TTL_MS`, `CACHE_MAX_BYTES`, `CACHE_SWEEP_INTERVAL_MS`, and `CACHE_TMP_MAX_AGE_MS`.
+- OCR/tesseract behavior is controlled by `TESSERACT_DIR` (defaults to `<CACHE_DIR>/tesseract`), `TESSERACT_POOL_SIZE`, `TESSERACT_PRELOAD`, `TESSERACT_RECYCLE_JOBS`, and `TESSERACT_TIMEOUT_MS`.
 - `NODE_ENV` must be `development` or `production`; production enables restrictive security headers / CSRF.
 
 ## Testing
