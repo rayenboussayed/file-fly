@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { sha256 } from 'jutilities/node/hash';
 
 /**
  * Build a deterministic multipart boundary string for a screenshot response.
@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
  * @returns Boundary string.
  */
 export function screenshotBoundary(frames: readonly number[]): string {
-  const hash = createHash('sha256').update(frames.join(',')).digest('hex').slice(0, 32);
+  const hash = sha256.buffer({ value: frames.join(',') }).toString('hex').slice(0, 32);
   return `file-fly-screenshot-${hash}`;
 }
 

@@ -5,7 +5,10 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { djb2 } from 'jutilities/hash';
+import { superjson } from 'jutilities/json';
 import { tee } from 'jutilities/node/stream/tee';
+import { toBuffer } from 'jutilities/to';
 import { createHash } from 'node:crypto';
 import { request as netRequest } from 'undici';
 
@@ -15,7 +18,14 @@ import { SourceSchema } from '@/schema.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { FileTypeService } from '../services/file-type.service.js';
-import { generateCacheKey } from '../utils/cache.js';
+
+/**
+ * Hashes an arbitrary value into a deterministic, url/fs-safe cache key.
+ * @param options - Value to hash (upload base key parts or download base key parts).
+ * @returns The cache key.
+ */
+const generateCacheKey = (options: unknown): string =>
+  djb2(superjson.stringify(options)).toString();
 
 @Injectable()
 export class FileParserInterceptor implements NestInterceptor {
@@ -132,7 +142,7 @@ async function prefixHash(stream: Readable, size: number) {
     };
     stream.on('data', (chunk: Buffer | string | Uint8Array) => {
       if (length >= size) return; // prefix done: keep dropping the rest
-      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
+      const buffer = toBuffer(chunk);
       const remaining = size - length;
       hash.update(
         remaining >= buffer.length ? buffer : buffer.subarray(0, remaining),

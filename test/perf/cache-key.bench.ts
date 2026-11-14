@@ -1,6 +1,14 @@
+import { djb2 } from 'jutilities/hash';
+import { superjson } from 'jutilities/json';
 import { bench, describe } from 'vitest';
 
-import { generateCacheKey } from '@/utils/cache.js';
+/**
+ * Hashes an arbitrary value into a deterministic, url/fs-safe cache key.
+ * @param options - Value to hash (the upload/download base-key parts).
+ * @returns The cache key.
+ */
+const generateCacheKey = (options: unknown): string =>
+  djb2(superjson.stringify(options)).toString();
 
 /**
  * Payload shaped like the value produced by FileParserInterceptor.buildCacheKey

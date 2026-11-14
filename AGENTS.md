@@ -15,6 +15,7 @@
 - Uploaded/downloaded media streams enter through `FileParserInterceptor` — `WorkerService` for the media pipeline, `bufferStream` for buffering OCR input.
 - PDQ/Chromaprint fingerprints are computed via `pdq-wasm` loaded through `createRequire` CJS (ESM entry broken under Node) and node-av's `chromaprint` muxer (`algorithm: 1`); see `docs/dna.md`.
 - Heavy media work runs in workers (`src/resources/*/worker/index.ts`, helpers in sibling files); OCR runs in-process via sharp + a tesseract.js worker pool — see `docs/ocr.md`.
+- Media output cache: filesystem-backed `StreamCache` from jutilities (atomic tmp→rename writes, 0o600, TTL via `CACHE_TTL_MS`, keys are sha256 of the NUL-joined `baseKey`/`filename`/`workerData`); size-0 entries count as a miss and failed workers' entries are unlinked. The `CacheJanitorService` enforces TTL and the `CACHE_MAX_BYTES` LRU cap over `CACHE_DIR`. See `src/services/worker.service.ts`.
 - `node_modules/node-av` is the media backend.
 - Generated format enums live in `src/constants/av-formats.ts`; regenerate with `npm run script:union-to-enum`. Do not edit manually.
 

@@ -1,5 +1,7 @@
 import type { Readable } from 'node:stream';
 
+import { toBuffer } from 'jutilities/to';
+
 /**
  * Discards the unread remainder of a stream without buffering it.
  *
@@ -14,13 +16,7 @@ import type { Readable } from 'node:stream';
 export async function drainStream(stream: Readable): Promise<number> {
   let dropped = 0;
   for await (const chunk of stream) {
-    if (Buffer.isBuffer(chunk)) {
-      dropped += chunk.length;
-    } else if (typeof chunk === 'string') {
-      dropped += Buffer.byteLength(chunk);
-    } else {
-      dropped += (chunk as Uint8Array).byteLength;
-    }
+    dropped += toBuffer(chunk).byteLength;
   }
   return dropped;
 }

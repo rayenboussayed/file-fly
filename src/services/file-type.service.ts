@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { fileTypeFromStream } from 'file-type';
+import { toBuffer } from 'jutilities/to';
 import { Readable } from 'node:stream';
 
 import { NormalizedClsService } from './normalized-cls.service.js';
@@ -66,17 +67,6 @@ function nonDestructiveWebStream(node: Readable): ReadableStream<Uint8Array> {
   let cancelled = false;
 
   /**
-   * Normalizes a chunk to bytes for the web stream.
-   * @param value - The chunk received from the Node stream iterator.
-   * @returns The chunk as bytes.
-   */
-  const toBytes = (value: unknown): Uint8Array => {
-    if (Buffer.isBuffer(value)) return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-    if (typeof value === 'string') return Buffer.from(value);
-    return value as Uint8Array;
-  };
-
-  /**
    * Reads the remainder of the Node stream with the same iterator, discarding
    * every chunk, so a paused tee unblocks.
    * @returns The number of bytes discarded.
@@ -85,13 +75,7 @@ function nonDestructiveWebStream(node: Readable): ReadableStream<Uint8Array> {
     let dropped = 0;
     try {
       for await (const chunk of iterator) {
-        if (Buffer.isBuffer(chunk)) {
-          dropped += chunk.length;
-        } else if (typeof chunk === 'string') {
-          dropped += Buffer.byteLength(chunk);
-        } else {
-          dropped += (chunk as Uint8Array).byteLength;
-        }
+        dropped += toBuffer(chunk).byteLength;
       }
     } catch {
       // The upload then fails on its own terms; nothing to report.
@@ -117,7 +101,7 @@ function nonDestructiveWebStream(node: Readable): ReadableStream<Uint8Array> {
           controller.close();
           return;
         }
-        controller.enqueue(toBytes(value));
+        controller.enqueue(toBuffer(value));
       } catch (error) {
         if (!cancelled) {
           try {

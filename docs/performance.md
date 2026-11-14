@@ -42,7 +42,7 @@ Current targets (all stream/buffer-shaped hot paths, small fixtures):
 
 - `bufferStream` — 2 MiB synthetic upload (`src/utils/buffer.ts`)
 - `drainStream` — 4 MiB discarded media (`src/utils/drain.ts`)
-- `generateCacheKey` — upload/download cache keys (`src/utils/cache.ts`)
+- cache key — upload/download cache keys, inlined `djb2(superjson(...))` (`test/perf/cache-key.bench.ts`, `src/interceptors/file-parser.interceptor.ts`)
 - `PDQ.hash` — 64×64 synthetic RGB frame (`src/utils/pdq.ts`)
 
 ## Memory regression specs (`test/mem/`)

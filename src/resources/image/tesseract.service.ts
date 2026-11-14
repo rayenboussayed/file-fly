@@ -2,6 +2,7 @@
 import type { Worker } from 'tesseract.js';
 
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { withTimeoutAsync } from 'jutilities/hof/timeout';
 import fs from 'node:fs';
 // eslint-disable-next-line n/no-missing-import
 import { createWorker, OEM } from 'tesseract.js';
@@ -80,10 +81,11 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
     const slot = await this.acquire(langs);
     let ok = false;
     try {
-      const result = await this.withTimeout(
-        slot.worker.recognize(buffer, {}, { blocks: true }),
-        environment.TESSERACT_TIMEOUT_MS,
-      );
+      const result = await withTimeoutAsync(
+        () => slot.worker.recognize(buffer, {}, { blocks: true }),
+        // eslint-disable-next-line n/no-unsupported-features/node-builtins -- AbortSignal.timeout needs Node >= 17.3; this repo runs Node 22+, the rule floor is 16
+        { signal: AbortSignal.timeout(environment.TESSERACT_TIMEOUT_MS) },
+      )();
       const { data } = result;
       const lines = (data.blocks ?? []).flatMap((block) =>
         (block.paragraphs ?? []).flatMap((paragraph) =>
@@ -156,10 +158,11 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
       idle.busy = true;
       if (idle.langs.join('+') !== key) {
         try {
-          await this.withTimeout(
-            idle.worker.reinitialize(langs.join('+'), OEM.LSTM_ONLY),
-            environment.TESSERACT_TIMEOUT_MS,
-          );
+          await withTimeoutAsync(
+            () => idle.worker.reinitialize(langs.join('+'), OEM.LSTM_ONLY),
+            // eslint-disable-next-line n/no-unsupported-features/node-builtins -- AbortSignal.timeout needs Node >= 17.3; this repo runs Node 22+, the rule floor is 16
+            { signal: AbortSignal.timeout(environment.TESSERACT_TIMEOUT_MS) },
+          )();
         } catch (error) {
           // A failed reinitialize must not wedge the slot in the pool forever.
           await this.retire(idle);
@@ -179,7 +182,11 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
         logger: () => {},
       });
       try {
-        const worker = await this.withTimeout(workerPromise, environment.TESSERACT_TIMEOUT_MS);
+        const worker = await withTimeoutAsync(
+          () => workerPromise,
+          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- AbortSignal.timeout needs Node >= 17.3; this repo runs Node 22+, the rule floor is 16
+          { signal: AbortSignal.timeout(environment.TESSERACT_TIMEOUT_MS) },
+        )();
         const slot: Slot = { busy: true, jobs: 0, langs: [...langs], worker };
         this.slots.push(slot);
         return slot;
@@ -200,18 +207,6 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
       this.release(slot);
     } catch (error) {
       this.logger.warn(`tesseract preload failed: ${String(error)}`);
-    }
-  }
-
-  private async withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-    let timer: NodeJS.Timeout | undefined;
-    const timeout = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(() => reject(new Error('tesseract timeout')), ms);
-    });
-    try {
-      return await Promise.race([promise, timeout]);
-    } finally {
-      if (timer) clearTimeout(timer);
     }
   }
 }
