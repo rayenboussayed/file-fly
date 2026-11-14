@@ -3,7 +3,7 @@
 import type { Readable } from 'node:stream';
 
 import { Injectable, Logger } from '@nestjs/common';
-import { tee } from 'jutilities/node-stream';
+import { tee } from 'jutilities/node/stream/tee';
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -243,7 +243,7 @@ export class WorkerService {
 
     if (!file) return worker.stdout;
 
-    const [cacheBranch, output] = tee({ source: worker.stdout });
+    const [cacheBranch, output] = tee({ stream: worker.stdout });
     this.persist(file, cacheBranch, succeeded);
     return output;
   }

@@ -1,7 +1,7 @@
 // eslint-disable-next-line n/no-missing-import
 import type { Worker } from 'tesseract.js';
 
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import fs from 'node:fs';
 // eslint-disable-next-line n/no-missing-import
 import { createWorker, OEM } from 'tesseract.js';
@@ -9,15 +9,11 @@ import { createWorker, OEM } from 'tesseract.js';
 import { TESSERACT_DIR } from '@/constants/fs.js';
 import { environment } from '@/environment.js';
 
-/**
- * Result returned by {@link TesseractService.recognize}.
- */
-export interface OcrResult {
-  /** Overall confidence, 0-100, rounded to two decimals. */
-  confidence: number;
-  /** Extracted text. */
-  text: string;
-}
+import type { ImageOcrResult } from './type.js';
+
+/** ISO 639-2 language code with an optional script suffix — tesseract's on-disk layout (`<code>.traineddata`). */
+// eslint-disable-next-line security/detect-unsafe-regex -- bounded linear pattern ([a-z]{3} + optional _xx{3,4}); no nested quantifiers
+const SINGLE_LANG_REGEX = /^[a-z]{3}(?:_[a-z]{3,4})?$/i;
 
 interface Slot {
   busy: boolean;
@@ -32,11 +28,14 @@ interface Slot {
  * Language data is downloaded on demand into {@link TESSERACT_DIR}. Each slot
  * handles one recognition job at a time; languages are switched with
  * `reinitialize` only when the requested set differs. Slots are recycled after
- * {@link environment.TESSERACT_RECYCLE_JOBS} jobs.
+ * {@link environment.TESSERACT_RECYCLE_JOBS} jobs; a slot whose job failed is
+ * retired instead of being returned to the pool (a zombie recognition could
+ * otherwise interleave with the next caller on the same worker).
  */
 @Injectable()
 export class TesseractService implements OnModuleDestroy, OnModuleInit {
   private creating = 0;
+  private readonly logger = new Logger(TesseractService.name);
   private readonly slots: Slot[] = [];
   private readonly waiters: Array<() => void> = [];
 
@@ -55,9 +54,16 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
   async onModuleInit(): Promise<void> {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     await fs.promises.mkdir(TESSERACT_DIR, { recursive: true });
-    const langs = environment.TESSERACT_PRELOAD.split(',')
-      .map((value) => value.trim())
+    const requested = environment.TESSERACT_PRELOAD.split(',')
+      .map((value) => value.trim().toLowerCase())
       .filter((value) => value.length > 0);
+    const langs = [...new Set(requested.filter((value) => {
+      const valid = SINGLE_LANG_REGEX.test(value);
+      if (!valid) {
+        this.logger.warn(`Ignoring invalid TESSERACT_PRELOAD language code: ${value}`);
+      }
+      return valid;
+    }))].sort();
     if (langs.length > 0) {
       void this.warm(langs);
     }
@@ -65,30 +71,42 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
 
   /**
    * Recognizes text in the given image buffer.
-   * @param buffer - Raw image bytes.
+   * @param buffer - Preprocessed (PNG) image bytes.
    * @param langs - Language codes to use (already normalized).
-   * @returns Extracted text and confidence.
+   * @returns Text with a per-line breakdown, normalized languages, confidence and wall time.
    */
-  async recognize(buffer: Buffer, langs: string[]): Promise<OcrResult> {
+  async recognize(buffer: Buffer, langs: string[]): Promise<ImageOcrResult> {
+    const started = performance.now();
     const slot = await this.acquire(langs);
+    let ok = false;
     try {
       const result = await this.withTimeout(
-        slot.worker.recognize(buffer),
+        slot.worker.recognize(buffer, {}, { blocks: true }),
         environment.TESSERACT_TIMEOUT_MS,
       );
-      const data = (result as { data: { confidence: number; text: string; } }).data;
+      const { data } = result;
+      const lines = (data.blocks ?? []).flatMap((block) =>
+        (block.paragraphs ?? []).flatMap((paragraph) =>
+          (paragraph.lines ?? []).map((line) => ({
+            confidence: Math.round(line.confidence * 100) / 100,
+            // tesseract pads line text with a trailing newline.
+            text: line.text.trimEnd(),
+          })),
+        ),
+      );
+      ok = true;
       return {
         confidence: Math.round(data.confidence * 100) / 100,
-        text: data.text,
+        durationMs: Math.round(performance.now() - started),
+        langs: [...langs],
+        lines,
+        text: data.text.trimEnd(),
       };
     } finally {
       slot.jobs += 1;
-      if (slot.jobs >= environment.TESSERACT_RECYCLE_JOBS) {
-        await slot.worker.terminate().catch(() => undefined);
-        const index = this.slots.indexOf(slot);
-        if (index >= 0) this.slots.splice(index, 1);
-        const waiter = this.waiters.shift();
-        if (waiter) waiter();
+      if (!ok || slot.jobs >= environment.TESSERACT_RECYCLE_JOBS) {
+        // Failed, timed-out, or recycled jobs go to retire(), not back to the pool.
+        await this.retire(slot);
       } else {
         this.release(slot);
       }
@@ -112,6 +130,18 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
     if (waiter) waiter();
   }
 
+  /**
+   * Terminates a slot and removes it from the pool, then wakes one waiter.
+   * @param slot - Pool slot whose worker is being retired.
+   */
+  private async retire(slot: Slot): Promise<void> {
+    await slot.worker.terminate().catch(() => undefined);
+    const index = this.slots.indexOf(slot);
+    if (index >= 0) this.slots.splice(index, 1);
+    const waiter = this.waiters.shift();
+    if (waiter) waiter();
+  }
+
   private async tryAcquire(langs: string[], key: string): Promise<null | Slot> {
     // 1. Idle slot with matching languages.
     const matching = this.slots.find((slot) => !slot.busy && slot.langs.join('+') === key);
@@ -125,10 +155,16 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
     if (idle) {
       idle.busy = true;
       if (idle.langs.join('+') !== key) {
-        await this.withTimeout(
-          idle.worker.reinitialize(langs.join('+'), OEM.LSTM_ONLY),
-          environment.TESSERACT_TIMEOUT_MS,
-        );
+        try {
+          await this.withTimeout(
+            idle.worker.reinitialize(langs.join('+'), OEM.LSTM_ONLY),
+            environment.TESSERACT_TIMEOUT_MS,
+          );
+        } catch (error) {
+          // A failed reinitialize must not wedge the slot in the pool forever.
+          await this.retire(idle);
+          throw error;
+        }
         idle.langs = [...langs];
       }
       return idle;
@@ -163,7 +199,7 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
       const slot = await this.acquire(langs);
       this.release(slot);
     } catch (error) {
-      console.warn('tesseract preload failed:', error);
+      this.logger.warn(`tesseract preload failed: ${String(error)}`);
     }
   }
 

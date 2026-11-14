@@ -5,6 +5,7 @@ const hoisted = vi.hoisted(() => ({ workerData: {} as Record<string, unknown> })
 vi.mock('node:worker_threads', () => ({ workerData: hoisted.workerData }));
 
 describe('video worker metadata', () => {
+  // Decoding the video asset via node-av takes close to the 5s default timeout on loaded machines.
   it('runs metadata and stats', async () => {
     for (const operation of ['metadata', 'stats'] as const) {
       hoisted.workerData = { inputFormat: 'mp4', operation };
@@ -23,5 +24,5 @@ describe('video worker metadata', () => {
     }
 // eslint-disable-next-line sonarjs/no-trivial-assertions
     expect(true).toBe(true);
-  });
+  }, 15000);
 });

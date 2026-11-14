@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    env: { CACHE_DIR: 'test/results/cache', NODE_ENV: 'development', TESSERACT_DIR: 'cache/tesseract' },
+    env: { CACHE_DIR: 'test/results/cache', NODE_ENV: 'development', TESSERACT_DIR: 'test/results/cache/tesseract' },
     fileParallelism: false,
     globals: true,
     globalSetup: './test/global-setup.ts',

@@ -1,6 +1,8 @@
 import { Readable, Writable } from 'node:stream';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ImageOcrResult } from './type.js';
+
 import { ImageController } from './image.controller.js';
 
 
@@ -34,5 +36,22 @@ describe('ImageController', () => {
     await expect(controller.statsPost()).resolves.toEqual({ stats: true });
     await controller.main(response as never, {} as never);
     expect(imageService.processor).toHaveBeenCalled();
+  });
+
+  it('delegates ocr to the service with the query payload', async () => {
+    const ocrResult: ImageOcrResult = {
+      confidence: 90,
+      durationMs: 5,
+      langs: ['eng'],
+      lines: [{ confidence: 90, text: 'ok' }],
+      text: 'ok',
+    };
+    const imageService = { ocr: vi.fn(async () => ocrResult) };
+    const controller = new ImageController(imageService as never, {} as never);
+
+    await expect(controller.ocrGet({ lang: 'eng' } as never)).resolves.toEqual(ocrResult);
+    await expect(controller.ocrPost({} as never)).resolves.toEqual(ocrResult);
+    expect(imageService.ocr).toHaveBeenCalledWith({ payload: { lang: 'eng' } });
+    expect(imageService.ocr).toHaveBeenCalledWith({ payload: {} });
   });
 });

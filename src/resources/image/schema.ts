@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import { z } from 'zod';
 
 import { SourceSchema } from '@/schema.js';
+import { trimmed } from '@/utils/zod.js';
 
 const formatKeys = Object.keys(sharp.format) as Array<keyof FormatEnum>;
 const fitKeys = Object.keys(sharp.fit) as Array<keyof FitEnum>;
@@ -37,3 +38,21 @@ export const ImageProcessorSchema = SourceSchema.partial().extend({
 });
 
 export type ImageProcessorType = z.infer<typeof ImageProcessorSchema>;
+
+/**
+ * Case-insensitive language code pattern: a three-letter ISO 639-2 code
+ * optionally followed by a script suffix (`_latn`, `_cyrl`, ...). Codes are
+ * combined with `+` or `,` (up to four). `+` only reaches this endpoint
+ * URL-encoded (`%2B`), because query-string decoders treat a raw `+` as a space.
+ */
+// eslint-disable-next-line security/detect-unsafe-regex
+const LANG_REGEX = /^[a-z]{3}(?:_[a-z]{3,4})?([+,][a-z]{3}(?:_[a-z]{3,4})?){0,3}$/i;
+
+/**
+ * Query schema for the `/image/ocr` endpoint.
+ */
+export const OcrSchema = SourceSchema.partial().extend({
+  lang: trimmed(z.string().regex(LANG_REGEX, 'Invalid language code')).optional(),
+});
+
+export type OcrType = z.infer<typeof OcrSchema>;

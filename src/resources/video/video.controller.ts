@@ -8,8 +8,10 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 
+import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
 import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
@@ -21,9 +23,11 @@ import {
   VideoProcessorSchema,
   type VideoProcessorType,
 } from './schema.js';
+import { VideoSignatureInterceptor } from './video-signature.interceptor.js';
 import { VideoService } from './video.service.js';
 
 @Controller('video')
+@UseInterceptors(FileParserInterceptor, VideoSignatureInterceptor)
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 

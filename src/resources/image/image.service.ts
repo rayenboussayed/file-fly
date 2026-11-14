@@ -1,26 +1,30 @@
 import type { Readable } from 'node:stream';
 
-import { Injectable, UnsupportedMediaTypeException } from '@nestjs/common';
-import { stream2buffer } from 'jutilities/node-stream';
+import { Injectable, Logger, UnsupportedMediaTypeException } from '@nestjs/common';
+import { stream2buffer } from 'jutilities/node/stream/buffer';
 import sharp from 'sharp';
 
+import { FileTypeService } from '@/services/file-type.service.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream } from '@/utils/buffer.js';
 import { loadPdq } from '@/utils/pdq.js';
 import { PDQ_WASM_VERSION, SHARP_VERSION } from '@/utils/versions.js';
 
-import type { ImageProcessorType } from './schema.js';
-import type { ImageDnaResult } from './type.js';
+import type { ImageProcessorType, OcrType } from './schema.js';
+import type { ImageDnaResult, ImageOcrResult } from './type.js';
 
-import { FileTypeService } from '../../services/file-type.service.js';
+import { TesseractService } from './tesseract.service.js';
 
 @Injectable()
 export class ImageService {
+  private readonly logger = new Logger(ImageService.name);
+
   constructor(
-    private readonly workerService: WorkerService,
     private readonly cls: NormalizedClsService,
     private readonly fileTypeService: FileTypeService,
+    private readonly tesseract: TesseractService,
+    private readonly workerService: WorkerService,
   ) {}
 
   async dna(): Promise<ImageDnaResult> {
@@ -59,18 +63,20 @@ export class ImageService {
     const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
       workerData: { operation: 'metadata' },
     });
-    const buffer = await stream2buffer(stdout);
+    const buffer = await stream2buffer({ stream: stdout });
     return JSON.parse(buffer.toString().trim());
   }
 
-  async ocr(): Promise<Readable> {
+  async ocr(
+    options: { payload: OcrType },
+  ): Promise<ImageOcrResult> {
     const signature = this.cls.fileSignature().get();
     if (!signature || !this.fileTypeService.isImage(signature.mime)) {
       throw new UnsupportedMediaTypeException('Unsupported image input');
     }
-    return this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
-      workerData: { operation: 'ocr' },
-    });
+    const buffer = await bufferStream(this.cls.sourceStream().get() as Readable);
+    const input = await this.preprocess(buffer);
+    return this.tesseract.recognize(input, this.parseLangs(options.payload.lang));
   }
 
   async processor(
@@ -89,7 +95,52 @@ export class ImageService {
     const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
       workerData: { operation: 'stats' },
     });
-    const buffer = await stream2buffer(stdout);
+    const buffer = await stream2buffer({ stream: stdout });
     return JSON.parse(buffer.toString().trim());
+  }
+
+  /**
+   * Normalizes the `lang` query value: splits on `+` or `,`, lowercases,
+   * trims, dedupes, sorts; defaults to `['eng']`, caps at 4 codes.
+   * @param raw - Raw `lang` query parameter (already regex-validated).
+   * @returns Sorted, deduped language codes.
+   */
+  private parseLangs(raw?: string): string[] {
+    if (!raw) return ['eng'];
+    const langs = [...new Set(
+      raw
+        .split(/[+,]/)
+        .map((value) => value.trim().toLowerCase())
+        .filter((value) => value.length > 0),
+    )]
+      .sort()
+      .slice(0, 4);
+    return langs.length === 0 ? ['eng'] : langs;
+  }
+
+  /**
+   * Preprocesses an image for OCR: auto-orient, downscale to at most 2000 px
+   * without enlarging, greyscale, normalize, sharpen; encoded as PNG.
+   * Pixel bombs are rejected via `limitInputPixels`; undecodable or malicious
+   * input surfaces as {@link UnsupportedMediaTypeException} instead of a 500.
+   * @param input - Raw (signature-verified) image bytes.
+   * @returns PNG bytes ready for tesseract.
+   */
+  private async preprocess(input: Buffer): Promise<Buffer> {
+    try {
+      return await sharp(input, { failOn: 'error', limitInputPixels: 100_000_000 })
+        .rotate()
+        .resize({ fit: 'inside', height: 2000, width: 2000, withoutEnlargement: true })
+        .greyscale()
+        .normalize()
+        .sharpen({ sigma: 1 })
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+    } catch (error) {
+      // Clients see a generic 415 (Nest does not serialize `cause`); log the
+      // sharp/libvips reason for operators.
+      this.logger.warn(`Image could not be decoded: ${String(error)}`);
+      throw new UnsupportedMediaTypeException('Image could not be decoded', { cause: error });
+    }
   }
 }

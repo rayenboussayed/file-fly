@@ -8,15 +8,19 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 
+import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
 import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
+import { AudioSignatureInterceptor } from './audio-signature.interceptor.js';
 import { AudioService } from './audio.service.js';
 import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 
 @Controller('audio')
+@UseInterceptors(FileParserInterceptor, AudioSignatureInterceptor)
 export class AudioController {
   constructor(private readonly audioService: AudioService) {}
 

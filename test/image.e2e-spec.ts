@@ -1,4 +1,4 @@
- 
+
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import fs from 'node:fs';
@@ -7,7 +7,22 @@ import sharp from 'sharp';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import type { ImageOcrResult } from '@/resources/image/type.js';
+
 import { binaryParser, bootApp, FIXTURES_DIR, startFixtureServer } from './helpers.js';
+
+/**
+ * Asserts the extended OCR payload shape shared by GET and POST.
+ * @param body - Response body to check.
+ * @param langs - Expected normalized language codes.
+ */
+function expectOcrResult(body: ImageOcrResult, langs: string[]) {
+  expect(body.confidence).toBeGreaterThan(50);
+  expect(body.text.length).toBeGreaterThan(0);
+  expect(body.langs).toEqual(langs);
+  expect(body.durationMs).toBeGreaterThanOrEqual(0);
+  expect(body.lines.length).toBeGreaterThan(0);
+}
 
 describe('Image (e2e)', () => {
   let app: NestFastifyApplication;
@@ -107,33 +122,134 @@ describe('Image (e2e)', () => {
     expect(typeof body.channels[0]!.mean).toBe('number');
   });
 
-  it('GET /image/ocr returns a preprocessed PNG', async () => {
+  it('GET /image/ocr extracts text from an image', async () => {
     const response = await request(app.getHttpServer())
       .get('/image/ocr')
       // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
-      .query({ source: `${fixtures.url}/photo.jpg` })
-      .buffer(true)
-      .parse(binaryParser as never);
+      .query({ lang: 'eng', source: `${fixtures.url}/text.png` });
 
     expect(response.status).toBe(200);
-    expect(response.headers['content-type']).toBe('image/png');
-    expect((response.body as Buffer).subarray(1, 4).toString()).toBe('PNG');
+    expect(response.headers['content-type']).toMatch(/application\/json/);
+    const body = response.body as ImageOcrResult;
+    expectOcrResult(body, ['eng']);
+    expect(body.text).toMatch(/quick brown fox/i);
   });
 
-  it('POST /image/ocr accepts an upload', async () => {
+  it('GET /image/ocr accepts a comma-separated lang list', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/image/ocr')
+      // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
+      .query({ lang: 'eng,fra', source: `${fixtures.url}/text.png` });
+
+    expect(response.status).toBe(200);
+    expect((response.body as ImageOcrResult).langs).toEqual(['eng', 'fra']);
+  });
+
+  it('POST /image/ocr extracts text from an uploaded image', async () => {
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- fixture path is test-controlled
-    const image = await fs.promises.readFile(path.join(FIXTURES_DIR, 'photo.jpg'));
+    const image = await fs.promises.readFile(path.join(FIXTURES_DIR, 'text.png'));
 
     const response = await request(app.getHttpServer())
       .post('/image/ocr')
-      .set('content-type', 'image/jpeg')
-      .send(image)
-      .buffer(true)
-      .parse(binaryParser as never);
+      // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
+      .query({ lang: 'eng' })
+      .set('content-type', 'image/png')
+      .send(image);
 
     expect(response.status).toBe(201);
-    expect(response.headers['content-type']).toBe('image/png');
-    expect((response.body as Buffer).subarray(1, 4).toString()).toBe('PNG');
+    const body = response.body as ImageOcrResult;
+    expectOcrResult(body, ['eng']);
+    expect(body.text).toMatch(/quick brown fox/i);
+  });
+
+  it('POST /image/ocr defaults to English when lang is missing', async () => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fixture path is test-controlled
+    const image = await fs.promises.readFile(path.join(FIXTURES_DIR, 'text.png'));
+
+    const response = await request(app.getHttpServer())
+      .post('/image/ocr')
+      .set('content-type', 'image/png')
+      .send(image);
+
+    expect(response.status).toBe(201);
+    expectOcrResult(response.body as ImageOcrResult, ['eng']);
+  });
+
+  it('POST /image/ocr rejects an upload above the 20 MiB limit with 413', async () => {
+    // A real uncompressed TIFF > 20 MiB so file-type detects it as an image reliably.
+    const side = 2700;
+    const raw = Buffer.alloc(side * side * 3);
+    let seed = 0x9e3779b9;
+    for (let i = 0; i < raw.length; i++) {
+      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0;
+      // eslint-disable-next-line security/detect-object-injection -- index is bounded by the loop
+      raw[i] = seed & 0xff;
+    }
+    const tiff = await sharp(raw, { raw: { channels: 3, height: side, width: side } }).tiff({ compression: 'none' }).toBuffer();
+    expect(tiff.length).toBeGreaterThan(20 * 1024 * 1024);
+
+    const response = await request(app.getHttpServer())
+      .post('/image/ocr')
+      .set('content-type', 'image/tiff')
+      .send(tiff);
+
+    expect(response.status).toBe(413);
+  }, 60000);
+
+  it('GET /image/ocr rejects an invalid language with 400', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/image/ocr')
+      // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
+      .query({ lang: 'not a lang', source: `${fixtures.url}/text.png` });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('POST /image/ocr rejects an invalid language with 400', async () => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fixture path is test-controlled
+    const image = await fs.promises.readFile(path.join(FIXTURES_DIR, 'text.png'));
+
+    const response = await request(app.getHttpServer())
+      .post('/image/ocr')
+      // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
+      .query({ lang: 'not a lang' })
+      .set('content-type', 'image/png')
+      .send(image);
+
+    expect(response.status).toBe(400);
+  });
+
+  it('GET /image/ocr rejects a non-image source with 403', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/image/ocr')
+      // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
+      .query({ source: `${fixtures.url}/not-an-image.txt` });
+
+    expect(response.status).toBe(403);
+  });
+
+  it('POST /image/ocr rejects a non-image upload with 403', async () => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fixture path is test-controlled
+    const text = await fs.promises.readFile(path.join(FIXTURES_DIR, 'not-an-image.txt'));
+
+    const response = await request(app.getHttpServer())
+      .post('/image/ocr')
+      .set('content-type', 'application/octet-stream')
+      .send(text);
+
+    expect(response.status).toBe(403);
+  });
+
+  it('POST /image/ocr rejects a video upload with 415', async () => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fixture path is test-controlled
+    const video = await fs.promises.readFile(path.join(FIXTURES_DIR, 'video-0.mp4'));
+
+    const response = await request(app.getHttpServer())
+      .post('/image/ocr')
+      .set('content-type', 'video/mp4')
+      .send(video);
+
+    expect(response.status).toBe(415);
   });
 
   it('rejects a non-image source with 403', async () => {

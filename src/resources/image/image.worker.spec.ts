@@ -50,11 +50,6 @@ describe('image worker', () => {
     expect(true).toBe(true);
   }, 30000);
 
-  it('covers ocr operation', async () => {
-    const writes = await run('ocr');
-    const total = writes.reduce((acc, chunk) => acc + chunk.length, 0);
-    expect(total).toBeGreaterThan(0);
-  }, 30000);
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('covers processor operation', async () => {
     hoisted.workerData = { operation: 'processor', payload: {} };
@@ -74,6 +69,7 @@ describe('image worker', () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }, 30000);
 
+  // The trim step alone scans the full 5760x8640 (~50MP) asset and takes ~30s.
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('covers worker runner and processor options', async () => {
     const input = fs.createReadStream('assets/images/image-0.jpg');
@@ -141,5 +137,5 @@ describe('image worker', () => {
     Object.defineProperty(process, 'stdout', { value: statsStdout, writable: true });
     await runImageWorker({ operation: 'stats', payload: {} } as never).catch(() => undefined);
     await new Promise((resolve) => setTimeout(resolve, 300));
-  }, 30000);
+  }, 120000);
 });

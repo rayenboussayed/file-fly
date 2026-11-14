@@ -11,10 +11,10 @@
 - Perf/memory suites (opt-in, not in `npm run check`): `npm run test:perf` (benchmarks), `npm run test:mem` (GC memory regressions); see `docs/performance.md`
 
 ## Structure
-- NestJS app; media endpoints under `/image`, `/audio`, `/video`, plus `/image/dna`, `/audio/dna`, `/video/dna`.
-- Uploaded/downloaded media streams enter through `FileParserInterceptor`, then `WorkerService`.
+- NestJS app; media endpoints under `/image`, `/audio`, `/video`, plus `/image/dna`, `/audio/dna`, `/video/dna`, and `/image/ocr` (tesseract.js text extraction; JSON payload).
+- Uploaded/downloaded media streams enter through `FileParserInterceptor` — `WorkerService` for the media pipeline, `bufferStream` for buffering OCR input.
 - PDQ/Chromaprint fingerprints are computed via `pdq-wasm` loaded through `createRequire` CJS (ESM entry broken under Node) and node-av's `chromaprint` muxer (`algorithm: 1`); see `docs/dna.md`.
-- Heavy work runs in workers: `src/resources/*/worker/index.ts` (with helpers in sibling `{util}.ts` files).
+- Heavy media work runs in workers (`src/resources/*/worker/index.ts`, helpers in sibling `{util}.ts` files); OCR runs in-process via sharp + a tesseract.js worker pool — see `docs/ocr.md`.
 - `node_modules/node-av` is the media backend.
 - Generated format enums live in `src/constants/av-formats.ts`; regenerate with `npm run script:union-to-enum`. Do not edit manually.
 

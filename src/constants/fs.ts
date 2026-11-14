@@ -1,40 +1,19 @@
 import fs from 'node:fs';
-import path from 'node:path';
 
-/**
- *
- * @param name Description.
- * @param fallback Description.
- * @returns Result.
- */
-function numberFromEnv(name: string, fallback: number): number {
-  /* eslint-disable-next-line security/detect-object-injection */
-  const raw = process.env[name];
-  if (!raw) return fallback;
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 ? value : fallback;
-}
+import { environment } from '@/environment.js';
 
-export const CACHE_DIR = process.env.CACHE_DIR ?? path.resolve('cache');
+/** Cache root (absolute); processed media output and the undici cache live here. */
+export const CACHE_DIR = environment.CACHE_DIR;
 // The cache directory is required at startup (undici cache store): create it up front.
 // eslint-disable-next-line security/detect-non-literal-fs-filename
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 /** Entries not used for this long are evicted. */
-export const CACHE_TTL_MS = numberFromEnv(
-  'CACHE_TTL_MS',
-  24 * 60 * 60 * 1000,
-);
+export const CACHE_TTL_MS = environment.CACHE_TTL_MS;
 /** Soft cap for the whole cache dir; oldest-used entries are evicted first. */
-export const CACHE_MAX_BYTES = numberFromEnv('CACHE_MAX_BYTES', 2 * 1024 ** 3);
-export const CACHE_SWEEP_INTERVAL_MS = numberFromEnv(
-  'CACHE_SWEEP_INTERVAL_MS',
-  10 * 60 * 1000,
-);
+export const CACHE_MAX_BYTES = environment.CACHE_MAX_BYTES;
+/** How often the cache janitor sweeps. */
+export const CACHE_SWEEP_INTERVAL_MS = environment.CACHE_SWEEP_INTERVAL_MS;
 /** Orphaned *.tmp files (crashed writers) older than this are removed. */
-export const CACHE_TMP_MAX_AGE_MS = numberFromEnv(
-  'CACHE_TMP_MAX_AGE_MS',
-  60 * 60 * 1000,
-);
+export const CACHE_TMP_MAX_AGE_MS = environment.CACHE_TMP_MAX_AGE_MS;
 /** Directory where tesseract.js stores its (gzipped) language data. */
-export const TESSERACT_DIR =
-  process.env.TESSERACT_DIR ?? path.join(CACHE_DIR, 'tesseract');
+export const TESSERACT_DIR = environment.TESSERACT_DIR;

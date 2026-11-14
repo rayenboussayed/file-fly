@@ -1,7 +1,7 @@
 import type { Readable } from 'node:stream';
 
 import { Injectable, UnsupportedMediaTypeException } from '@nestjs/common';
-import { stream2buffer } from 'jutilities/node-stream';
+import { stream2buffer } from 'jutilities/node/stream/buffer';
 
 import { FileTypeService } from '@/services/file-type.service.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
@@ -29,7 +29,7 @@ export class VideoService {
         operation: 'dna',
       },
     });
-    const buffer = await stream2buffer(stdout);
+    const buffer = await stream2buffer({ stream: stdout });
     return JSON.parse(buffer.toString().trim());
   }
 
@@ -42,7 +42,7 @@ export class VideoService {
         operation: 'metadata',
       },
     });
-    const buffer = await stream2buffer(stdout);
+    const buffer = await stream2buffer({ stream: stdout });
     return JSON.parse(buffer.toString().trim());
   }
 
@@ -87,7 +87,7 @@ export class VideoService {
         operation: 'stats',
       },
     });
-    const buffer = await stream2buffer(stdout);
+    const buffer = await stream2buffer({ stream: stdout });
     return JSON.parse(buffer.toString().trim());
   }
 }

@@ -5,7 +5,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { tee } from 'jutilities/node-stream';
+import { tee } from 'jutilities/node/stream/tee';
 import { createHash } from 'node:crypto';
 import { request as netRequest } from 'undici';
 
@@ -25,13 +25,8 @@ export class FileParserInterceptor implements NestInterceptor {
   ) {}
 
   async intercept(_: never, next: CallHandler) {
-    const request = this.cls.request();
-    if (
-      !request.url.startsWith('/audio') &&
-      !request.url.startsWith('/image') &&
-      !request.url.startsWith('/ocr') &&
-      !request.url.startsWith('/video')
-    ) {
+    // Method-less requests (e.g. synthetic invocations) carry no media to process.
+    if (!this.cls.request()?.method) {
       return next.handle();
     }
 
@@ -50,7 +45,7 @@ export class FileParserInterceptor implements NestInterceptor {
    */
  private branchSource(): Readable {
     const [branch, rest] = tee({
-      source: this.cls.sourceStream().get(),
+      stream: this.cls.sourceStream().get(),
     });
     this.cls.sourceStream().set(rest);
     return branch;

@@ -3,7 +3,6 @@ import { workerData } from 'node:worker_threads';
 import type { ImageWorkerData } from '../type.js';
 
 import { metadata, stats } from './inspect.js';
-import { ocr } from './ocr.js';
 import { Processor } from './processor.js';
 
 const data: ImageWorkerData = workerData;
@@ -29,9 +28,6 @@ export async function runImageWorker(inputData: ImageWorkerData = data) {
   switch (inputData.operation) {
     case 'metadata':
       await metadata();
-      break;
-    case 'ocr':
-      await ocr();
       break;
     case 'processor':
       await new Processor().process(inputData.payload);

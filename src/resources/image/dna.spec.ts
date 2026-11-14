@@ -33,7 +33,8 @@ function makeService(signature: unknown, streamFactory: () => Readable, isImage 
     sourceStream: (): { get: () => Readable } => ({ get: () => streamFactory() }),
   };
   const fileTypeService = { isImage: (): boolean => isImage };
-  return new ImageService(workerService as never, cls as never, fileTypeService as never);
+  const tesseract = { recognize: vi.fn() };
+  return new ImageService(cls as never, fileTypeService as never, tesseract as never, workerService as never);
 }
 
 describe('ImageService.dna', () => {
