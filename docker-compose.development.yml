@@ -1,0 +1,52 @@
+# Development stack for file-fly: Nest app in watch mode + ClamAV.
+#
+#   docker compose -f docker-compose.development.yml up --build
+#
+# The app runs the repo's Dockerfile.dev image (`platformatic/node-caged`)
+# with `npm run start:dev` (nest start --watch) and the repo bind-mounted at
+# /app, so host edits hot-reload inside the container. Host node_modules are
+# shadowed by an anonymous volume seeded from the image (same glibc ABI).
+# The ClamAV service is the official clamav/clamav image with the bundled
+# signature DBs; it serves INSTREAM on 3310. POST assets/eicar.com to
+# http://localhost:3000/virus-scan (content-type application/octet-stream) and
+# expect 422 + Eicar-Test-Signature; a clean upload returns 201.
+# clamd's 3310 is deliberately not published: a host clamd may already use it
+# (as it does here). The app reaches clamav over the compose network.
+#
+# Tear down with: docker compose -f docker-compose.development.yml down
+
+services:
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - clamav-db:/var/lib/clamav
+    healthcheck:
+      # Image ships /usr/local/bin/clamdcheck.sh (PING -> PONG).
+      test: ["CMD", "clamdcheck.sh"]
+      start_period: 360s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    depends_on:
+      clamav:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      CLAMAV_TIMEOUT_MS: "60000"
+      # Matches clamd.conf StreamMaxLength; bigger bodies get 413 before scanning.
+      CLAMAV_MAX_BYTES: "26214400"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+
+volumes:
+  clamav-db: {}

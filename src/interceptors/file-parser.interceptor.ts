@@ -7,17 +7,16 @@ import {
 } from '@nestjs/common';
 import { djb2 } from 'jutilities/hash';
 import { superjson } from 'jutilities/json';
-import { tee } from 'jutilities/node/stream/tee';
 import { toBuffer } from 'jutilities/to';
 import { createHash } from 'node:crypto';
-import { request as netRequest } from 'undici';
 
 import { HEADER_X_FILE_HASH } from '@/constants/header.js';
 import { environment } from '@/environment.js';
-import { SourceSchema } from '@/schema.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { FileTypeService } from '../services/file-type.service.js';
+import { forkSource } from '../utils/fork-source.js';
+import { openMediaSource } from '../utils/open-source.js';
 
 /**
  * Hashes an arbitrary value into a deterministic, url/fs-safe cache key.
@@ -40,25 +39,13 @@ export class FileParserInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    await this.openSource();
+    await openMediaSource(this.cls);
     await this.fileTypeService.signature({
-      stream: this.branchSource(),
+      stream: forkSource(this.cls),
     });
     await this.buildCacheKey();
 
     return next.handle();
-  }
-
-  /**
-   * Splits the current source stream: returns one branch, keeps the other as the source.
-   * @returns Result.
-   */
- private branchSource(): Readable {
-    const [branch, rest] = tee({
-      stream: this.cls.sourceStream().get(),
-    });
-    this.cls.sourceStream().set(rest);
-    return branch;
   }
 
   private async buildCacheKey() {
@@ -82,7 +69,7 @@ export class FileParserInterceptor implements NestInterceptor {
 // eslint-disable-next-line security/detect-object-injection
       (request.headers[HEADER_X_FILE_HASH]?.toString().trim()) ||
       (await prefixHash(
-        this.branchSource(),
+        forkSource(this.cls),
         environment.FILE_HASH_HEADER_SIZE,
       ));
     this.cls.fileHash().set(fileHash);
@@ -97,24 +84,6 @@ export class FileParserInterceptor implements NestInterceptor {
         fileHash,
       }),
     );
-  }
-
-  private async openSource() {
-    const request = this.cls.request()
-    if (request.method.toUpperCase() === 'POST') {
-      this.cls.sourceDirection().set('upload');
-      this.cls.sourceStream().set(request.raw);
-      return;
-    }
-
-    const { source } = SourceSchema.parse(request.query);
-    const { body } = await netRequest(source, {
-      headers: request.headers,
-      method: 'GET',
-      signal: request.signal,
-    });
-    this.cls.sourceDirection().set('download');
-    this.cls.sourceStream().set(body);
   }
 }
 

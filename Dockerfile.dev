@@ -11,12 +11,18 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
        ca-certificates \
        openssl \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /app && chown -R node:node /app
 
-COPY package*.json ./
-RUN npm ci
+# Run as the image's unprivileged node user (uid 1000) so files written into the
+# bind-mounted repo (dist/, cache/) keep the host user's ownership.
+USER node
 
-COPY . .
+COPY --chown=node:node package*.json .npmrc ./
+# husky (the `prepare` script) is not a dependency; install without lifecycle scripts.
+RUN npm ci --ignore-scripts
+
+COPY --chown=node:node . .
 
 EXPOSE 3000
 

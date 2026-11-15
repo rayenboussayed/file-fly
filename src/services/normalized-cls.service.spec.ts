@@ -17,6 +17,10 @@ describe('NormalizedClsService', () => {
     expect(service.cacheKey().get()).toBe('k');
     service.fileHash().unset();
     expect(service.fileHash().get()).toBeUndefined();
+    service.fileScan().set({ isInfected: true, viruses: ['Eicar-Test-File'] });
+    expect(service.fileScan().get()?.isInfected).toBe(true);
+    service.fileScan().unset();
+    expect(service.fileScan().get()).toBeUndefined();
     service.fileSignature().set({ mime: 'image/png' } as never);
     expect(service.fileSignature().get()?.mime).toBe('image/png');
     expect(service.request()).toEqual({ id: 'request' });

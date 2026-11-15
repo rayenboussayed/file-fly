@@ -76,6 +76,44 @@ describe('environment', () => {
     expect(environment.TESSERACT_DIR).toBe('.cache-test/env-lang');
   });
 
+  it('leaves CLAMAV_* unset and applies clamav defaults', async () => {
+    // No CLAMAV_* vars stubbed: host/port stay undefined, size/timeout get defaults.
+    vi.stubEnv('CLAMAV_HOST', undefined);
+    vi.stubEnv('CLAMAV_PORT', undefined);
+    vi.stubEnv('CLAMAV_MAX_BYTES', undefined);
+    vi.stubEnv('CLAMAV_TIMEOUT_MS', undefined);
+    const { environment } = await importEnvironment();
+
+    expect(environment.CLAMAV_HOST).toBeUndefined();
+    expect(environment.CLAMAV_PORT).toBeUndefined();
+    expect(environment.CLAMAV_MAX_BYTES).toBe(25 * 1024 ** 2);
+    expect(environment.CLAMAV_MAX_BYTES).toBe(26214400);
+    expect(environment.CLAMAV_TIMEOUT_MS).toBe(60000);
+  });
+
+  it('accepts valid CLAMAV_* values', async () => {
+    vi.stubEnv('CLAMAV_HOST', 'clamd.test.invalid');
+    vi.stubEnv('CLAMAV_PORT', '3310');
+    vi.stubEnv('CLAMAV_TIMEOUT_MS', '1234');
+    vi.stubEnv('CLAMAV_MAX_BYTES', '2048');
+    const { environment } = await importEnvironment();
+
+    expect(environment.CLAMAV_HOST).toBe('clamd.test.invalid');
+    expect(environment.CLAMAV_PORT).toBe(3310);
+    expect(environment.CLAMAV_TIMEOUT_MS).toBe(1234);
+    expect(environment.CLAMAV_MAX_BYTES).toBe(2048);
+  });
+
+  it('rejects an invalid CLAMAV_PORT loudly', async () => {
+    vi.stubEnv('CLAMAV_PORT', 'abc');
+    await expect(importEnvironment()).rejects.toThrow();
+  });
+
+  it('rejects an out-of-range CLAMAV_PORT loudly', async () => {
+    vi.stubEnv('CLAMAV_PORT', '70000');
+    await expect(importEnvironment()).rejects.toThrow();
+  });
+
   it('falls back to the derived TESSERACT_DIR for a blank override', async () => {
     vi.stubEnv('CACHE_DIR', '.cache-test/env-cache');
     vi.stubEnv('TESSERACT_DIR', '   ');

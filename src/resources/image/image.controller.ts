@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 
 import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
+import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
@@ -38,7 +39,7 @@ const SHARP_TO_MIME: Partial<Record<keyof FormatEnum, string>> = {
 };
 
 @Controller('image')
-@UseInterceptors(FileParserInterceptor, ImageSignatureInterceptor)
+@UseInterceptors(FileScannerInterceptor, FileParserInterceptor, ImageSignatureInterceptor)
 export class ImageController {
   constructor(
     private readonly imageService: ImageService,

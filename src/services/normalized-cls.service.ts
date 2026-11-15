@@ -10,10 +10,16 @@ import { CLS_REQ, CLS_RES, ClsService } from 'nestjs-cls';
 import {
   CLS_CACHE_KEY,
   CLS_FILE_HASH,
+  CLS_FILE_SCAN,
   CLS_FILE_SIGNATURE,
   CLS_SOURCE_DIRECTION,
   CLS_SOURCE_STREAM,
 } from '@/constants/cls.js';
+
+interface FileScanResult {
+  isInfected: boolean;
+  viruses: string[];
+}
 
 @Injectable()
 export class NormalizedClsService {
@@ -33,6 +39,10 @@ export class NormalizedClsService {
 
   fileHash() {
     return this.mange<string>(CLS_FILE_HASH);
+  }
+
+  fileScan() {
+    return this.mange<FileScanResult>(CLS_FILE_SCAN);
   }
 
   fileSignature() {

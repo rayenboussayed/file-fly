@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
+import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
 import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
@@ -27,7 +28,7 @@ import { VideoSignatureInterceptor } from './video-signature.interceptor.js';
 import { VideoService } from './video.service.js';
 
 @Controller('video')
-@UseInterceptors(FileParserInterceptor, VideoSignatureInterceptor)
+@UseInterceptors(FileScannerInterceptor, FileParserInterceptor, VideoSignatureInterceptor)
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 

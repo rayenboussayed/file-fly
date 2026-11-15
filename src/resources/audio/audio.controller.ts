@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
+import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
 import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
@@ -20,7 +21,7 @@ import { AudioService } from './audio.service.js';
 import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 
 @Controller('audio')
-@UseInterceptors(FileParserInterceptor, AudioSignatureInterceptor)
+@UseInterceptors(FileScannerInterceptor, FileParserInterceptor, AudioSignatureInterceptor)
 export class AudioController {
   constructor(private readonly audioService: AudioService) {}
 

@@ -2,8 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 
+import { startFakeClamd, stopFakeClamd } from './fake-clamd.js';
+
 export const FIXTURES_DIR = path.join('test', 'results', 'fixtures');
 export const CACHE_DIR = path.join('test', 'results', 'cache');
+const FAKE_CLAMD_PORT = 33331;
 
 const TEXT_SVG = `<svg width="640" height="160" xmlns="http://www.w3.org/2000/svg">
   <rect width="640" height="160" fill="white"/>
@@ -13,7 +16,10 @@ const TEXT_SVG = `<svg width="640" height="160" xmlns="http://www.w3.org/2000/sv
 
 /**
  * Prepares isolated cache dir and static fixtures (copying assets, generating
- * small images) before any e2e spec runs. Runs once per e2e invocation.
+ * small images) before any e2e spec runs, then starts a fake clamd on
+ * {@link FAKE_CLAMD_PORT} so the antivirus pipeline is exercised without a
+ * real ClamAV daemon. Runs once per e2e invocation.
+ * @returns An async teardown closing the fake clamd, as supported by vitest globalSetup.
  */
 export default async function setup() {
   await fs.promises.rm(path.join('test', 'results'), { force: true, recursive: true });
@@ -30,4 +36,11 @@ export default async function setup() {
   await sharp(Buffer.from(TEXT_SVG)).png().toFile(path.join(FIXTURES_DIR, 'text.png'));
 
   await fs.promises.writeFile(path.join(FIXTURES_DIR, 'not-an-image.txt'), 'hello, this is not media\n');
+
+  const clamd = await startFakeClamd(FAKE_CLAMD_PORT);
+
+  // vitest globalSetup supports returning an async teardown; close the fake clamd when the run is done.
+  return async () => {
+    await stopFakeClamd(clamd);
+  };
 }

@@ -11,6 +11,7 @@ import { isProduction } from './environment.js';
 import { AudioModule } from './resources/audio/audio.module.js';
 import { ImageModule } from './resources/image/image.module.js';
 import { VideoModule } from './resources/video/video.module.js';
+import { AntiVirusService } from './services/anti-virus.service.js';
 import { CacheJanitorService } from './services/cache-janitor.service.js';
 import { FileTypeService } from './services/file-type.service.js';
 import { NormalizedClsService } from './services/normalized-cls.service.js';
@@ -43,6 +44,7 @@ import { WorkerService } from './services/worker.service.js';
       provide: APP_INTERCEPTOR,
       useClass: ClsInterceptor,
     },
+    AntiVirusService,
     AppService,
     CacheJanitorService,
     FileTypeService,

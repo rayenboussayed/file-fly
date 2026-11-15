@@ -11,8 +11,8 @@
 - Perf/memory suites (opt-in, not in `npm run check`): `npm run test:perf` (benchmarks), `npm run test:mem` (GC memory regressions); see `docs/performance.md`
 
 ## Structure
-- NestJS app; media endpoints under `/image`, `/audio`, `/video`, plus `/image/dna`, `/audio/dna`, `/video/dna`, and `/image/ocr` (tesseract.js text extraction; JSON payload).
-- Uploaded/downloaded media streams enter through `FileParserInterceptor` — `WorkerService` for the media pipeline, `bufferStream` for buffering OCR input.
+- NestJS app; media endpoints under `/image`, `/audio`, `/video`, plus `/image/dna`, `/audio/dna`, `/video/dna`, `/image/ocr` (tesseract.js text extraction; JSON payload), and root `/signature`, `/virus-scan` (both `GET|POST`; JSON; `POST` answers 201).
+- Media streams enter through two interceptors, bound in this order: `FileScannerInterceptor` (ClamAV scan before routing; infected → 422) then `FileParserInterceptor` (signature probe → cache key). Sources enter via `WorkerService` for the media pipeline, `bufferStream` for OCR. Feature modules each provide their own `AntiVirusService` — see `docs/antivirus.md`.
 - PDQ/Chromaprint fingerprints are computed via `pdq-wasm` loaded through `createRequire` CJS (ESM entry broken under Node) and node-av's `chromaprint` muxer (`algorithm: 1`); see `docs/dna.md`.
 - Heavy media work runs in workers (`src/resources/*/worker/index.ts`, helpers in sibling files); OCR runs in-process via sharp + a tesseract.js worker pool — see `docs/ocr.md`.
 - Media output cache: filesystem-backed `StreamCache` from jutilities (atomic tmp→rename writes, 0o600, TTL via `CACHE_TTL_MS`, keys are sha256 of the NUL-joined `baseKey`/`filename`/`workerData`); size-0 entries count as a miss and failed workers' entries are unlinked. The `CacheJanitorService` enforces TTL and the `CACHE_MAX_BYTES` LRU cap over `CACHE_DIR`. See `src/services/worker.service.ts`.

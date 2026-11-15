@@ -32,8 +32,17 @@ const EnvironmentSchema = z
     CACHE_SWEEP_INTERVAL_MS: numericFromEnv(10 * 60 * 1000),
     /** Orphaned *.tmp files (crashed writers) older than this are removed. */
     CACHE_TMP_MAX_AGE_MS: numericFromEnv(60 * 60 * 1000),
+
     /** Entries not used for this long are evicted. */
     CACHE_TTL_MS: numericFromEnv(24 * 60 * 60 * 1000),
+    /** Host of the clamd daemon; unset = virus scanning skipped with a warning. */
+    CLAMAV_HOST: z.string().trim().min(1).optional(),
+    /** Bodies larger than this are rejected 413 before scanning so clamd's INSTREAM size limit is never hit; raise together with clamd.conf StreamMaxLength. */
+    CLAMAV_MAX_BYTES: numericFromEnv(25 * 1024 ** 2),
+    /** Port of the clamd daemon; must be set together with CLAMAV_HOST. */
+    CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+    /** Clamd socket connect timeout passed to clamdscan. */
+    CLAMAV_TIMEOUT_MS: numericFromEnv(60000),
 
     CORS_ORIGIN: z.array(z.url().trim()).optional(),
     FILE_HASH_HEADER_SIZE: z.coerce.number().int().positive().catch(65536), // 64 KB
