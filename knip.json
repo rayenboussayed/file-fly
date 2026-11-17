@@ -3,17 +3,34 @@
   "tags": [
     "-lintignore"
   ],
-  "nest": {
-    "config": [
-      "nest-cli.json",
-      ".nestcli.json",
-      ".nest-cli.json",
-      "nest.json"
-    ]
+  "workspaces": {
+    "packages/backend": {
+      "entry": [
+        "src/main.ts",
+        "test/helpers.ts",
+        "test/fake-clamd.ts",
+        "test/*.e2e-spec.ts",
+        "src/**/*.spec.ts",
+        "test/perf/*.bench.ts",
+        "test/mem/*.spec.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "test/**/*.ts"
+      ],
+      "ignore": [
+        "src/constants/av-formats.ts"
+      ],
+      "nest": {
+        "config": [
+          "nest-cli.json",
+          ".nestcli.json",
+          ".nest-cli.json",
+          "nest.json"
+        ]
+      }
+    }
   },
-  "ignore": [
-    "src/constants/av-formats.ts"
-  ],
   "ignoreDependencies": [
     "fastify",
     "@commitlint/cli",

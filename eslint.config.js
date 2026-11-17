@@ -25,7 +25,7 @@ const JS_FILES = '**/*.{ts,mts,cts}';
 const TS_FILES = '**/*.{ts,mts,cts}';
 
 export default defineConfig([
-  globalIgnores(['node_modules', 'dist', 'package-lock.json', 'test/results/**', '.cache-dist-bak']),
+  globalIgnores(['node_modules', '**/node_modules', 'dist', '**/dist', 'package-lock.json', '**/test/results/**', '**/cache/**', '.cache-dist-bak']),
   {
     files: [JS_FILES, TS_FILES],
     plugins: { js, unicorn, depend, deprecate, n: node, '@stylistic': stylistic },
@@ -57,7 +57,7 @@ export default defineConfig([
     ],
   },
   {
-    files: ['{test,src}/**/*.*{test,spec}.{ts,js}'],
+    files: ['**/{test,src}/**/*.*{test,spec}.{ts,js}'],
     plugins: { vitest },
   },
   {

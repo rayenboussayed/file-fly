@@ -18,7 +18,8 @@ RUN apt-get update \
 # bind-mounted repo (dist/, cache/) keep the host user's ownership.
 USER node
 
-COPY --chown=node:node package*.json .npmrc ./
+COPY --chown=node:node package.json package-lock.json .npmrc ./
+COPY --chown=node:node packages/backend/package.json packages/backend/package.json
 # husky (the `prepare` script) is not a dependency; install without lifecycle scripts.
 RUN npm ci --ignore-scripts
 
@@ -26,4 +27,4 @@ COPY --chown=node:node . .
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start:dev", "-w", "file-fly-backend"]

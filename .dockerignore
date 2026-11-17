@@ -1,8 +1,14 @@
 node_modules
+**/node_modules
 dist
+**/dist
 .cache
 .git
 .github
 npm-debug.log
 coverage
 *.log
+.agent-swarm
+assets
+cache
+**/test/results

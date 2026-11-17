@@ -10,19 +10,20 @@ WORKDIR /app
 # --ignore-scripts: the repo's `prepare` calls husky, which is not a dependency;
 # it is useless and fatal inside a container.
 COPY package.json package-lock.json .npmrc ./
+COPY packages/backend/package.json packages/backend/package.json
 RUN npm ci --ignore-scripts
 
-COPY tsconfig.json tsconfig.build.json nest-cli.json ./
-COPY src ./src
-RUN npm run build && npm prune --omit=dev
+COPY packages/backend ./packages/backend
+RUN npm run build -w file-fly-backend && npm prune --omit=dev
 
 FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
 COPY --from=build /app/package.json ./
+COPY --from=build /app/packages/backend/package.json ./packages/backend/package.json
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/packages/backend/dist ./packages/backend/dist
 
 # Cache root is a volume: media output cache + tesseract language data.
 RUN mkdir -p /data/cache && chown -R node:node /data /app
@@ -30,4 +31,4 @@ ENV CACHE_DIR=/data/cache
 USER node
 
 EXPOSE 3000
-CMD ["node", "dist/main"]
+CMD ["node", "packages/backend/dist/main"]
