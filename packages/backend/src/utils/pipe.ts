@@ -1,6 +1,6 @@
 // eslint-disable-next-line n/no-extraneous-import
 import type { FastifyReply } from 'fastify';
-import type { Readable } from 'node:stream';
+import type { Readable, Transform } from 'node:stream';
 
 import { Logger } from '@nestjs/common';
 
@@ -21,12 +21,18 @@ const logger = new Logger('pipeToReply');
  * worker output would never be persisted on early client disconnects.
  * @param source - Stream produced by a worker or served from the cache.
  * @param response - Fastify reply wrapping the raw HTTP response.
+ * @param outMeter - Optional pass-through transform placed between the source
+ * and the raw response to count streamed bytes (see `createOutMeter`).
  */
 export async function pipeToReply(
   source: Readable,
   response: FastifyReply,
+  outMeter?: Transform,
 ): Promise<void> {
   const { raw } = response;
+  // With a meter, the meter is both the drain target (on failure) and the
+  // stream whose 'end' completes the pump; without one, the source plays both.
+  const endStream = outMeter ?? source;
 
   let settled = false;
   await new Promise<void>((resolve) => {
@@ -44,7 +50,11 @@ export async function pipeToReply(
       }
       logger.warn(`stream ended with error: ${String(error)}`);
       raw.destroy();
-      source.unpipe(raw);
+      if (outMeter) {
+        outMeter.unpipe(raw);
+      } else {
+        source.unpipe(raw);
+      }
       // `pipeline()` would destroy the source here; drop the remainder to
       // /dev/null so the sibling tee branch (cache persist) still sees EOF.
       drainStream(source)
@@ -52,11 +62,20 @@ export async function pipeToReply(
         .catch(() => resolve());
     };
     source.once('error', (error: Error) => finish(true, error));
+    outMeter?.once('error', (error: Error) => finish(true, error));
     raw.once('error', (error: Error) => finish(true, error));
+    // 'finish' means everything written to this response was flushed;
+    // it can race raw 'close' on a clean completion.
+    raw.once('finish', () => finish(false));
     // 'close' fires on both clean endings and aborted connections; the
-    // `source.once('end')` listener wins on the clean path via `settled`.
+    // `endStream.once('end')` listener wins on the clean path via `settled`.
     raw.once('close', () => finish(true));
-    source.once('end', () => finish(false));
+    endStream.once('end', () => finish(false));
+    if (outMeter) {
+      source.pipe(outMeter);
+      outMeter.pipe(raw);
+      return;
+    }
     source.pipe(raw);
   });
 }

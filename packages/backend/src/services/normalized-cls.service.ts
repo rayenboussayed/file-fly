@@ -8,7 +8,10 @@ import { lazy } from 'jutilities/lazy';
 import { CLS_REQ, CLS_RES, ClsService } from 'nestjs-cls';
 
 import {
+  CLS_BYTES_IN,
+  CLS_BYTES_OUT,
   CLS_CACHE_KEY,
+  CLS_CACHE_OUTCOME,
   CLS_FILE_HASH,
   CLS_FILE_SCAN,
   CLS_FILE_SIGNATURE,
@@ -33,8 +36,20 @@ export class NormalizedClsService {
 
   constructor(private readonly cls: ClsService) {}
 
+  bytesIn() {
+    return this.mange<number>(CLS_BYTES_IN);
+  }
+
+  bytesOut() {
+    return this.mange<number>(CLS_BYTES_OUT);
+  }
+
   cacheKey() {
     return this.mange<string>(CLS_CACHE_KEY);
+  }
+
+  cacheOutcome() {
+    return this.mange<'hit' | 'miss'>(CLS_CACHE_OUTCOME);
   }
 
   fileHash() {

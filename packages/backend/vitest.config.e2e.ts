@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    env: { CACHE_DIR: 'test/results/cache', CLAMAV_HOST: '127.0.0.1', CLAMAV_PORT: '33331', CLAMAV_TIMEOUT_MS: '5000', NODE_ENV: 'development', TESSERACT_DIR: 'test/results/cache/tesseract' },
+    env: { CACHE_DIR: 'test/results/cache', CLAMAV_HOST: '127.0.0.1', CLAMAV_PORT: '33331', CLAMAV_TIMEOUT_MS: '5000', METRICS_DIR: 'test/results/metrics', NODE_ENV: 'development', TESSERACT_DIR: 'test/results/cache/tesseract' },
     fileParallelism: false,
     globals: true,
     globalSetup: './test/global-setup.ts',

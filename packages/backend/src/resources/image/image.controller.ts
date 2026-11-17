@@ -14,6 +14,7 @@ import {
 
 import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
 import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
@@ -68,7 +69,7 @@ export class ImageController {
     // back to octet-stream rather than wrongly labelling bytes with the input's mime.
     const output = query.format ? (SHARP_TO_MIME[query.format] ?? 'application/octet-stream') : this.cls.fileSignature().get()?.mime;
     response.raw.setHeader('content-type', output ?? 'application/octet-stream');
-    return pipeToReply(processed, response);
+    return pipeToReply(processed, response, createOutMeter(this.cls));
   }
 
   @Get()

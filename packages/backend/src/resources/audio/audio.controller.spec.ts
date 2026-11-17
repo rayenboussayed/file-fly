@@ -22,7 +22,8 @@ describe('AudioController', () => {
       processor: vi.fn(async () => processed),
       stats: vi.fn(async () => ({ stats: true })),
     };
-    const controller = new AudioController(audioService as never);
+    const cls = { bytesOut: () => ({ set: vi.fn() }) };
+    const controller = new AudioController(audioService as never, cls as never);
     const response = { raw: rawSink(), type: vi.fn() };
 
     await expect(controller.metadataGet()).resolves.toEqual({ ok: true });

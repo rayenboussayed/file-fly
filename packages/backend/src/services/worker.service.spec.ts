@@ -71,6 +71,7 @@ describe('WorkerService', () => {
   it('serves cached worker output without re-running the worker, and misses unknown keys', async () => {
     const makeCls = (cacheKey: string, source: Readable | undefined) => ({
       cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
     } as never);
@@ -110,6 +111,7 @@ describe('WorkerService', () => {
   it('does not deadlock on a failing worker, and caches nothing', async () => {
     const cls = {
       cacheKey: () => ({ get: () => 'fail-key', set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
     } as never;
@@ -143,6 +145,7 @@ describe('WorkerService coverage branches', () => {
     const source = new Readable({ read() { this.push(null); } });
     const cls = {
       cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
     } as never;
@@ -156,6 +159,7 @@ describe('WorkerService coverage branches', () => {
     await fs.writeFile(cachePath, 'cached');
     const cls2 = {
       cacheKey: () => ({ get: () => 'base-key', set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => new Readable({ read() { this.push(null); } }), set: (v: unknown) => v }),
     } as never;

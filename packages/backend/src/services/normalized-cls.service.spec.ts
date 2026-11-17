@@ -28,5 +28,17 @@ describe('NormalizedClsService', () => {
     expect(service.sourceDirection().get()).toBeUndefined();
     service.sourceStream().set('s' as never);
     expect(service.sourceStream().get()).toBe('s');
+    service.bytesIn().set(64);
+    expect(service.bytesIn().get()).toBe(64);
+    service.bytesIn().unset();
+    expect(service.bytesIn().get()).toBeUndefined();
+    service.bytesOut().set(1024);
+    expect(service.bytesOut().get()).toBe(1024);
+    service.bytesOut().unset();
+    expect(service.bytesOut().get()).toBeUndefined();
+    service.cacheOutcome().set('hit');
+    expect(service.cacheOutcome().get()).toBe('hit');
+    service.cacheOutcome().unset();
+    expect(service.cacheOutcome().get()).toBeUndefined();
   });
 });

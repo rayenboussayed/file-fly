@@ -8,6 +8,8 @@ import { CLS_REQ, CLS_RES, ClsInterceptor, ClsModule } from 'nestjs-cls';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { isProduction } from './environment.js';
+import { MetricsInterceptor } from './metrics/metrics.interceptor.js';
+import { MetricsModule } from './metrics/metrics.module.js';
 import { AudioModule } from './resources/audio/audio.module.js';
 import { ImageModule } from './resources/image/image.module.js';
 import { VideoModule } from './resources/video/video.module.js';
@@ -37,12 +39,18 @@ import { WorkerService } from './services/worker.service.js';
     }),
     AudioModule,
     ImageModule,
+    MetricsModule,
     VideoModule,
   ],
   providers: [
     {
       provide: APP_INTERCEPTOR,
       useClass: ClsInterceptor,
+    },
+    {
+      // After ClsInterceptor: CLS is required to read the request context.
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
     },
     AntiVirusService,
     AppService,

@@ -64,11 +64,13 @@ export class WorkerService {
           // mtime drives LRU eviction; refresh it on every hit.
           void this.touch(key).catch(() => undefined);
           source?.destroy(); // nobody will read it: free socket / request body
+          this.cls.cacheOutcome().set('hit');
           return cached;
         }
       }
     }
 
+    if (key) this.cls.cacheOutcome().set('miss');
     return this.spawn(filename, options, source, key);
   }
 

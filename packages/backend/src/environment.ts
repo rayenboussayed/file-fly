@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 /** Absolute default cache root, used when `CACHE_DIR` is unset or blank. */
 const DEFAULT_CACHE_DIR = path.resolve('cache');
+/** Absolute default metrics root, used when `METRICS_DIR` is unset or blank. */
+const DEFAULT_METRICS_DIR = path.resolve('metrics');
 
 /**
  * Numeric env var handling:
@@ -47,6 +49,15 @@ const EnvironmentSchema = z
     CORS_ORIGIN: z.array(z.url().trim()).optional(),
     FILE_HASH_HEADER_SIZE: z.coerce.number().int().positive().catch(65536), // 64 KB
 
+    /** Directory holding `metrics.db`; created at startup. Kept out of `CACHE_DIR` on purpose. */
+    METRICS_DIR: z.string().trim().min(1).catch(DEFAULT_METRICS_DIR),
+    /** Flush interval for the in-memory metric deltas. `0` disables the timer. */
+    METRICS_FLUSH_INTERVAL_MS: numericFromEnv(1000),
+    /** Retention for the metrics tables. `0` disables the sweep; defaults to 35 days. */
+    METRICS_RETENTION_DAYS: numericFromEnv(35),
+    /** Bearer token for `GET /metrics`; production refuses requests without it. Unset in development = open. */
+    METRICS_TOKEN: z.string().trim().min(1).optional().catch(undefined),
+
     NODE_ENV: z.enum(['development', 'production']),
 
     /** Language data for tesseract.js; defaults to `<CACHE_DIR>/tesseract`. */
@@ -55,6 +66,8 @@ const EnvironmentSchema = z
     TESSERACT_PRELOAD: z.string().trim().default('eng'),
     TESSERACT_RECYCLE_JOBS: z.coerce.number().int().positive().catch(500),
     TESSERACT_TIMEOUT_MS: z.coerce.number().int().positive().catch(60000),
+    /** Honor `X-Forwarded-For` for `request.ip` (set only behind a trusted proxy). */
+    TRUST_PROXY: z.stringbool().optional().catch(undefined),
   })
   .transform((env) => ({
     ...env,

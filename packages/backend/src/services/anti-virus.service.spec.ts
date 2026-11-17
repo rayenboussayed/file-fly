@@ -275,7 +275,7 @@ describe('AntiVirusService', () => {
     expect(mocks.scanStreamCalls).toHaveLength(1);
   });
 
-  it('rejects with 422 on an infected payload, destroys the branch and does not set CLS', async () => {
+  it('rejects with 422 on an infected payload, destroys the branch and records the verdict on CLS', async () => {
     const { cls, service, sourceDestroy, store } = await createService();
     stubRequest(store, '10');
     mocks.scanResult = {
@@ -296,7 +296,7 @@ describe('AntiVirusService', () => {
     expect(destroySpy).toHaveBeenCalled();
     // clamd consumed the branch, so EOF was reached: source is left alone.
     expect(sourceDestroy).not.toHaveBeenCalled();
-    expect(cls.get(CLS_FILE_SCAN)).toBeUndefined();
+    expect(cls.get(CLS_FILE_SCAN)).toEqual({ isInfected: true, viruses: ['Test.Virus'] });
   });
 
   it('rejects with 503 when initialization fails, destroys the branch and leaves CLS unset', async () => {

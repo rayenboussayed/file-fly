@@ -1,3 +1,4 @@
+import { streamSizeTransform } from 'jutilities/node/stream/size';
 import { request as netRequest } from 'undici';
 
 import type { NormalizedClsService } from '@/services/normalized-cls.service.js';
@@ -35,5 +36,14 @@ export async function openMediaSource(cls: NormalizedClsService): Promise<void> 
     signal: request.signal,
   });
   cls.sourceDirection().set('download');
-  cls.sourceStream().set(body);
+  // Meter the remote body so downloaded bytes are observable even on chunked
+  // responses without a content-length header. The upload path is counted from
+  // its declared content-length instead, so nothing else moves.
+  const meter = streamSizeTransform({
+    onSize: ({ size }) => cls.bytesIn().set(size),
+  });
+  // A meter failure degrades into a source failure consumers already handle.
+  meter.once('error', () => body.destroy());
+  body.pipe(meter);
+  cls.sourceStream().set(meter);
 }

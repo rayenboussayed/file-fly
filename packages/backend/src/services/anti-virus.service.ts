@@ -167,6 +167,8 @@ export class AntiVirusService {
     if (scanResult.isInfected === true) {
       abort();
       const viruses = scanResult.viruses;
+      // Record the verdict before throwing so the metrics interceptor can see it.
+      this.normalizedCls.fileScan().set({ isInfected: true, viruses });
       throw new UnprocessableEntityException({
         message: `File is infected with: ${viruses.join(', ')}`,
         viruses,

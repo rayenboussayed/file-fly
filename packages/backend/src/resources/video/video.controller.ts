@@ -13,6 +13,8 @@ import {
 
 import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
 import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { createOutMeter } from '@/metrics/out-meter.js';
+import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
@@ -30,7 +32,10 @@ import { VideoService } from './video.service.js';
 @Controller('video')
 @UseInterceptors(FileScannerInterceptor, FileParserInterceptor, VideoSignatureInterceptor)
 export class VideoController {
-  constructor(private readonly videoService: VideoService) {}
+  constructor(
+    private readonly videoService: VideoService,
+    private readonly cls: NormalizedClsService,
+  ) {}
 
   @Get('dna')
   async dnaGet() {
@@ -50,7 +55,7 @@ export class VideoController {
       payload: query,
     });
     response.raw.setHeader('content-type', OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
-    return pipeToReply(processed, response);
+    return pipeToReply(processed, response, createOutMeter(this.cls));
   }
 
   @Get()
@@ -89,7 +94,7 @@ export class VideoController {
     const processed = await this.videoService.screenshot({
       payload: query,
     });
-    return pipeToReply(processed, response);
+    return pipeToReply(processed, response, createOutMeter(this.cls));
   }
 
   @Get('screenshot')

@@ -13,6 +13,8 @@ import {
 
 import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
 import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { createOutMeter } from '@/metrics/out-meter.js';
+import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
@@ -23,7 +25,10 @@ import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 @Controller('audio')
 @UseInterceptors(FileScannerInterceptor, FileParserInterceptor, AudioSignatureInterceptor)
 export class AudioController {
-  constructor(private readonly audioService: AudioService) {}
+  constructor(
+    private readonly audioService: AudioService,
+    private readonly cls: NormalizedClsService,
+  ) {}
 
   @Get('dna')
   async dnaGet() {
@@ -43,7 +48,7 @@ export class AudioController {
       payload: query,
     });
     response.raw.setHeader('content-type', OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
-    return pipeToReply(processed, response);
+    return pipeToReply(processed, response, createOutMeter(this.cls));
   }
 
   @Get()

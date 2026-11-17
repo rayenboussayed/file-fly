@@ -1,3 +1,9 @@
+export const CLS_CACHE_OUTCOME = Symbol.for('CLS_CACHE_OUTCOME');
+
+export const CLS_BYTES_IN = Symbol.for('CLS_BYTES_IN');
+
+export const CLS_BYTES_OUT = Symbol.for('CLS_BYTES_OUT');
+
 export const CLS_CACHE_KEY = Symbol.for('CLS_CACHE_KEY');
 
 export const CLS_FILE_HASH = Symbol.for('CLS_FILE_HASH');

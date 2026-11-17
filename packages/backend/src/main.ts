@@ -41,8 +41,11 @@ process.on('uncaughtException', (error) => {
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    new FastifyAdapter({ trustProxy: environment.TRUST_PROXY === true }),
   );
+  // Flushes pending metrics on SIGTERM (metrics.db) and lets Nest close
+  // servers cleanly instead of the default blunt exit.
+  app.enableShutdownHooks();
 
   fastify(app.getHttpAdapter().getInstance());
 
@@ -89,10 +92,10 @@ function fastify(instance: FastifyInstance) {
  */
 function swagger(app: NestFastifyApplication) {
   const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
-    .setVersion('1.0')
-    .addTag('cats')
+    .setTitle('file-fly')
+    .setDescription('Stream-first file and media processing')
+    .setVersion('0.0.1')
+    .addTag('media')
     .build();
 
   const documentOptions: SwaggerDocumentOptions = {
