@@ -1,118 +1,175 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# file-fly
 
+Stream-first file and media processing, on the fly.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+`file-fly` is a [NestJS](https://nestjs.com) + [Fastify](https://fastify.dev) service (strict TypeScript, ESM) that accepts media from a raw upload (`POST`) or a remote URL (`GET ?source=…`) and streams the processed result back — never buffering whole files in memory and never writing temporary media files.
 
-## Description
+Under the hood: images are processed with [sharp](https://sharp.pixelplumbing.com/) (libvips), audio and video with [node-av](https://github.com/Brooooooklyn/node-av) (FFmpeg), perceptual fingerprints are computed in WebAssembly (PDQ) or through FFmpeg (Chromaprint), and every payload is scanned with ClamAV before it reaches the pipeline.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Features
 
-## Project setup
+- **Image processing** — resize / crop / rotate / flip, blur, sharpen, median, normalize, greyscale, trim, negate, tint, format conversion via sharp. `GET|POST /image`
+- **OCR** — text extraction from images with tesseract.js (bounded worker pool). `GET|POST /image/ocr`
+- **Audio processing** — transcode and filter (trim, fade, gain, speed, normalize, compress, denoise) via FFmpeg. `GET|POST /audio`
+- **Video processing** — transcode (h264 / vp9 / av1), scale, fps, crf, trim, denoise, deinterlace, grayscale, normalize, sharpen; frame screenshots served as `multipart/mixed`. `GET|POST /video`, `GET|POST /video/screenshot`
+- **Perceptual fingerprints ("DNA")** — PDQ for images, Chromaprint for audio, frame-sequence PDQ for video. For deduplication and triage, never identity. `GET|POST /{image,audio,video}/dna`
+- **Metadata & statistics** — container/stream metadata and channel-level statistics for image, audio and video. `GET|POST /{image,audio,video}/metadata`, `GET|POST /{image,audio,video}/stats`
+- **Malware scanning** — every media route is scanned with ClamAV (fail-closed) before processing starts; `GET|POST /virus-scan` reports the verdict, `GET|POST /signature` reports the detected file signature.
+- **Streaming output cache** — filesystem-backed, atomic `tmp → rename` writes, TTL + LRU size cap, background janitor.
+- **OpenAPI** — Swagger UI at `/swagger` (JSON at `/swagger/json`).
 
-```bash
-$ npm install
+## How it works
+
+```text
+request (raw body upload or ?source=<url> download)
+  → FileScannerInterceptor   ClamAV INSTREAM scan, fail-closed
+                             (infected → 422, daemon down → 503, body too big → 413)
+  → FileParserInterceptor    file-type signature probe + cache key
+  → signature interceptor    per-media-type checks (payload mismatch → 4xx)
+  → service / worker thread  sharp or node-av pipeline
+  → StreamCache              cache hit streams straight from disk
+  → chunked response with backpressure
 ```
 
-## Compile and run the project
+- No full in-memory buffering: input streams through the interceptors into worker threads; output streams back chunked with backpressure.
+- No temporary media files; a crashed writer can only leave `*.tmp` files behind, which the janitor removes after `CACHE_TMP_MAX_AGE_MS`.
+- Cache keys are a SHA-256 of the NUL-joined base key / filename / worker payload; entries are evicted by TTL (`CACHE_TTL_MS`) and by total size (`CACHE_MAX_BYTES`, LRU).
+- Fingerprint (`/dna`) responses are served through the same cache.
+
+## API overview
+
+All routes accept `GET` (media fetched server-side from `?source=<url>`; client headers are forwarded to the remote host) and `POST` (raw body — set `content-length > 0` and a `content-type` supported by `file-type`, or `application/octet-stream`). `GET` answers `200`, `POST` answers `201`.
+
+| Route | Description |
+| --- | --- |
+| `GET\|POST /image` | Process an image. Query: `width`, `height`, `fit`, `rotate`, `flip`, `flop`, `format`, `quality`, `blur`, `sharpen`, `median`, `normalize`, `greyscale`, `trim`, `negate`, `tint`, `background`, `withoutEnlargement`, `withoutReduction`, `threshold`, … |
+| `GET\|POST /image/metadata` | sharp metadata as JSON |
+| `GET\|POST /image/stats` | sharp channel statistics as JSON |
+| `GET\|POST /image/ocr` | OCR text extraction. Query: `lang` — ISO 639-2 codes separated by `+` (URL-encoded, e.g. `eng%2Bfra`) or `,` (e.g. `eng,fra`); up to four codes; default `eng` |
+| `GET\|POST /image/dna` | PDQ fingerprint — `{ algorithm, version, env, hash, quality }` |
+| `GET\|POST /audio` | Process audio. Query: `format` (default `mp3`), `codec`, `bitrate`, `sampleRate`, `channels`, `gain`, `speed`, `fadeIn`, `fadeOut`, `trimStart`, `trimEnd`, `normalize`, `compress`, `denoise` |
+| `GET\|POST /audio/metadata` | Audio stream metadata as JSON |
+| `GET\|POST /audio/stats` | Audio stream statistics as JSON |
+| `GET\|POST /audio/dna` | Chromaprint fingerprint — `{ algorithm, version, env, hash, length }` |
+| `GET\|POST /video` | Process video. Query: `format` (default `mp4`, fragmented), `codec` (`h264`, `vp9`, `av1`), `crf`, `bitrate`, `preset`, `fps`, `width`, `height`, `rotate`, `flip`, `flop`, `trimStart`, `trimEnd`, `denoise`, `deinterlace`, `grayscale`, `normalize`, `sharpen`, `audioCodec`, `audioBitrate`, `audioNormalize`, … |
+| `GET\|POST /video/screenshot` | Frame capture. Required query `frames=0,1.5,9` (up to 50, seconds) → `multipart/mixed`, one part per frame |
+| `GET\|POST /video/metadata` | Video stream metadata as JSON |
+| `GET\|POST /video/stats` | Video stream statistics as JSON |
+| `GET\|POST /video/dna` | Frame-sequence PDQ fingerprint — `{ algorithm, version, env, fps, count, frames[] }` |
+| `GET\|POST /signature` | Detected file signature — `{ ext, mime }` |
+| `GET\|POST /virus-scan` | ClamAV verdict — `{ isInfected, viruses }` (answers `503` when ClamAV is not configured; infected payloads are rejected with `422` before the handler runs) |
+| `GET /swagger` | Swagger UI |
+
+## Quick start
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
+npm run start:dev        # Nest watch mode on http://localhost:3000
 ```
 
-## Run tests
+Upload a file for processing:
 
 ```bash
-# unit tests
-$ npm run test
+# Resize + re-encode an image on the fly
+curl -X POST --data-binary @photo.jpg \
+     -H 'content-type: image/jpeg' \
+     'http://localhost:3000/image?width=800&format=webp' \
+     -o out.webp
 
-# e2e tests
-$ npm run test:e2e
+# Transcode a video to WebM (VP9)
+curl -X POST --data-binary @clip.mp4 \
+     -H 'content-type: video/mp4' \
+     'http://localhost:3000/video?format=webm&codec=vp9' \
+     -o out.webm
 
-# test coverage
-$ npm run test:cov
+# OCR an uploaded scan (English + French)
+curl -X POST --data-binary @scan.png \
+     -H 'content-type: image/png' \
+     'http://localhost:3000/image/ocr?lang=eng%2Bfra'
+
+# Detect the signature / scan for malware
+curl -X POST --data-binary @file.bin -H 'content-type: application/octet-stream' \
+     http://localhost:3000/signature
+curl -X POST --data-binary @file.bin -H 'content-type: application/octet-stream' \
+     http://localhost:3000/virus-scan
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Or let the server fetch the media itself (client headers are forwarded — only use `source=` with trusted URLs):
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+curl 'http://localhost:3000/image?source=https%3A%2F%2Fexample.com%2Fphoto.jpg&format=webp' \
+     -o out.webp
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Docker
 
-## Observability
+Development stack (watch-mode app + ClamAV with bundled signature databases):
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+```bash
+docker compose -f docker-compose.development.yml up --build
+# app on http://localhost:3000; clamd reachable on the compose network (3310), not published
+```
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+Production image (multi-stage, `node:24-bookworm-slim`, non-root `node` user, cache volume at `/data/cache`):
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+```bash
+docker build -t file-fly .
+docker run -p 3000:3000 -v file-fly-cache:/data/cache \
+           -e NODE_ENV=production \
+           -e CLAMAV_HOST=clamav -e CLAMAV_PORT=3310 \
+           file-fly
+```
 
-## Resources
+## Configuration
 
-Check out a few resources that may come in handy when working with NestJS:
+All configuration is via environment variables. Values are validated with zod at boot; blank strings are treated as unset, invalid values fall back to defaults, and `NODE_ENV` must be `development` or `production`. Production enables restrictive security headers, CSRF protection and CORS (from `CORS_ORIGIN`).
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `NODE_ENV` | — (required) | `development` or `production` |
+| `PORT` | `3000` | HTTP port |
+| `CORS_ORIGIN` | unset | Allowed origins in production (URLs) |
+| `CACHE_DIR` | `./cache` (`/data/cache` in Docker) | Cache root; created at startup |
+| `CACHE_TTL_MS` | `86400000` (24 h) | Entries unused for longer are evicted |
+| `CACHE_MAX_BYTES` | `2147483648` (2 GiB) | Total cache size cap; oldest-used entries evicted first |
+| `CACHE_SWEEP_INTERVAL_MS` | `600000` (10 min) | Cache janitor sweep interval |
+| `CACHE_TMP_MAX_AGE_MS` | `3600000` (1 h) | Orphaned `*.tmp` files older than this are removed |
+| `CLAMAV_HOST` | unset | clamd host. **Unset ⇒ virus scanning is skipped** (one warning); production deployments must set it |
+| `CLAMAV_PORT` | unset | clamd port; must be set together with `CLAMAV_HOST` |
+| `CLAMAV_TIMEOUT_MS` | `60000` | clamd socket connect timeout |
+| `CLAMAV_MAX_BYTES` | `26214400` (25 MiB) | Larger bodies are rejected `413` before scanning |
+| `TESSERACT_DIR` | `<CACHE_DIR>/tesseract` | tesseract.js language data directory |
+| `TESSERACT_POOL_SIZE` | `2` | OCR worker pool size (1–8) |
+| `TESSERACT_PRELOAD` | `eng` | Languages preloaded at startup |
+| `TESSERACT_RECYCLE_JOBS` | `500` | Recycle an OCR worker after N jobs |
+| `TESSERACT_TIMEOUT_MS` | `60000` | Per-recognition timeout |
+| `FILE_HASH_HEADER_SIZE` | `65536` | Bytes hashed (SHA-512 prefix) for the upload cache key when no `x-file-hash` request header is sent |
 
-## Support
+## Testing
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+npm run test        # unit tests (vitest, serial)
+npm run test:e2e    # build + e2e tests (fake clamd fixture)
+npm run test:cov    # unit tests with coverage
+npm run test:perf   # opt-in micro-benchmarks (tinybench)
+npm run test:mem    # opt-in memory-regression specs (--expose-gc)
+npm run check       # typecheck + lint + build + unit & e2e tests + knip
+```
 
-## Stay in touch
+Unit specs match `**/*.spec.ts`; e2e specs match `**/*.e2e-spec.ts`. Test files run serially (`fileParallelism: false`); real-worker smoke tests use fixtures under `assets/`; generated output goes under `test/results/`.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Documentation
+
+Deep-dives live in `docs/`:
+
+- [docs/dna.md](docs/dna.md) — perceptual fingerprints: endpoints, pipelines, comparison recipes, security notes
+- [docs/ocr.md](docs/ocr.md) — OCR pipeline, query parameters, limits
+- [docs/antivirus.md](docs/antivirus.md) — ClamAV integration, fail-closed behaviour, EICAR testing
+- [docs/performance.md](docs/performance.md) — benchmark and memory-regression suites
 
 ## Media streaming (audio / video)
 
-Supported output formats: `webm`, `matroska`, `mpegts`, `mp3`, `ogg`, `adts`,
-`flac`, and fragmented `mp4`. Plain `mp4`, `mov`, and `wav` output is rejected.
-Source media is streamed through node-av's demuxer, decoders, filters, encoders,
-and muxer, and the response uses chunked transfer encoding with backpressure.
+Supported output formats: `webm`, `matroska`, `mpegts`, `mp3`, `ogg`, `adts`, `flac`, and fragmented `mp4`. Plain `mp4`, `mov`, and `wav` output is rejected. Source media is streamed through node-av's demuxer, decoders, filters, encoders, and muxer, and the response uses chunked transfer encoding with backpressure.
 
 Hard limits:
 
@@ -124,7 +181,6 @@ Hard limits:
 - Jobs abort on client disconnect or timeout; native resources are released when FFmpeg exits.
 - `UV_THREADPOOL_SIZE` should be raised when running many concurrent jobs; concurrency must be capped by the libuv thread pool.
 
-
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Private — the package declares `UNLICENSED` (see `package.json`).
