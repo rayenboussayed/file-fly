@@ -66,3 +66,4 @@ test/results
 
 # temporary: root-owned dist backup from the container run; delete with: sudo rm -rf .cache-dist-bak
 .cache-dist-bak/
+.agent-swarm/
