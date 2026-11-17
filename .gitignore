@@ -59,7 +59,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .tsbuildinfo
 .cache*
 # e2e test output
-test/results
+**/test/results
 
 # runtime media cache (content-addressed entries, tesseract data, undici cache)
 cache
