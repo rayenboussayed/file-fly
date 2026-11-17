@@ -1,0 +1,11 @@
+/* Minimal app-level styles; the Astryx reset and theme carry the rest. */
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}

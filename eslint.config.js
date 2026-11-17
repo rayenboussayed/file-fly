@@ -21,8 +21,8 @@ import stylistic from '@stylistic/eslint-plugin'
 import prettier from "eslint-config-prettier/flat";
 import { defineConfig, globalIgnores } from 'eslint/config';
 
-const JS_FILES = '**/*.{ts,mts,cts}';
-const TS_FILES = '**/*.{ts,mts,cts}';
+const JS_FILES = '**/*.{ts,tsx,mts,cts}';
+const TS_FILES = '**/*.{ts,tsx,mts,cts}';
 
 export default defineConfig([
   globalIgnores(['node_modules', '**/node_modules', 'dist', '**/dist', 'package-lock.json', '**/test/results/**', '**/cache/**', '.cache-dist-bak']),
@@ -57,8 +57,17 @@ export default defineConfig([
     ],
   },
   {
-    files: ['**/{test,src}/**/*.*{test,spec}.{ts,js}'],
+    files: ['**/{test,src}/**/*.*{test,spec}.{ts,js,tsx}'],
     plugins: { vitest },
+  },
+  {
+    files: ['packages/dashboard/**/*.{ts,tsx}'],
+    languageOptions: { globals: { ...globals.browser } },
+    rules: {
+      // The dashboard runs in the browser: fetch, Response and sessionStorage
+      // are ambient platform globals, not experimental node builtins.
+      'n/no-unsupported-features/node-builtins': 'off',
+    },
   },
   {
     files: ['**/*.json'],

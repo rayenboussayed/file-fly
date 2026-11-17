@@ -4,6 +4,15 @@
     "-lintignore"
   ],
   "workspaces": {
+    "packages/dashboard": {
+      "entry": [
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ]
+    },
     "packages/backend": {
       "entry": [
         "src/main.ts",

@@ -1,0 +1,41 @@
+{
+  "name": "file-fly-dashboard",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{ts,html}\""
+  },
+  "dependencies": {
+    "@astryxdesign/core": "^0.7.16",
+    "@astryxdesign/theme-neutral": "^0.7.16",
+    "@stylexjs/stylex": "^0.19.2",
+    "@tanstack/react-query": "^5.108.0",
+    "@tanstack/react-router": "^1.170.46",
+    "jutilities": "^1.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "@tanstack/charts": "^1.5.0"
+  },
+  "devDependencies": {
+    "@tanstack/router-plugin": "^1.169.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "jsdom": "^31.0.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^4.1.2"
+  }
+}
