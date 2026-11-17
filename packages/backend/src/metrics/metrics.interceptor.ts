@@ -8,6 +8,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 
+import { AntiVirusService } from '@/services/anti-virus.service.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { MetricsService } from './metrics.service.js';
@@ -41,6 +42,7 @@ export class MetricsInterceptor implements NestInterceptor {
   constructor(
     private readonly cls: NormalizedClsService,
     private readonly metrics: MetricsService,
+    private readonly antiVirus: AntiVirusService,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler) {
@@ -85,6 +87,7 @@ export class MetricsInterceptor implements NestInterceptor {
   private scanOutcome(status: number): 'blocked' | 'clean' | 'infected' | undefined {
     const fileScan = this.cls.fileScan().get();
     if (fileScan) return fileScan.isInfected ? 'infected' : 'clean';
+    if (!this.antiVirus.enabled()) return undefined;
     return status === 413 || status === 422 ? 'blocked' : undefined;
   }
 }

@@ -80,6 +80,22 @@ describe('OverviewPage', () => {
     expect(screen.getByText('203.0.113.7')).toBeDefined();
   });
 
+  it('reorders rows when a column is clicked', async () => {
+    mocks.fetchMetrics.mockResolvedValue(snapshot);
+    renderPage();
+    expect(await screen.findByText('203.0.113.7')).toBeDefined();
+    const ipOrder = () =>
+      screen
+        .getAllByRole('link')
+        .map((link) => link.textContent ?? '')
+        .filter((text) => /^\d+\.\d+\.\d+\.\d+$/.test(text));
+    // Default sort: bytes out descending.
+    expect(ipOrder()).toEqual(['203.0.113.7', '198.51.100.9', '192.0.2.44']);
+    const [control] = screen.getAllByRole('button', { name: 'GB in' });
+    fireEvent.click(control as HTMLElement);
+    expect(ipOrder()[0]).toBe('192.0.2.44');
+  });
+
   it('shows the token gate and forwards the submitted token on 401', async () => {
     mocks.fetchMetrics.mockRejectedValue(new ApiError(401));
     renderPage();

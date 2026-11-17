@@ -8,11 +8,11 @@ and the workers never see the bytes.
 
 ## How it works
 
-- `src/services/anti-virus.service.ts` — `AntiVirusService` streams a tee branch
+- `packages/backend/src/services/anti-virus.service.ts` — `AntiVirusService` streams a tee branch
   of the request payload to `clamd` over the clamd `INSTREAM` protocol via the
   [`clamscan`](https://www.npmjs.com/package/clamscan) package. The verdict is
   stored in CLS (`fileScan()`) for the `/virus-scan` endpoint.
-- `src/interceptors/file-scanner.interceptor.ts` — `FileScannerInterceptor` runs
+- `packages/backend/src/interceptors/file-scanner.interceptor.ts` — `FileScannerInterceptor` runs
   the scan **before** `FileParserInterceptor`, so infected files are rejected
   before the signature probe and before any processing. Bind order everywhere is
   `@UseInterceptors(FileScannerInterceptor, FileParserInterceptor, …)`.
@@ -55,7 +55,7 @@ Both live on the root controller and accept `GET` and `POST`:
 
 The EICAR antivirus test file is the industry-standard payload for this.
 The official signature ships in ClamAV's default databases, and the fake
-clamd in `test/fake-clamd.ts` (started by `test/global-setup.ts` for e2e)
+clamd in `packages/backend/test/fake-clamd.ts` (started by `packages/backend/test/global-setup.ts` for e2e)
 also detects it. How the EICAR fixture should be provided to the e2e suite
 (repo check-in vs. generated at setup) is being discussed separately; the
 dedicated `/virus-scan` e2e cases are parked until that settles.

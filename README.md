@@ -6,6 +6,14 @@ Stream-first file and media processing, on the fly.
 
 Under the hood: images are processed with [sharp](https://sharp.pixelplumbing.com/) (libvips), audio and video with [node-av](https://github.com/Brooooooklyn/node-av) (FFmpeg), perceptual fingerprints are computed in WebAssembly (PDQ) or through FFmpeg (Chromaprint), and every payload is scanned with ClamAV before it reaches the pipeline.
 
+## Repository layout
+
+npm workspaces monorepo:
+
+- `packages/backend` — the NestJS + Fastify media service (this document)
+- `packages/dashboard` — the React SPA metrics dashboard
+- root — workspaces orchestration (`npm run check`, `start:dev`, …), Docker, docs
+
 ## Features
 
 - **Image processing** — resize / crop / rotate / flip, blur, sharpen, median, normalize, greyscale, trim, negate, tint, format conversion via sharp. `GET|POST /image`
@@ -16,6 +24,8 @@ Under the hood: images are processed with [sharp](https://sharp.pixelplumbing.co
 - **Metadata & statistics** — container/stream metadata and channel-level statistics for image, audio and video. `GET|POST /{image,audio,video}/metadata`, `GET|POST /{image,audio,video}/stats`
 - **Malware scanning** — every media route is scanned with ClamAV (fail-closed) before processing starts; `GET|POST /virus-scan` reports the verdict, `GET|POST /signature` reports the detected file signature.
 - **Streaming output cache** — filesystem-backed, atomic `tmp → rename` writes, TTL + LRU size cap, background janitor.
+- **Usage metrics** — per-IP request counts, files and bytes in/out, in-flight gauge, latency percentiles (p50/p95/p99), cache hit rate and scan verdicts, stored in SQLite (`node:sqlite`) with hourly rollups and a retention sweep.
+- **Metrics dashboard** — a React SPA served at `/` by the backend (Vite + Astryx + TanStack Router/Query/Charts), polling `GET /metrics` every 5 seconds. See [docs/metrics.md](docs/metrics.md).
 - **OpenAPI** — Swagger UI at `/swagger` (JSON at `/swagger/json`).
 
 ## How it works
@@ -35,6 +45,25 @@ request (raw body upload or ?source=<url> download)
 - No temporary media files; a crashed writer can only leave `*.tmp` files behind, which the janitor removes after `CACHE_TMP_MAX_AGE_MS`.
 - Cache keys are a SHA-256 of the NUL-joined base key / filename / worker payload; entries are evicted by TTL (`CACHE_TTL_MS`) and by total size (`CACHE_MAX_BYTES`, LRU).
 - Fingerprint (`/dna`) responses are served through the same cache.
+
+## Metrics and the dashboard
+
+Every completed request is counted, keyed by client IP (the socket peer, or the first `X-Forwarded-For` hop when `TRUST_PROXY=true` — only behind a proxy you control):
+
+- request count, files in/out (uploads/downloads count as a file in, streamed responses as a file out)
+- bytes in/out (GB), 4xx/5xx counts
+- latency distribution with p50/p95/p99 per route
+- cache hit/miss rate, antivirus verdicts (clean/infected/blocked)
+- live in-flight gauge (never persisted)
+
+Aggregates live in a SQLite database at `METRICS_DIR` (default `./metrics/metrics.db`, deliberately outside `CACHE_DIR`): hourly per-route counters, daily per-IP counters, hourly latency histogram buckets. Writes are coalesced in memory and flushed in one transaction on a timer — never on the request path. Buckets older than `METRICS_RETENTION_DAYS` (default 35) are swept. See [docs/metrics.md](docs/metrics.md) for the schema and payload.
+
+`GET /metrics` returns one JSON payload with everything the dashboard needs. In production, requests to `/metrics` require `Authorization: Bearer $METRICS_TOKEN` (503 without it, never public by accident); in development the endpoint is open with a boot warning. The dashboard at `/` renders it; `/ip/<addr>` deep-links into per-client stats.
+
+```bash
+curl -s http://localhost:3000/metrics | head -c 400
+curl -s http://localhost:3000/health
+```
 
 ## API overview
 
@@ -58,13 +87,21 @@ All routes accept `GET` (media fetched server-side from `?source=<url>`; client 
 | `GET\|POST /video/dna` | Frame-sequence PDQ fingerprint — `{ algorithm, version, env, fps, count, frames[] }` |
 | `GET\|POST /signature` | Detected file signature — `{ ext, mime }` |
 | `GET\|POST /virus-scan` | ClamAV verdict — `{ isInfected, viruses }` (answers `503` when ClamAV is not configured; infected payloads are rejected with `422` before the handler runs) |
+| `GET /health` | Liveness probe — `{ status, uptimeSeconds, timestamp }` |
+| `GET /metrics` | Metrics payload for the dashboard; bearer-token gated in production (`METRICS_TOKEN`, open in development) |
 | `GET /swagger` | Swagger UI |
 
 ## Quick start
 
 ```bash
-npm install
+npm ci --ignore-scripts
 npm run start:dev        # Nest watch mode on http://localhost:3000
+```
+
+The dashboard dev server (with hot reload and an API proxy):
+
+```bash
+npm run dev -w file-fly-dashboard   # Vite on http://localhost:5173, proxies /metrics and API paths to :3000
 ```
 
 Upload a file for processing:
@@ -103,20 +140,22 @@ curl 'http://localhost:3000/image?source=https%3A%2F%2Fexample.com%2Fphoto.jpg&f
 
 ## Docker
 
-Development stack (watch-mode app + ClamAV with bundled signature databases):
+Development stack (watch-mode app + dashboard + ClamAV with bundled signature databases):
 
 ```bash
 docker compose -f docker-compose.development.yml up --build
-# app on http://localhost:3000; clamd reachable on the compose network (3310), not published
+# app on http://localhost:3000; dashboard on http://localhost:5173 (proxies to the app);
+# clamd reachable on the compose network (3310), not published
 ```
 
-Production image (multi-stage, `node:24-bookworm-slim`, non-root `node` user, cache volume at `/data/cache`):
+Production image (multi-stage, `node:24-bookworm-slim`, non-root `node` user, cache volume at `/data/cache`, metrics volume at `/data/metrics`, dashboard baked in and served at `/`):
 
 ```bash
 docker build -t file-fly .
-docker run -p 3000:3000 -v file-fly-cache:/data/cache \
+docker run -p 3000:3000 -v file-fly-cache:/data/cache -v file-fly-metrics:/data/metrics \
            -e NODE_ENV=production \
            -e CLAMAV_HOST=clamav -e CLAMAV_PORT=3310 \
+           -e METRICS_TOKEN=change-me \
            file-fly
 ```
 
@@ -144,11 +183,17 @@ All configuration is via environment variables. Values are validated with zod at
 | `TESSERACT_RECYCLE_JOBS` | `500` | Recycle an OCR worker after N jobs |
 | `TESSERACT_TIMEOUT_MS` | `60000` | Per-recognition timeout |
 | `FILE_HASH_HEADER_SIZE` | `65536` | Bytes hashed (SHA-512 prefix) for the upload cache key when no `x-file-hash` request header is sent |
+| `METRICS_DIR` | `./metrics` (`/data/metrics` in Docker) | Directory holding `metrics.db` (SQLite); kept outside `CACHE_DIR` on purpose |
+| `METRICS_TOKEN` | unset | Bearer token for `GET /metrics`. Production refuses the route without it (503); development is open |
+| `METRICS_RETENTION_DAYS` | `35` | Days of hourly buckets to keep per route/histogram and daily per-IP buckets |
+| `METRICS_FLUSH_INTERVAL_MS` | `1000` | Flush interval for the in-memory metrics delta buffer |
+| `DASHBOARD_DIR` | `packages/dashboard/dist` (`/app/dashboard` in Docker) | Static root of the prebuilt dashboard; missing dir = dashboard not served |
+| `TRUST_PROXY` | `false` | Honor `X-Forwarded-For` for `request.ip`; set only behind a proxy you control |
 
 ## Testing
 
 ```bash
-npm run test        # unit tests (vitest, serial)
+npm run test        # unit tests (vitest, serial), both workspaces
 npm run test:e2e    # build + e2e tests (fake clamd fixture)
 npm run test:cov    # unit tests with coverage
 npm run test:perf   # opt-in micro-benchmarks (tinybench)
@@ -156,7 +201,7 @@ npm run test:mem    # opt-in memory-regression specs (--expose-gc)
 npm run check       # typecheck + lint + build + unit & e2e tests + knip
 ```
 
-Unit specs match `**/*.spec.ts`; e2e specs match `**/*.e2e-spec.ts`. Test files run serially (`fileParallelism: false`); real-worker smoke tests use fixtures under `assets/`; generated output goes under `test/results/`.
+Unit specs match `**/*.spec.ts` (dashboard: `**/*.spec.tsx`); e2e specs match `**/*.e2e-spec.ts`. Test files run serially (`fileParallelism: false`); real-worker smoke tests use fixtures under `packages/backend/assets/`; generated output goes under `packages/backend/test/results/`.
 
 ## Documentation
 
@@ -165,6 +210,7 @@ Deep-dives live in `docs/`:
 - [docs/dna.md](docs/dna.md) — perceptual fingerprints: endpoints, pipelines, comparison recipes, security notes
 - [docs/ocr.md](docs/ocr.md) — OCR pipeline, query parameters, limits
 - [docs/antivirus.md](docs/antivirus.md) — ClamAV integration, fail-closed behaviour, EICAR testing
+- [docs/metrics.md](docs/metrics.md) — metrics: schema, definitions, payload, security posture
 - [docs/performance.md](docs/performance.md) — benchmark and memory-regression suites
 
 ## Media streaming (audio / video)

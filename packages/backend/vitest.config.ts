@@ -23,7 +23,7 @@ export default defineConfig({
         statements: 100,
       },
     },
-    env: { NODE_ENV: "development" },
+    env: { DASHBOARD_DIR: "test/results/no-such-dashboard", METRICS_DIR: "test/results/metrics", NODE_ENV: "development" },
     // The memory suite has its own runner (vitest.config.mem.ts, --expose-gc).
     exclude: [...configDefaults.exclude, 'test/mem/**'],
     fileParallelism: false,

@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { IpDetailPage } from '../components/IpDetailPage.js';
 
+/** File-based route for the per-IP detail page. */
 export const Route = createFileRoute('/ip/$ip')({
   component: RouteComponent,
 });

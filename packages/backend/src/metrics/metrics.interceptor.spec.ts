@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MetricsInterceptor } from './metrics.interceptor.js';
 
 interface Stub {
+  antiVirus: { enabled: () => boolean };
   cls: {
     bytesIn: () => { get: () => number | undefined };
     bytesOut: () => { get: () => number | undefined };
@@ -28,6 +29,7 @@ interface Stub {
  * @param options.headers - Request headers.
  * @param options.statusCode - Status code for the raw response.
  * @param options.responseContentLength - Value returned by `getHeader('content-length')`.
+ * @param options.antiVirusEnabled - Whether the AV integration is configured; defaults to true.
  * @param options.bytesIn - Cumulative bytes-in counter stored on CLS.
  * @param options.bytesOut - Cumulative bytes-out counter stored on CLS.
  * @param options.files - `1` when a media source was opened, `0` otherwise.
@@ -37,6 +39,7 @@ interface Stub {
  * @returns The stub bundle (context, CLS, metrics mocks, raw).
  */
 const makeStub = (options: {
+  antiVirusEnabled?: boolean;
   bytesIn?: number;
   bytesOut?: number;
   cacheOutcome?: 'hit' | 'miss';
@@ -78,7 +81,14 @@ const makeStub = (options: {
     record: vi.fn(),
   };
 
-  return { cls, context, metrics, raw, request };
+  return {
+    antiVirus: { enabled: () => options.antiVirusEnabled ?? true },
+    cls,
+    context,
+    metrics,
+    raw,
+    request,
+  };
 };
 
 const handler = { handle: () => 'next' } as never;
@@ -89,7 +99,11 @@ const handler = { handle: () => 'next' } as never;
  * @returns The argument passed to `metrics.record`.
  */
 const fire = (stub: Stub) => {
-  const interceptor = new MetricsInterceptor(stub.cls as never, stub.metrics as never);
+  const interceptor = new MetricsInterceptor(
+    stub.cls as never,
+    stub.metrics as never,
+    stub.antiVirus as never,
+  );
   expect(interceptor.intercept(stub.context, handler)).toBe('next');
   stub.raw.emit('close');
   return stub.metrics.record.mock.calls[0]?.[0] as Record<string, unknown>;
@@ -124,7 +138,11 @@ describe('MetricsInterceptor', () => {
   it('ignores /metrics and /health routes entirely', () => {
     for (const route of ['/metrics', '/health']) {
       const stub = makeStub({ routeUrl: route });
-      const interceptor = new MetricsInterceptor(stub.cls as never, stub.metrics as never);
+      const interceptor = new MetricsInterceptor(
+    stub.cls as never,
+    stub.metrics as never,
+    stub.antiVirus as never,
+  );
       expect(interceptor.intercept(stub.context, handler)).toBe('next');
       stub.raw.emit('close');
       expect(stub.metrics.inflightInc).not.toHaveBeenCalled();
@@ -177,6 +195,8 @@ describe('MetricsInterceptor', () => {
       const stub = makeStub({ routeUrl: '/image', statusCode: status });
       expect(fire(stub).scan).toBe(scan);
     }
+    const disabled = makeStub({ antiVirusEnabled: false, routeUrl: '/image', statusCode: 422 });
+    expect(fire(disabled).scan).toBeUndefined();
     expect(fire(makeStub({ fileScan: { isInfected: false }, routeUrl: '/image', statusCode: 201 })).scan).toBe('clean');
     expect(fire(makeStub({ fileScan: { isInfected: true }, routeUrl: '/image', statusCode: 422 })).scan).toBe('infected');
   });

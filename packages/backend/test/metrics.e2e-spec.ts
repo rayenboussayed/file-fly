@@ -94,6 +94,30 @@ describe('Metrics (e2e)', () => {
     expect(after.body.totals.filesIn).toBeGreaterThanOrEqual(1);
   });
 
+  it('returns to zero in-flight after a concurrent burst', async () => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fixture path derived from the FIXTURES_DIR constant
+    const image = fs.readFileSync(IMAGE);
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        request(app.getHttpServer())
+          .post('/image?format=webp&quality=80')
+          .set('content-type', 'image/jpeg')
+          .send(image),
+      ),
+    );
+    expect(results.every((response) => response.status === 201)).toBe(true);
+    const after = await request(app.getHttpServer()).get('/metrics');
+    expect(after.body.inFlight).toBe(0);
+  });
+
+  it('rejects a non-numeric content-length without hanging', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/image')
+      .set('content-type', 'image/jpeg')
+      .set('content-length', 'not-a-number');
+    expect(response.status).toBe(400);
+  });
+
   it('keeps the 404 contract for unknown routes', async () => {
     const response = await request(app.getHttpServer()).get('/definitely-not-a-route');
     expect(response.status).toBe(404);

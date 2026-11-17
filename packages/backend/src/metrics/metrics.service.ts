@@ -10,7 +10,7 @@ import path from 'node:path';
 // eslint-disable-next-line n/no-unsupported-features/node-builtins -- node:sqlite is unflagged on Node >= 22.13 and targets Node 24/26
 import { DatabaseSync } from 'node:sqlite';
 
-import { environment } from '@/environment.js';
+import { environment, isProduction } from '@/environment.js';
 
 /** Current schema version; kept in sync with the DDL below. */
 const SCHEMA_VERSION = 1;
@@ -103,6 +103,7 @@ export interface MetricsSeriesPoint {
   requests: number;
 }
 
+/** Constructor options; every field defaults to the environment schema in production. */
 export interface MetricsServiceOptions {
   /** Database path, or `:memory:`. Defaults to `<METRICS_DIR>/metrics.db`. */
   dbPath?: string;
@@ -182,6 +183,9 @@ const isoDay = (date: Date): string => date.toISOString().slice(0, 10);
 const hourAgo = (hours: number): string => isoHour(new Date(Date.now() - hours * 3_600_000));
 const dayAgo = (days: number): string => isoDay(new Date(Date.now() - days * 86_400_000));
 
+/** Bounded delta buffers: a persistently failing store drops counts rather than grow memory without limit. */
+const MAX_DELTA_KEYS = 10_000;
+
 const zeroTotals = (): MetricsTotals => ({
   avgMs: 0,
   bytesIn: 0,
@@ -223,7 +227,11 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   private readonly logger = new Logger(MetricsService.name);
   private readonly retentionDays: number;
   private retentionTimer?: NodeJS.Timeout;
-  private snapshotCache?: { at: number; value: MetricsSnapshot };
+  private statements?: {
+    hist: ReturnType<DatabaseSync['prepare']>;
+    ip: ReturnType<DatabaseSync['prepare']>;
+    route: ReturnType<DatabaseSync['prepare']>;
+  };
 
   // @Optional(): the interface emits Object as its design paramtype, which
   // Nest would otherwise try to resolve as a provider.
@@ -251,15 +259,20 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     try {
       db.exec('BEGIN IMMEDIATE');
       began = true;
-      const upsertRoute = db.prepare(
-        'INSERT INTO metric_counter (name, route, bucket, count, bytes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name, route, bucket) DO UPDATE SET count = count + excluded.count, bytes = bytes + excluded.bytes',
-      );
-      const upsertIp = db.prepare(
-        'INSERT INTO metric_counter_ip (name, ip, bucket, count, bytes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name, ip, bucket) DO UPDATE SET count = count + excluded.count, bytes = bytes + excluded.bytes',
-      );
-      const upsertHist = db.prepare(
-        'INSERT INTO metric_hist (route, bucket, le, count) VALUES (?, ?, ?, ?) ON CONFLICT(route, bucket, le) DO UPDATE SET count = count + excluded.count',
-      );
+      if (!this.statements) {
+        this.statements = {
+          hist: db.prepare(
+            'INSERT INTO metric_hist (route, bucket, le, count) VALUES (?, ?, ?, ?) ON CONFLICT(route, bucket, le) DO UPDATE SET count = count + excluded.count',
+          ),
+          ip: db.prepare(
+            'INSERT INTO metric_counter_ip (name, ip, bucket, count, bytes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name, ip, bucket) DO UPDATE SET count = count + excluded.count, bytes = bytes + excluded.bytes',
+          ),
+          route: db.prepare(
+            'INSERT INTO metric_counter (name, route, bucket, count, bytes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name, route, bucket) DO UPDATE SET count = count + excluded.count, bytes = bytes + excluded.bytes',
+          ),
+        };
+      }
+      const { hist: upsertHist, ip: upsertIp, route: upsertRoute } = this.statements;
       for (const row of this.deltaRoute.values()) upsertRoute.run(row.name, row.route, row.bucket, row.count, row.bytes);
       for (const row of this.deltaIp.values()) upsertIp.run(row.name, row.ip, row.bucket, row.count, row.bytes);
       for (const row of this.deltaHist.values()) upsertHist.run(row.route, row.bucket, row.le, row.count);
@@ -280,7 +293,6 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
    */
   inflightDec(): void {
     this.inflight = Math.max(0, this.inflight - 1);
-    this.invalidateSnapshot();
   }
 
   /**
@@ -288,7 +300,6 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
    */
   inflightInc(): void {
     this.inflight += 1;
-    this.invalidateSnapshot();
   }
 
   /**
@@ -296,6 +307,9 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
    */
   onApplicationBootstrap(): void {
     if (this.disabled) return;
+    if (!isProduction && !environment.METRICS_TOKEN) {
+      this.logger.warn('METRICS_TOKEN is not set; /metrics is open in development');
+    }
     if (this.flushIntervalMs > 0) {
       this.flushTimer = setInterval(() => { this.safeFlush(); }, this.flushIntervalMs);
       this.flushTimer.unref();
@@ -335,7 +349,6 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     if (record.scan) this.bumpPair(`scan_${record.scan}`, record.route, record.ip, 0, 1);
     this.bumpRoute('duration', record.route, duration, 1);
     this.bumpHist(record.route, duration);
-    this.snapshotCache = undefined;
   }
 
   /**
@@ -343,7 +356,6 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
    * @returns The snapshot; cached for 1 second to absorb dashboard polls.
    */
   snapshot(): MetricsSnapshot {
-    if (this.snapshotCache && Date.now() - this.snapshotCache.at < 1000) return this.snapshotCache.value;
     const base: MetricsSnapshot = {
       generatedAt: new Date().toISOString(),
       inFlight: this.inflight,
@@ -363,7 +375,6 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     base.last24h = this.series24h(db);
     base.perIp = this.perIp(db);
     base.perRoute = this.perRoute(db);
-    this.snapshotCache = { at: Date.now(), value: base };
     return base;
   }
 
@@ -377,7 +388,6 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     db.prepare('DELETE FROM metric_counter WHERE bucket < ?').run(hourAgo(retentionDays * 24));
     db.prepare('DELETE FROM metric_counter_ip WHERE bucket < ?').run(dayAgo(retentionDays));
     db.prepare('DELETE FROM metric_hist WHERE bucket < ?').run(hourAgo(retentionDays * 24));
-    this.snapshotCache = undefined;
   }
 
   private applyHistograms(
@@ -423,6 +433,10 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     const bucket = isoHour(new Date());
     const le = HISTOGRAM_LE.find((bound) => durationMs / 1000 <= bound) ?? 999_999;
     const key = `${route}|${bucket}|${le}`;
+    if (this.deltaHist.size >= MAX_DELTA_KEYS && !this.deltaHist.has(key)) {
+      this.deltaHist.clear();
+      this.logger.warn('metrics histogram delta buffer full; dropping pending counts');
+    }
     const current = this.deltaHist.get(key) ?? { bucket, count: 0, le, route };
     current.count += 1;
     this.deltaHist.set(key, current);
@@ -431,6 +445,10 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   private bumpIp(name: string, ip: string, bytes: number, count: number): void {
     const bucket = isoDay(new Date());
     const key = `${name}|${ip}|${bucket}`;
+    if (this.deltaIp.size >= MAX_DELTA_KEYS && !this.deltaIp.has(key)) {
+      this.deltaIp.clear();
+      this.logger.warn('metrics ip delta buffer full; dropping pending counts');
+    }
     const current = this.deltaIp.get(key) ?? { bucket, bytes: 0, count: 0, ip, name };
     current.count += count;
     current.bytes += bytes;
@@ -445,6 +463,10 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   private bumpRoute(name: string, route: string, bytes: number, count: number): void {
     const bucket = isoHour(new Date());
     const key = `${name}|${route}|${bucket}`;
+    if (this.deltaRoute.size >= MAX_DELTA_KEYS && !this.deltaRoute.has(key)) {
+      this.deltaRoute.clear();
+      this.logger.warn('metrics route delta buffer full; dropping pending counts');
+    }
     const current = this.deltaRoute.get(key) ?? { bucket, bytes: 0, count: 0, name, route };
     current.count += count;
     current.bytes += bytes;
@@ -454,10 +476,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   private close(): void {
     this.db?.close();
     this.db = undefined;
-  }
-
-  private invalidateSnapshot(): void {
-    this.snapshotCache = undefined;
+    this.statements = undefined;
   }
 
   private open(): void {
@@ -497,7 +516,16 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private perIp(db: DatabaseSync): MetricsPerIp[] {
-    const rows = db.prepare('SELECT ip, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter_ip GROUP BY ip, name').all() as unknown as Array<{ bytes: number; count: number; ip: string; name: string; }>;
+    const topIps = db.prepare(
+      "SELECT ip FROM metric_counter_ip WHERE name = 'bytes_out' GROUP BY ip ORDER BY SUM(bytes) DESC LIMIT 50",
+    ).all() as unknown as Array<{ ip: string }>;
+    const candidates = new Set<string>(topIps.map((row) => row.ip));
+    for (const row of this.deltaIp.values()) candidates.add(row.ip);
+    if (candidates.size === 0) return [];
+    const filter = [...candidates].map(() => '?').join(',');
+    // eslint-disable-next-line deslint/no-sql-injection -- the interpolated segment is placeholder marks only (?,?,…); every value binds via parameters
+    const sql = `SELECT ip, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter_ip WHERE ip IN (${filter}) GROUP BY ip, name`;
+    const rows = db.prepare(sql).all(...candidates) as unknown as Array<{ bytes: number; count: number; ip: string; name: string; }>;
     const byIp = new Map<string, MetricsPerIp>();
     const ensure = (ip: string): MetricsPerIp => {
       const current = byIp.get(ip) ?? { bytesIn: 0, bytesOut: 0, filesIn: 0, filesOut: 0, ip, requests: 0 };

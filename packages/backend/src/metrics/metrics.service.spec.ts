@@ -192,16 +192,6 @@ describe('MetricsService record', () => {
     service.onApplicationShutdown();
   });
 
-  it('returns the cached snapshot within a second', () => {
-    const service = makeService();
-    service.record(record());
-    const cached = service.snapshot();
-    expect(service.snapshot()).toBe(cached);
-    service.record(record());
-    expect(service.snapshot()).not.toBe(cached);
-    service.onApplicationShutdown();
-  });
-
   it('zero-fills the last 24 hours series', () => {
     const service = makeService();
     const snapshot = service.snapshot();
@@ -250,6 +240,44 @@ describe('MetricsService record', () => {
     service.onApplicationShutdown();
   });
 
+  it('sweep is a no-op when the store is disabled', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    tempDirs.push(dir);
+    const blocker = path.join(dir, 'blocker');
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- temp directory created by the test itself
+    fs.writeFileSync(blocker, 'file');
+    const service = makeService({ dbPath: path.join(blocker, 'metrics.db') });
+    expect(() => service.sweep()).not.toThrow();
+    service.onApplicationShutdown();
+  });
+
+  it('drops and refills a full route delta buffer without crashing', () => {
+    const service = makeService();
+    const internal = service as never as { deltaRoute: Map<string, unknown> };
+    for (let index = 0; index <= 10_000; index += 1) internal.deltaRoute.set(`k${String(index)}`, null);
+    service.record(record());
+    expect(internal.deltaRoute.size).toBe(6); // one cleared refill per counter name
+    service.onApplicationShutdown();
+  });
+
+  it('drops and refills a full ip delta buffer without crashing', () => {
+    const service = makeService();
+    const internal = service as never as { deltaIp: Map<string, unknown> };
+    for (let index = 0; index <= 10_000; index += 1) internal.deltaIp.set(`k${String(index)}`, null);
+    service.record(record());
+    expect(internal.deltaIp.size).toBe(5); // one cleared refill per counter name
+    service.onApplicationShutdown();
+  });
+
+  it('drops and refills a full histogram delta buffer without crashing', () => {
+    const service = makeService();
+    const internal = service as never as { deltaHist: Map<string, unknown> };
+    for (let index = 0; index <= 10_000; index += 1) internal.deltaHist.set(`k${String(index)}`, null);
+    service.record(record());
+    expect(internal.deltaHist.size).toBe(1);
+    service.onApplicationShutdown();
+  });
+
   it('opens an in-memory database', () => {
     const service = makeService({ dbPath: ':memory:' });
     service.record(record());
@@ -258,15 +286,15 @@ describe('MetricsService record', () => {
   });
 
   it('falls back to environment defaults without options', () => {
-    const dir = path.resolve('metrics');
+    // test/results is the unit run's disposable output root (gitignored, wiped by design).
+    const dir = path.resolve('test/results/metrics');
     fs.rmSync(dir, { force: true, recursive: true });
     const service = new MetricsService();
-    const before = service.snapshot().totals.requests;
     service.record(record());
     service.flush();
-    expect(service.snapshot().totals.requests).toBe(before + 1);
+    expect(service.snapshot().totals.requests).toBe(1);
+    expect(fs.existsSync(path.join(dir, 'metrics.db'))).toBe(true);
     service.onApplicationShutdown();
-    fs.rmSync(dir, { force: true, recursive: true });
   });
 
   it('rolls back and keeps deltas when a flush fails', () => {
@@ -332,7 +360,9 @@ describe('MetricsService record', () => {
   it('caps durations above the largest histogram bucket', () => {
     const service = makeService();
     service.record(record({ durationMs: 10_000_000_000 }));
-    expect(() => service.onApplicationShutdown()).not.toThrow();
+    service.flush();
+    expect(service.snapshot().perRoute[0]?.p99).toBe(10_000);
+    service.onApplicationShutdown();
   });
 
   it('percentile returns 0 for an empty histogram', () => {

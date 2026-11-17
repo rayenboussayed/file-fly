@@ -55,8 +55,11 @@ services:
       - "3000:3000"
 
   dashboard:
-    # Same image as the app service (it carries the root workspace's full
-    # node_modules, including vite and the astryx/tanstack stack).
+    # Same Dockerfile.dev as the app service (its full root node_modules,
+    # vite included, is what Vite needs to run).
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     image: file-fly:dev
     restart: unless-stopped
     working_dir: /app

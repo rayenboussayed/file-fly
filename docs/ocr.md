@@ -63,4 +63,4 @@ request (raw body or source= download)
 
 Env vars: `TESSERACT_DIR`, `TESSERACT_POOL_SIZE`, `TESSERACT_PRELOAD`,
 `TESSERACT_RECYCLE_JOBS`, `TESSERACT_TIMEOUT_MS` (defaults and validation live in
-`src/environment.ts`).
+`packages/backend/src/environment.ts`).
