@@ -1,17 +1,22 @@
-# Development stack for file-fly: Nest app in watch mode + ClamAV.
+# Development stack for file-fly: Nest app in watch mode + React dashboard + ClamAV.
 #
 #   docker compose -f docker-compose.development.yml up --build
 #
 # The app runs the repo's Dockerfile.dev image (`platformatic/node-caged`)
-# with `npm run start:dev` (nest start --watch) and the repo bind-mounted at
+# with `npm run start:dev -w file-fly-backend` (nest start --watch) and the repo bind-mounted at
 # /app, so host edits hot-reload inside the container. Host node_modules are
 # shadowed by an anonymous volume seeded from the image (same glibc ABI).
+# The dashboard runs Vite's dev server on 5173 with the same image (vite is
+# a dev dependency installed in the root workspace); it proxies /metrics and
+# the API routes to the app service, so no CORS is involved in the browser.
 # The ClamAV service is the official clamav/clamav image with the bundled
 # signature DBs; it serves INSTREAM on 3310. POST assets/eicar.com to
 # http://localhost:3000/virus-scan (content-type application/octet-stream) and
 # expect 422 + Eicar-Test-Signature; a clean upload returns 201.
 # clamd's 3310 is deliberately not published: a host clamd may already use it
 # (as it does here). The app reaches clamav over the compose network.
+#
+# App on http://localhost:3000, dashboard on http://localhost:5173
 #
 # Tear down with: docker compose -f docker-compose.development.yml down
 
@@ -30,6 +35,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    image: file-fly:dev
     restart: unless-stopped
     depends_on:
       clamav:
@@ -47,6 +53,28 @@ services:
       - /app/node_modules
     ports:
       - "3000:3000"
+
+  dashboard:
+    # Same image as the app service (it carries the root workspace's full
+    # node_modules, including vite and the astryx/tanstack stack).
+    image: file-fly:dev
+    restart: unless-stopped
+    working_dir: /app
+    command: npm run dev -w file-fly-dashboard -- --host
+    depends_on:
+      - app
+    environment:
+      # Browser loads the SPA from localhost:5173; vite proxies API paths to
+      # the app service, so no CORS is needed.
+      VITE_PROXY_TARGET: http://app:3000
+      CHOKIDAR_USEPOLLING: "true"
+      NPM_CONFIG_UPDATE_NOTIFIER: "false"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/dashboard/node_modules
+    ports:
+      - "5173:5173"
 
 volumes:
   clamav-db: {}

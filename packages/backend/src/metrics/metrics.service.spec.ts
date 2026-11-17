@@ -258,12 +258,15 @@ describe('MetricsService record', () => {
   });
 
   it('falls back to environment defaults without options', () => {
+    const dir = path.resolve('metrics');
+    fs.rmSync(dir, { force: true, recursive: true });
     const service = new MetricsService();
+    const before = service.snapshot().totals.requests;
     service.record(record());
     service.flush();
-    expect(service.snapshot().totals.requests).toBe(1);
+    expect(service.snapshot().totals.requests).toBe(before + 1);
     service.onApplicationShutdown();
-    fs.rmSync(path.resolve('metrics'), { force: true, recursive: true });
+    fs.rmSync(dir, { force: true, recursive: true });
   });
 
   it('rolls back and keeps deltas when a flush fails', () => {

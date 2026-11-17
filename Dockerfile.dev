@@ -20,6 +20,7 @@ USER node
 
 COPY --chown=node:node package.json package-lock.json .npmrc ./
 COPY --chown=node:node packages/backend/package.json packages/backend/package.json
+COPY --chown=node:node packages/dashboard/package.json packages/dashboard/package.json
 # husky (the `prepare` script) is not a dependency; install without lifecycle scripts.
 RUN npm ci --ignore-scripts
 

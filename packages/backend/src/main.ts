@@ -64,8 +64,8 @@ async function bootstrap() {
 }
 
 /**
- *
- * @param instance Description.
+ * Registers the media content-type parsers that accept uploads as raw streams.
+ * @param instance - The Fastify instance to configure.
  */
 function fastify(instance: FastifyInstance) {
   instance.addContentTypeParser(

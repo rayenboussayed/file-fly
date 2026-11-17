@@ -6,7 +6,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CLS_REQ, CLS_RES, ClsInterceptor, ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { DashboardStaticModule } from './dashboard-static.module.js';
 import { isProduction } from './environment.js';
 import { MetricsInterceptor } from './metrics/metrics.interceptor.js';
 import { MetricsModule } from './metrics/metrics.module.js';
@@ -38,6 +38,7 @@ import { WorkerService } from './services/worker.service.js';
       },
     }),
     AudioModule,
+    DashboardStaticModule,
     ImageModule,
     MetricsModule,
     VideoModule,
@@ -53,7 +54,6 @@ import { WorkerService } from './services/worker.service.js';
       useClass: MetricsInterceptor,
     },
     AntiVirusService,
-    AppService,
     CacheJanitorService,
     FileTypeService,
     NormalizedClsService,

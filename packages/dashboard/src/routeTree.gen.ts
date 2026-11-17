@@ -8,70 +8,70 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root';
-import { Route as IndexRouteImport } from './routes/index';
-import { Route as IpIpRouteImport } from './routes/ip.$ip';
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as IpIpRouteImport } from './routes/ip.$ip'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IpIpRoute = IpIpRouteImport.update({
   id: '/ip/$ip',
   path: '/ip/$ip',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute;
-  '/ip/$ip': typeof IpIpRoute;
+  '/': typeof IndexRoute
+  '/ip/$ip': typeof IpIpRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute;
-  '/ip/$ip': typeof IpIpRoute;
+  '/': typeof IndexRoute
+  '/ip/$ip': typeof IpIpRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  '/': typeof IndexRoute;
-  '/ip/$ip': typeof IpIpRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/ip/$ip': typeof IpIpRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/ip/$ip';
-  fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/ip/$ip';
-  id: '__root__' | '/' | '/ip/$ip';
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/ip/$ip'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/ip/$ip'
+  id: '__root__' | '/' | '/ip/$ip'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  IpIpRoute: typeof IpIpRoute;
+  IndexRoute: typeof IndexRoute
+  IpIpRoute: typeof IpIpRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
-      id: '/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ip/$ip': {
-      id: '/ip/$ip';
-      path: '/ip/$ip';
-      fullPath: '/ip/$ip';
-      preLoaderRoute: typeof IpIpRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/ip/$ip'
+      path: '/ip/$ip'
+      fullPath: '/ip/$ip'
+      preLoaderRoute: typeof IpIpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   IpIpRoute: IpIpRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()

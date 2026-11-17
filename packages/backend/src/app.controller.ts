@@ -10,19 +10,11 @@ import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js
 import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
-import { AppService } from './app.service.js';
-
 @Controller()
 export class AppController {
   constructor(
-    private readonly appService: AppService,
     private readonly normalizedCls: NormalizedClsService,
   ) {}
-
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
 
   /**
    * Returns the detected signature of the scanned file (GET).

@@ -28,7 +28,7 @@
     "script:union-to-enum": "node scripts/union-to-enum.js --file node_modules/node-av/dist/constants/formats.d.ts --types DemuxerFormat MuxerFormat --output src/constants/av-formats.ts"
   },
   "dependencies": {
-    "@fastify/static": "^10.1.8",
+    "@fastify/static": "^10.1.10",
     "@nestjs/common": "^12.0.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-fastify": "^12.3.2",

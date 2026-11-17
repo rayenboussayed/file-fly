@@ -5,6 +5,8 @@ import { z } from 'zod';
 const DEFAULT_CACHE_DIR = path.resolve('cache');
 /** Absolute default metrics root, used when `METRICS_DIR` is unset or blank. */
 const DEFAULT_METRICS_DIR = path.resolve('metrics');
+/** Default static root for the dashboard build output, used when `DASHBOARD_DIR` is unset or blank. */
+const DEFAULT_DASHBOARD_DIR = path.resolve('packages/dashboard/dist');
 
 /**
  * Numeric env var handling:
@@ -47,8 +49,10 @@ const EnvironmentSchema = z
     CLAMAV_TIMEOUT_MS: numericFromEnv(60000),
 
     CORS_ORIGIN: z.array(z.url().trim()).optional(),
-    FILE_HASH_HEADER_SIZE: z.coerce.number().int().positive().catch(65536), // 64 KB
+    /** Static root for the dashboard build (`packages/dashboard/dist`); missing dir = dashboard not served. */
+    DASHBOARD_DIR: z.string().trim().min(1).catch(DEFAULT_DASHBOARD_DIR),
 
+    FILE_HASH_HEADER_SIZE: z.coerce.number().int().positive().catch(65536), // 64 KB
     /** Directory holding `metrics.db`; created at startup. Kept out of `CACHE_DIR` on purpose. */
     METRICS_DIR: z.string().trim().min(1).catch(DEFAULT_METRICS_DIR),
     /** Flush interval for the in-memory metric deltas. `0` disables the timer. */

@@ -20,11 +20,11 @@ describe('App (e2e)', () => {
     await fixtures.close();
   });
 
-  it('GET / returns Hello World!', async () => {
-    const response = await request(app.getHttpServer()).get('/');
+  it('GET / serves the dashboard shell when DASHBOARD_DIR is set', async () => {
+    const response = await request(app.getHttpServer()).get('/').set('accept', 'text/html');
 
     expect(response.status).toBe(200);
-    expect(response.text).toBe('Hello World!');
+    expect(response.text).toContain('<div id="root"></div>');
   });
 
   it('returns 404 for an unknown route', async () => {
