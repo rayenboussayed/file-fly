@@ -9,6 +9,6 @@ npm-debug.log
 coverage
 *.log
 .agent-swarm
-assets
-cache
+**/assets
+**/cache
 **/test/results

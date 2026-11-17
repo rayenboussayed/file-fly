@@ -62,8 +62,5 @@
     "typescript": "^6.0.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.2"
-  },
-  "allowScripts": {
-    "node-av@6.2.0": true
   }
 }
