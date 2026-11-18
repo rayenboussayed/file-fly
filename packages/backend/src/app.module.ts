@@ -14,6 +14,7 @@ import { MetricsInterceptor } from './metrics/metrics.interceptor.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { AudioModule } from './resources/audio/audio.module.js';
 import { CsvModule } from './resources/csv/csv.module.js';
+import { DocxModule } from './resources/docx/docx.module.js';
 import { ImageModule } from './resources/image/image.module.js';
 import { VideoModule } from './resources/video/video.module.js';
 import { XlsxModule } from './resources/xlsx/xlsx.module.js';
@@ -52,6 +53,7 @@ import { WorkerService } from './services/worker.service.js';
     }),
     AudioModule,
     CsvModule,
+    DocxModule,
     DashboardStaticModule,
     ImageModule,
     MetricsModule,

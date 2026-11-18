@@ -4,6 +4,7 @@ describe('modules', () => {
   it('can be imported without side effects', async () => {
     await import('./resources/audio/audio.module.js');
     await import('./resources/csv/csv.module.js');
+    await import('./resources/docx/docx.module.js');
     await import('./resources/image/image.module.js');
     await import('./resources/video/video.module.js');
     await import('./resources/xlsx/xlsx.module.js');
