@@ -1,8 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { createRequire } from 'node:module';
 
 import { startFakeClamd, stopFakeClamd } from './fake-clamd.js';
+
+// xlsx@0.18.5 ships CJS without an exports map and no default ESM export;
+// createRequire sidesteps the interop ambiguity the same way the repo does for CJS-only deps.
+const XLSX = createRequire(import.meta.url)('xlsx') as typeof import('xlsx');
 
 export const FIXTURES_DIR = path.join('test', 'results', 'fixtures');
 export const CACHE_DIR = path.join('test', 'results', 'cache');
@@ -36,6 +41,21 @@ export default async function setup() {
   await sharp(Buffer.from(TEXT_SVG)).png().toFile(path.join(FIXTURES_DIR, 'text.png'));
 
   await fs.promises.writeFile(path.join(FIXTURES_DIR, 'not-an-image.txt'), 'hello, this is not media\n');
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.aoa_to_sheet([
+      ['name', 'count'],
+      ['a', 1],
+      ['b', 2],
+    ]),
+    'People',
+  );
+  fs.writeFileSync(
+    path.join(FIXTURES_DIR, 'basic.xlsx'),
+    XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer,
+  );
 
   const clamd = await startFakeClamd(FAKE_CLAMD_PORT);
 

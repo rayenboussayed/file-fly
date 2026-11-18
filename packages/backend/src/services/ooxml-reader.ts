@@ -1,7 +1,7 @@
 import { unzipSync } from 'fflate';
 
 /** Hard limits applied to every OOXML package read, enforced before inflating. */
-export const OOXML_LIMITS = {
+const OOXML_LIMITS = {
   /** Maximum number of zip entries inspected (central directory scan). */
   maxEntries: 10_000,
   /** Maximum uncompressed size of a single entry. */
@@ -9,6 +9,16 @@ export const OOXML_LIMITS = {
   /** Maximum uncompressed bytes of the whole package. */
   maxTotalUncompressed: 256 * 1024 * 1024,
 } as const;
+
+/** Override knobs for the readParts caps; defaults are the shared limits. */
+export interface OoxmlReadLimits {
+  /** Maximum number of zip entries inspected. */
+  maxEntries?: number;
+  /** Maximum uncompressed size of a single entry. */
+  maxEntryUncompressed?: number;
+  /** Maximum uncompressed bytes of the whole package. */
+  maxTotalUncompressed?: number;
+}
 
 /** Error thrown for any OOXML structural problem; maps to HTTP 400/415 at the boundary. */
 export class OoxmlError extends Error {}
@@ -34,18 +44,22 @@ export class OoxmlReader {
   /**
    * Reads every entry of the package into memory.
    * @param buffer - The full, already upload-capped file.
+   * @param limits - Optional per-call cap overrides.
    * @returns The parts, keyed by zip path (e.g. `docProps/core.xml`).
    * @throws {OoxmlError} On structural problems: invalid zip, entry count, or uncompressed size caps.
    */
-  static readParts(buffer: Buffer): Map<string, Buffer> {
+  static readParts(buffer: Buffer, limits?: OoxmlReadLimits): Map<string, Buffer> {
+    const maxEntries = limits?.maxEntries ?? OOXML_LIMITS.maxEntries;
+    const maxEntry = limits?.maxEntryUncompressed ?? OOXML_LIMITS.maxEntryUncompressed;
+    const maxTotal = limits?.maxTotalUncompressed ?? OOXML_LIMITS.maxTotalUncompressed;
     const state = { entries: 0, reason: '', total: 0 };
-    const filter = (info: { compression: number; name: string; originalSize: number; }) => {
+    const filter = (info: { compression: number; name: string; originalSize: number }) => {
       state.entries += 1;
-      if (state.entries > OOXML_LIMITS.maxEntries && !state.reason) {
-        state.reason = `too many entries (over ${OOXML_LIMITS.maxEntries})`;
+      if (state.entries > maxEntries && !state.reason) {
+        state.reason = `too many entries (over ${maxEntries})`;
         return false;
       }
-      if (info.originalSize > OOXML_LIMITS.maxEntryUncompressed && !state.reason) {
+      if (info.originalSize > maxEntry && !state.reason) {
         state.reason = `entry "${info.name}" exceeds the per-entry cap`;
         return false;
       }
@@ -54,7 +68,7 @@ export class OoxmlReader {
         return false;
       }
       state.total += info.originalSize;
-      if (state.total > OOXML_LIMITS.maxTotalUncompressed && !state.reason) {
+      if (state.total > maxTotal && !state.reason) {
         state.reason = 'package exceeds the total uncompressed size cap';
         return false;
       }
