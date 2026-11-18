@@ -1,13 +1,15 @@
 // eslint-disable-next-line n/no-extraneous-import
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { Module } from '@nestjs/common';
+import { Module, RequestMethod } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CLS_REQ, CLS_RES, ClsInterceptor, ClsModule } from 'nestjs-cls';
+import { LoggerModule } from 'nestjs-pino';
 
 import { AppController } from './app.controller.js';
 import { DashboardStaticModule } from './dashboard-static.module.js';
-import { isProduction } from './environment.js';
+import { environment, isProduction } from './environment.js';
+import { buildPinoHttpOptions } from './logging/pino-options.js';
 import { MetricsInterceptor } from './metrics/metrics.interceptor.js';
 import { MetricsModule } from './metrics/metrics.module.js';
 import { AudioModule } from './resources/audio/audio.module.js';
@@ -22,6 +24,15 @@ import { WorkerService } from './services/worker.service.js';
 @Module({
   controllers: [AppController],
   imports: [
+    LoggerModule.forRoot({
+      // middie strips the mount path before pino-http sees it, so route-aware
+      // exclusion must happen at the Nest middleware layer, not autoLogging.
+      exclude: [{ method: RequestMethod.ALL, path: '/health' }],
+      pinoHttp: buildPinoHttpOptions({
+        isProduction,
+        level: environment.LOG_LEVEL,
+      }),
+    }),
     ClsModule.forRoot({
       global: true,
       interceptor: {

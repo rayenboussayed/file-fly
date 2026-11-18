@@ -5,7 +5,6 @@ import './undici.js';
 // eslint-disable-next-line n/no-extraneous-import
 import type { FastifyInstance } from 'fastify';
 
-import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -17,6 +16,7 @@ import {
   SwaggerModule,
 } from '@nestjs/swagger';
 import { supportedMimeTypes } from 'file-type';
+import { Logger } from 'nestjs-pino';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
 
@@ -24,8 +24,9 @@ import * as AppHeaders from '@/constants/header.js';
 
 import { AppModule } from './app.module.js';
 import { environment, isProduction } from './environment.js';
+import { bootstrapLogger } from './logging/bootstrap-logger.js';
 
-const logger = new Logger('bootstrap');
+const logger = bootstrapLogger;
 
 // A stray rejection must never kill the media streaming process.
 process.on('unhandledRejection', (reason) => {
@@ -42,7 +43,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ trustProxy: environment.TRUST_PROXY === true }),
+    { bufferLogs: true },
   );
+  // Route Nest's built-in Logger through pino (request context included).
+  app.useLogger(app.get(Logger));
   // Flushes pending metrics on SIGTERM (metrics.db) and lets Nest close
   // servers cleanly instead of the default blunt exit.
   app.enableShutdownHooks();

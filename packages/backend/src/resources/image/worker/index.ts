@@ -2,8 +2,11 @@ import { workerData } from 'node:worker_threads';
 
 import type { ImageWorkerData } from '../type.js';
 
+import { createWorkerLogger } from '../../../logging/worker-logger.js';
 import { metadata, stats } from './inspect.js';
 import { Processor } from './processor.js';
+
+const logger = createWorkerLogger();
 
 const data: ImageWorkerData = workerData;
 
@@ -50,7 +53,7 @@ export function startImageWorker() {
   return job.then(
     () => finishWorker(0),
     (error: unknown) => {
-      console.error(error);
+      logger.error({ err: error }, 'worker failed');
       finishWorker(1);
     },
   );

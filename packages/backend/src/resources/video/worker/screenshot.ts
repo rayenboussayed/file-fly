@@ -10,7 +10,10 @@ import { CACHE_DIR } from '@/constants/fs.js';
 
 import type { VideoWorkerData } from '../type.js';
 
+import { createWorkerLogger } from '../../../logging/worker-logger.js';
 import { screenshotBoundary, writePartHeader, writeTerminator } from '../multipart.js';
+
+const logger = createWorkerLogger();
 
 const data: VideoWorkerData = workerData;
 
@@ -57,7 +60,7 @@ export async function screenshot(frames: number[]) {
           written += 1;
         }
       } catch (error) {
-        console.warn(`screenshot frame ${requested} failed:`, error);
+        logger.warn({ err: error, frame: requested }, 'screenshot frame failed');
       }
     }
 

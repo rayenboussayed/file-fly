@@ -2,9 +2,12 @@ import { workerData } from 'node:worker_threads';
 
 import type { AudioWorkerData } from '../type.js';
 
+import { createWorkerLogger } from '../../../logging/worker-logger.js';
 import { dna } from './dna.js';
 import { metadata, stats } from './inspect.js';
 import { processMedia } from './processor.js';
+
+const logger = createWorkerLogger();
 
 const data: AudioWorkerData = workerData;
 
@@ -54,7 +57,7 @@ export function startAudioWorker() {
   return job.then(
     () => finishWorker(0),
     (error: unknown) => {
-      console.error(error);
+      logger.error({ err: error }, 'worker failed');
       finishWorker(1);
     },
   );
