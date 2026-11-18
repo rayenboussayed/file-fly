@@ -1,12 +1,9 @@
-import type { Readable } from 'node:stream';
-
 import {
   BadRequestException,
   Injectable,
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
-import { XMLParser } from 'fast-xml-parser';
 import { fileTypeFromBuffer } from 'file-type';
 import { superjson } from 'jutilities/json';
 
@@ -14,8 +11,10 @@ import { environment } from '@/environment.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { parseOoxmlMetadata } from '@/services/ooxml-meta.js';
 import { OoxmlError, OoxmlReader } from '@/services/ooxml-reader.js';
+import { attr, collectByKey, collectRelationships, textOf, walkXml, xml } from '@/services/ooxml-xml.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream } from '@/utils/buffer.js';
+import { hyperlinkUrlOk } from '@/utils/hyperlinks.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
 import { DOCX_MIME, type DocxBuildType } from './schema.js';
@@ -58,7 +57,7 @@ const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
   if (!stream) {
     throw new BadRequestException({ code: 'DOCX_NO_SOURCE', message: 'DOCX body is missing' });
   }
-  return bufferStream(stream as Readable, environment.CLAMAV_MAX_BYTES);
+  return bufferStream(stream, environment.CLAMAV_MAX_BYTES);
 };
 
 /**
@@ -74,84 +73,6 @@ const assertDocxSignature = async (buffer: Buffer): Promise<void> => {
   }
 };
 
-const xml = new XMLParser({
-  ignoreAttributes: false,
-  parseTagValue: false,
-  processEntities: false,
-  removeNSPrefix: true,
-  trimValues: true,
-});
-
-const attr = (value: unknown, name: string): string => {
-  if (value && typeof value === 'object') {
-    const inner = (value as Record<string, unknown>)[`@_${name}`];
-    if (typeof inner === 'string') return inner;
-  }
-  return '';
-};
-
-/**
- * Depth-first walk of a parsed XML tree; visits every key/value pair.
- * @param node - The parsed XML node (or subtree).
- * @param visit - Callback per key/value pair; may throw to abort the walk.
- */
-const walkXml = (node: unknown, visit: (key: string, value: unknown) => void): void => {
-  if (node === null || node === undefined) return;
-  if (Array.isArray(node)) {
-    for (const item of node) walkXml(item, visit);
-    return;
-  }
-  if (typeof node !== 'object') return;
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-    visit(key, value);
-    walkXml(value, visit);
-  }
-};
-
-/**
- * Every element under a given key, anywhere in the tree.
- * @param node - The parsed XML node (or subtree).
- * @param key - The local (namespace-stripped) element name, e.g. `p`, `tbl`, `tr`.
- * @returns The matched elements, in document order.
- */
-const collectByKey = (node: unknown, key: string): unknown[] => {
-  const found: unknown[] = [];
-  walkXml(node, (entryKey, value) => {
-    if (entryKey !== key) return;
-    for (const item of Array.isArray(value) ? value : [value]) found.push(item);
-  });
-  return found;
-};
-
-/**
- * Concatenated text of every <w:t> under a node (attributes ignored).
- * @param node - The parsed XML node (or subtree).
- * @returns The concatenated string.
- */
-/**
- * A <w:t> node may be a plain string or { '#text': string } when attributes are kept.
- * @param value - The <w:t> node value.
- * @returns The text, or an empty string.
- */
-const textValue = (value: unknown): string => {
-  if (typeof value === 'string') return value;
-  if (value && typeof value === 'object') {
-    const inner = (value as Record<string, unknown>)['#text'];
-    if (inner !== undefined) return String(inner);
-  }
-  return '';
-};
-
-const textOf = (node: unknown): string => {
-  const parts: string[] = [];
-  walkXml(node, (key, value) => {
-    if (key !== 't') return;
-    const text = textValue(value);
-    if (text !== '') parts.push(text);
-  });
-  return parts.join('');
-};
-
 const paragraphOf = (entry: unknown) => {
   const record = (entry ?? {}) as Record<string, unknown>;
   const pPr = (record['pPr'] ?? {}) as Record<string, unknown>;
@@ -164,7 +85,10 @@ const paragraphOf = (entry: unknown) => {
 
 const cellTextOf = (cell: unknown): string => textOf(cell);
 
-const extractDocumentXml = (documentXml: string, relationships: Map<string, string>) => {
+const extractDocumentXml = (
+  documentXml: string,
+  relationships: Map<string, { external: boolean; target: string }>,
+) => {
   // fast-xml-parser does not throw on malformed XML; garbage input yields garbage cells,
   // which callers handle by their own caps and output shape checks.
   const parsed = xml.parse(documentXml) as Record<string, unknown>;
@@ -198,7 +122,8 @@ const extractDocumentXml = (documentXml: string, relationships: Map<string, stri
     const record = entry as Record<string, unknown>;
     const id = attr(record, 'id');
     const anchor = attr(record, 'anchor');
-    const url = relationships.get(id) ?? (anchor ? `#${anchor}` : undefined);
+    const rel = relationships.get(id);
+    const url = (rel?.external ? rel.target : undefined) ?? (anchor ? `#${anchor}` : undefined);
     return { text: textOf(record), url };
   });
 
@@ -220,41 +145,6 @@ const extractDocumentXml = (documentXml: string, relationships: Map<string, stri
     tables,
     text: lines.join('\n'),
   };
-};
-
-/**
- * Maps r:id to Target for the word relationships part.
- * @param relsXml - The raw rels XML, or undefined.
- * @returns The id-to-url map for external relationships.
- */
-const collectRelationships = (relsXml: string | undefined): Map<string, string> => {
-  const map = new Map<string, string>();
-  if (relsXml === undefined) return map;
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = xml.parse(relsXml) as Record<string, unknown>;
-  } catch {
-    return map;
-  }
-  for (const rel of collectByKey(parsed, 'Relationship')) {
-    const record = rel as Record<string, unknown>;
-    const id = attr(record, 'Id');
-    const target = attr(record, 'Target');
-    const mode = attr(record, 'TargetMode');
-    if (id !== '' && target !== '' && mode === 'External') map.set(id, target);
-  }
-  return map;
-};
-
-/** URL schemes allowed for generated hyperlinks; Word opens file:/javascript:/data: links. */
-const ALLOWED_SCHEMES = new Set(['http', 'https', 'mailto']);
-
-const hyperlinkUrlOk = (url: string): boolean => {
-  try {
-    return ALLOWED_SCHEMES.has(new URL(url).protocol.replace(/:$/, '').toLowerCase());
-  } catch {
-    return false;
-  }
 };
 
 /**
@@ -478,7 +368,19 @@ export class DocxService {
     const stream = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
       workerData: { operation: 'build', payload: body },
     });
-    return bufferStream(stream as Readable, environment.CLAMAV_MAX_BYTES);
+    const bytes = await bufferStream(stream, environment.CLAMAV_MAX_BYTES);
+    // Defense in depth: a worker can exit 0 with truncated bytes (flush race); refuse a corrupt document.
+    try {
+      const parts = OoxmlReader.readParts(bytes);
+      if (!parts.has('word/document.xml')) {
+        throw new Error('missing word/document.xml');
+      }
+    } catch (error) {
+      const wrapped = new Error('docx builder produced an invalid document');
+      (wrapped as Error & { cause?: unknown }).cause = error;
+      throw wrapped;
+    }
+    return bytes;
   }
 
   /**

@@ -48,6 +48,11 @@ const makeService = (body: Buffer, contentType = 'application/vnd.openxmlformats
   return { cls, service: new DocxService(cls as never, workerService as never), workerService };
 };
 
+const buildPresentationSafe = async (): Promise<Buffer> => {
+  const { Document, Packer } = await import('docx');
+  return Packer.toBuffer(new Document({ sections: [{ children: [] }] }));
+};
+
 describe('DocxService.build', () => {
   it('sets the cache key and spawns the worker', async () => {
     const setCacheKey = vi.fn();
@@ -58,7 +63,8 @@ describe('DocxService.build', () => {
       sourceDirection: () => ({ set: () => undefined }),
       sourceStream: () => ({ get: () => stream, set: () => undefined }),
     };
-    const workerService = { createWorker: vi.fn(async () => Readable.from([Buffer.from('ok')])) };
+    const valid = await buildPresentationSafe();
+    const workerService = { createWorker: vi.fn(async () => Readable.from([valid])) };
     const service = new DocxService(cls as never, workerService as never);
     await service.build({ sections: [{ children: [] }] });
     expect(setCacheKey).toHaveBeenCalledOnce();
@@ -73,7 +79,8 @@ describe('DocxService.build', () => {
       sourceDirection: () => ({ set: () => undefined }),
       sourceStream: () => ({ get: () => Readable.from([Buffer.from('PK')]), set: () => undefined }),
     };
-    const workerService = { createWorker: vi.fn(async () => Readable.from([Buffer.from('ok')])) };
+    const valid = await buildPresentationSafe();
+    const workerService = { createWorker: vi.fn(async () => Readable.from([valid])) };
     const service = new DocxService(cls as never, workerService as never);
     const payload = { metadata: { title: 'x' }, sections: [{ children: [] }] };
     await service.build(payload);

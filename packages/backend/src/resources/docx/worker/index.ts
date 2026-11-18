@@ -4,6 +4,7 @@ import { workerData } from 'node:worker_threads';
 import type { DocxBuildType } from '../schema.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
+import { OoxmlReader } from '../../../services/ooxml-reader.js';
 import { buildBlock, buildSectionOptions } from '../elements.js';
 
 const logger = createWorkerLogger();
@@ -118,8 +119,13 @@ if (data.operation !== 'build') {
 
   Packer.toBuffer(document)
     .then((buffer) => {
-      process.stdout.write(buffer);
-      finishWorker(0);
+      // Refuse to emit a corrupt document: a valid container is the only acceptable output.
+      const parts = OoxmlReader.readParts(buffer);
+      if (!parts.has('word/document.xml')) {
+        throw new Error('missing word/document.xml in output');
+      }
+      // Exit only once the bytes are flushed; an early exit(0) would truncate the output.
+      process.stdout.write(buffer, () => finishWorker(0));
       return buffer;
     })
     .catch((error: unknown) => {
