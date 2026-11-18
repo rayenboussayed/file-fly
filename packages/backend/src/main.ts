@@ -42,7 +42,9 @@ process.on('uncaughtException', (error) => {
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ trustProxy: environment.TRUST_PROXY === true }),
+    // The JSON `/build` routes are the first parsed-body endpoints; pin an
+    // explicit cap instead of inheriting Fastify's 1 MiB default.
+    new FastifyAdapter({ bodyLimit: 16 * 1024 * 1024, trustProxy: environment.TRUST_PROXY === true }),
     { bufferLogs: true },
   );
   // Route Nest's built-in Logger through pino (request context included).
@@ -73,7 +75,7 @@ async function bootstrap() {
  */
 function fastify(instance: FastifyInstance) {
   instance.addContentTypeParser(
-    [...supportedMimeTypes, 'application/octet-stream'],
+    [...supportedMimeTypes, 'application/octet-stream', 'text/csv'],
     (request, _, done) => {
       if (request.method.toUpperCase() === 'GET') return done(null, request.raw);
       const contentLength = Number.parseInt(

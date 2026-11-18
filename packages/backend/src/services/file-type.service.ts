@@ -13,8 +13,45 @@ export class FileTypeService {
     return mime.startsWith('audio/');
   }
 
+  /**
+   * Whether the mime is csv text. Content-level checks happen in the csv module;
+   * file-type cannot sniff csv, so this matches on the declared mime only.
+   * @param mime - Detected or declared content type.
+   * @returns True for text/csv.
+   */
+  isCsv(mime: string) {
+    return mime === 'text/csv';
+  }
+
+  /**
+   * Whether the mime is an office or PDF document the document pipeline accepts.
+   * @param mime - Detected content type (e.g. from the parser).
+   * @returns True for docx, pptx and pdf mimes.
+   */
+  isDocument(mime: string) {
+    return (
+      mime ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      mime ===
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      mime === 'application/pdf'
+    );
+  }
+
   isImage(mime: string) {
     return mime.startsWith('image/');
+  }
+
+  /**
+   * Whether the mime is a spreadsheet the xlsx pipeline accepts.
+   * @param mime - Detected content type (e.g. from the parser).
+   * @returns True for the OOXML spreadsheet mime.
+   */
+  isSpreadsheet(mime: string) {
+    return (
+      mime ===
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
   }
 
   isVideo(mime: string) {

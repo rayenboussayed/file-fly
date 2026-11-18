@@ -11,6 +11,26 @@ describe('FileTypeService', () => {
     expect(service.isImage('image/png')).toBe(true);
     expect(service.isVideo('video/mp4')).toBe(true);
     expect(service.isAudio('text/plain')).toBe(false);
+    expect(service.isDocument('application/pdf')).toBe(true);
+    expect(
+      service.isDocument(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ),
+    ).toBe(true);
+    expect(
+      service.isDocument(
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      ),
+    ).toBe(true);
+    expect(service.isDocument('application/zip')).toBe(false);
+    expect(
+      service.isSpreadsheet(
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ),
+    ).toBe(true);
+    expect(service.isSpreadsheet('application/pdf')).toBe(false);
+    expect(service.isCsv('text/csv')).toBe(true);
+    expect(service.isCsv('text/plain')).toBe(false);
   });
 
   it('reads and stores a signature', async () => {

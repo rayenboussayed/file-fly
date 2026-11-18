@@ -56,7 +56,7 @@ export async function bootApp(): Promise<NestFastifyApplication> {
 
   const instance = app.getHttpAdapter().getInstance() as FastifyInstance;
   instance.addContentTypeParser(
-    [...supportedMimeTypes, 'application/octet-stream'],
+    [...supportedMimeTypes, 'application/octet-stream', 'text/csv'],
     (request, _, done) => {
       if (request.method.toUpperCase() === 'GET') return done(null, request.raw);
       const contentLength = Number.parseInt(
