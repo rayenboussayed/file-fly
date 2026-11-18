@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { LoggerOptions } from 'pino';
 import type { Options as PinoHttpOptions } from 'pino-http';
+import type { PrettyOptions } from 'pino-pretty';
 
 /**
  * Inputs for the pino configuration builders.
@@ -73,7 +74,7 @@ export function buildPinoHttpOptions(
     ...buildPinoOptions(environment),
     ...(isProduction
       ? {}
-      : { transport: { options: { singleLine: true }, target: 'pino-pretty' } }),
+      : { transport: { options: { singleLine: true } satisfies PrettyOptions, target: 'pino-pretty' } }),
     serializers: { req: serializeRequest, res: serializeResponse },
   };
 }
