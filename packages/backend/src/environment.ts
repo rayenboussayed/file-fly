@@ -53,6 +53,12 @@ const EnvironmentSchema = z
     DASHBOARD_DIR: z.string().trim().min(1).catch(DEFAULT_DASHBOARD_DIR),
 
     FILE_HASH_HEADER_SIZE: z.coerce.number().int().positive().catch(65536), // 64 KB
+    /** pino log level; unset (or blank) = `info` in production, `debug` otherwise. Invalid values are rejected at boot. */
+    LOG_LEVEL: z.preprocess(
+      (value) =>
+        typeof value === 'string' && value.trim().length === 0 ? undefined : value,
+      z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
+    ),
     /** Directory holding `metrics.db`; created at startup. Kept out of `CACHE_DIR` on purpose. */
     METRICS_DIR: z.string().trim().min(1).catch(DEFAULT_METRICS_DIR),
     /** Flush interval for the in-memory metric deltas. `0` disables the timer. */

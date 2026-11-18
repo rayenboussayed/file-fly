@@ -114,6 +114,21 @@ describe('environment', () => {
     await expect(importEnvironment()).rejects.toThrow();
   });
 
+  it('leaves LOG_LEVEL unset and accepts a valid level', async () => {
+    vi.stubEnv('LOG_LEVEL', '');
+    const unset = await importEnvironment();
+    expect(unset.environment.LOG_LEVEL).toBeUndefined();
+
+    vi.stubEnv('LOG_LEVEL', 'warn');
+    const set = await importEnvironment();
+    expect(set.environment.LOG_LEVEL).toBe('warn');
+  });
+
+  it('rejects an invalid LOG_LEVEL', async () => {
+    vi.stubEnv('LOG_LEVEL', 'chatty');
+    await expect(importEnvironment()).rejects.toThrow();
+  });
+
   it('falls back to the derived TESSERACT_DIR for a blank override', async () => {
     vi.stubEnv('CACHE_DIR', '.cache-test/env-cache');
     vi.stubEnv('TESSERACT_DIR', '   ');
