@@ -62,5 +62,8 @@
   },
   "allowScripts": {
     "node-av@6.2.0": true
+  },
+  "overrides": {
+    "image-size": "^2.1.0"
   }
 }
