@@ -171,3 +171,100 @@ describe('ModelService primitive modes', () => {
     }
   });
 });
+
+describe('ModelService with animated/skinned documents and adversarial graphs', () => {
+  it('extracts animations and skins from a document that has them', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+
+    const positionAccessor = doc.createAccessor('positions')
+      .setType('VEC3')
+      .setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]))
+      .setBuffer(buffer);
+    const jointsAccessor = doc.createAccessor('joints')
+      .setType('VEC4')
+      .setNormalized(false)
+      .setArray(new Uint16Array([0, 0, 0, 0]))
+      .setBuffer(buffer);
+    const weightsAccessor = doc.createAccessor('weights')
+      .setType('VEC4')
+      .setArray(new Float32Array([1, 0, 0, 0]))
+      .setBuffer(buffer);
+    const ibmAccessor = doc.createAccessor('ibm')
+      .setType('MAT4')
+      .setArray(new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]))
+      .setBuffer(buffer);
+    const mesh = doc.createMesh('SkinnedMesh').addPrimitive(
+      doc.createPrimitive()
+        .setAttribute('POSITION', positionAccessor)
+        .setAttribute('JOINTS_0', jointsAccessor)
+        .setAttribute('WEIGHTS_0', weightsAccessor),
+    );
+
+    const jointNode = doc.createNode('Joint');
+    const scene = doc.createScene('Scene');
+    const skin = doc.createSkin('Skin').addJoint(jointNode).setInverseBindMatrices(ibmAccessor);
+
+    const skinnedNode = doc.createNode('Animated').setMesh(mesh).setSkin(skin).setTranslation([0, 0, 0]);
+    scene.addChild(skinnedNode).addChild(jointNode);
+
+    const times = doc.createAccessor('times').setType('SCALAR').setArray(new Float32Array([0, 1])).setBuffer(buffer);
+    const translations = doc.createAccessor('translations')
+      .setType('VEC3')
+      .setArray(new Float32Array([0, 0, 0, 10, 0, 0]))
+      .setBuffer(buffer);
+    const sampler = doc.createAnimationSampler()
+      .setInput(times)
+      .setOutput(translations)
+      .setInterpolation('LINEAR');
+    const channel = doc.createAnimationChannel()
+      .setTargetNode(jointNode)
+      .setTargetPath('translation')
+      .setSampler(sampler);
+    doc.createAnimation('Slide').addChannel(channel).addSampler(sampler);
+
+    const bytes = await new NodeIO().writeBinary(doc);
+    const { service } = makeService(Buffer.from(bytes));
+    const extract = await service.extract();
+    expect(extract.animations).toEqual([
+      expect.objectContaining({ channels: 1, name: 'Slide', samplers: 1 }),
+    ]);
+    expect(extract.skins).toEqual([expect.objectContaining({ joints: 1, name: 'Skin' })]);
+  });
+
+  it('answers 400 MODEL_TOO_COMPLEX against scene fan-out', async () => {
+    // Many scenes re-walk the same subtree; the emitted JSON explodes.
+    const nodes = [];
+    for (let i = 0; i < 200; i += 1) {
+      nodes.push(i < 199 ? { children: [i + 1], name: `n${i}` } : { name: `n${i}` });
+    }
+    // Each scene re-walks the depth-capped chain (33 emissions); 400 scenes exceed the 10 000-node cap.
+    const json = {
+      asset: { version: '2.0' },
+      nodes,
+      scenes: Array.from({ length: 400 }, () => ({ nodes: [0] })),
+    };
+    const jsonBytes = Buffer.from(JSON.stringify(json));
+    const pad = (4 - (jsonBytes.length % 4)) % 4;
+    const jsonChunk = Buffer.concat([
+      Buffer.alloc(4),
+      Buffer.from('JSON'),
+      jsonBytes,
+      Buffer.alloc(pad, 0x20),
+    ]);
+    jsonChunk.writeUInt32LE(jsonBytes.length + pad, 0);
+    const body = Buffer.concat([
+      Buffer.from('glTF'),
+      Buffer.from([2, 0, 0, 0]),
+      Buffer.alloc(4),
+      jsonChunk,
+    ]);
+    body.writeUInt32LE(body.length, 8);
+
+    const { service } = makeService(body);
+    await expect(service.extract()).rejects.toMatchObject({
+      response: { code: 'MODEL_TOO_COMPLEX' },
+    });
+  });
+});

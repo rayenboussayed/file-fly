@@ -80,3 +80,75 @@ describe('FileParserInterceptor', () => {
     store; // use
   });
 });
+describe('FileParserInterceptor cache keys', () => {
+  const setup = async (overrides: {
+    direction?: string;
+    headers?: Record<string, string>;
+  }) => {
+    const { PassThrough } = await import('node:stream');
+    const source = new PassThrough();
+    source.end(Buffer.from('hello world, this is a deterministic payload for hashing'));
+    const request = {
+      headers: { 'content-length': '42', ...overrides.headers },
+      method: 'POST',
+      query: { q: '1' },
+      raw: source,
+      signal: new AbortController().signal,
+      url: '/upload',
+    };
+    const store = new Map<symbol, unknown>();
+    store.set(CLS_SOURCE_STREAM, request.raw);
+    if (overrides.direction !== undefined) store.set(CLS_SOURCE_DIRECTION, overrides.direction);
+    const cls = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cacheKey: () => ({ get: () => store.get(CLS_CACHE_KEY), set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fileHash: () => ({ get: () => store.get(CLS_FILE_HASH), set: (v: any) => store.set(CLS_FILE_HASH, v) }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fileSignature: () => ({ get: () => store.get(CLS_FILE_SIGNATURE), set: (v: any) => store.set(CLS_FILE_SIGNATURE, v) }),
+      request: () => request,
+      response: () => ({ header: () => undefined }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sourceDirection: () => ({ get: () => store.get(CLS_SOURCE_DIRECTION), set: (v: any) => store.set(CLS_SOURCE_DIRECTION, v) }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sourceStream: () => ({ get: () => store.get(CLS_SOURCE_STREAM), set: (v: any) => store.set(CLS_SOURCE_STREAM, v) }),
+    };
+    const fileTypeService = { signature: vi.fn(async () => ({ ext: 'png', mime: 'image/png' })) };
+    const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
+    const { of } = await import('rxjs');
+    const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
+    await interceptor.intercept(undefined as never, { handle: () => of('done') } as never);
+    return { request, store };
+  };
+
+  it('computes the file hash from the stream prefix when the client does not supply one', async () => {
+    const { store } = await setup({});
+    const hash = store.get(CLS_FILE_HASH);
+    expect(typeof hash).toBe('string');
+    expect(String(hash).length).toBeGreaterThan(20);
+    expect(store.get(CLS_CACHE_KEY)).toBeDefined();
+    // deterministic: same bytes produce the same hash
+    const { store: again } = await setup({});
+    expect(again.get(CLS_FILE_HASH)).toBe(hash);
+  });
+
+  it('prefers the client-supplied hash when present', async () => {
+    const { store } = await setup({ headers: { 'x-file-hash': 'client-supplied-hash' } });
+    expect(store.get(CLS_FILE_HASH)).toBe('client-supplied-hash');
+  });
+
+  it('uses the client hash for downloads instead of hashing the payload', async () => {
+    const { store } = await setup({
+      direction: 'download',
+      headers: { 'x-file-hash': 'client-download-hash' },
+    });
+    expect(store.get(CLS_FILE_HASH)).toBe('client-download-hash');
+    expect(store.get(CLS_CACHE_KEY)).toBeDefined();
+  });
+
+  it('download without a client hash still produces a cache key but no file hash', async () => {
+    const { store } = await setup({ direction: 'download' });
+    expect(store.get(CLS_FILE_HASH)).toBeUndefined();
+    expect(store.get(CLS_CACHE_KEY)).toBeDefined();
+  });
+});

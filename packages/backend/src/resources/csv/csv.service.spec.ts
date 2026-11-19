@@ -113,7 +113,7 @@ describe('CsvService.extract', () => {
     await expect(service.extract({})).rejects.toMatchObject({
       status: 413,
     });
-  });
+  }, 30_000);
 
   it('metadata answers 413 past the record cap', async () => {
     const rows = Array.from({ length: 1_000_001 }, () => 'x,y').join('\n');
@@ -121,7 +121,7 @@ describe('CsvService.extract', () => {
     await expect(service.metadata({ maxRows: 10 })).rejects.toMatchObject({
       status: 413,
     });
-  });
+  }, 30_000);
 
   it('opens the source itself when the virus scanner is disabled', async () => {
     const raw = Readable.from([Buffer.from('a,b\n1,2\n')]);

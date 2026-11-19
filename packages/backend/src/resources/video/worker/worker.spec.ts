@@ -1,0 +1,130 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { Readable, Writable } from 'node:stream';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const tinyVideo = () =>
+   
+  fs.readFileSync(path.join('assets', 'videos', 'tiny.mp4'));
+
+const originalStdin = process.stdin;
+const originalStdout = process.stdout;
+
+/** Replaces process.stdin with a replay of the tiny fixture. */
+const stubStdin = () => {
+  Object.defineProperty(process, 'stdin', { value: Readable.from([tinyVideo()]), writable: true });
+};
+
+/**
+ * Replaces process.stdout with a sink; returns the collected chunks.
+ * @returns The collected stdout chunks.
+ */
+const stubStdout = (): Buffer[] => {
+  const chunks: Buffer[] = [];
+  const stdout = new Writable({
+    write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+      chunks.push(Buffer.from(chunk as Buffer));
+      callback();
+    },
+  });
+  Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
+  return chunks;
+};
+
+const waitForWorker = (ms = 5000) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+/**
+ * Imports the worker module fresh with the given workerData.
+ * @param workerData - The worker payload (operation + inputFormat).
+ */
+const importWorker = async (workerData: Record<string, unknown>) => {
+  vi.resetModules();
+  vi.doMock('node:worker_threads', () => ({ workerData }));
+  await import('./index.js');
+};
+
+describe('video worker', () => {
+  beforeEach(() => {
+    vi.stubEnv('FILE_FLY_WORKER', '0'); // run in-process; finishWorker is a no-op
+    stubStdin();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    vi.unstubAllEnvs();
+  });
+
+  it('metadata emits a parseable probe result', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'metadata' });
+    await waitForWorker();
+    const lines = Buffer.concat(chunks).toString('utf8').trim().split('\n').filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    const parsed = JSON.parse(lines[0] as string) as {
+      duration: number;
+      format: string;
+      streams: Array<{ codec: number }>;
+    };
+    expect(parsed.format).toContain('mov');
+    expect(parsed.duration).toBeGreaterThan(0);
+    expect(parsed.streams.length).toBeGreaterThan(0);
+  }, 30000);
+
+  it('stats emits a parseable stats result', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'stats' });
+    await waitForWorker();
+    const lines = Buffer.concat(chunks).toString('utf8').trim().split('\n').filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    const parsed = JSON.parse(lines[0] as string) as {
+      streams: Array<{ codec: number; height: number; width: number; }>;
+    };
+    expect(parsed.streams.some((stream) => stream.height === 120)).toBe(true);
+  }, 30000);
+
+  it('dna emits a PDQ hash sequence', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'dna' });
+    await waitForWorker(10_000);
+    const lines = Buffer.concat(chunks).toString('utf8').trim().split('\n').filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    const parsed = JSON.parse(lines[0] as string) as { algorithm: string; fps: number; frames: unknown[]; };
+    expect(parsed.algorithm).toBe('vid-pdq');
+    expect(parsed.fps).toBe(2);
+    expect(parsed.frames.length).toBeGreaterThan(0);
+  }, 30000);
+
+  it('screenshot emits a multipart stream containing a JPEG frame', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'screenshot', payload: { frames: [0] } });
+    await waitForWorker(10_000);
+    const out = Buffer.concat(chunks);
+    expect(out.length).toBeGreaterThan(100);
+    // JPEG SOI marker must appear somewhere in the multipart stream.
+    expect(out.includes(Buffer.from([0xff, 0xd8]))).toBe(true);
+  }, 30000);
+
+  it('processor transcodes to fragmented mp4', async () => {
+    const chunks = stubStdout();
+    await importWorker({
+      inputFormat: 'mp4',
+      operation: 'processor',
+      payload: { bitrate: '512k', codec: 'h264', format: 'mp4' },
+    });
+    await waitForWorker(15_000);
+    const out = Buffer.concat(chunks);
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
+  }, 30000);
+
+  it('ignores unknown operations without writing bytes', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'not-a-thing' });
+    await waitForWorker(500);
+    expect(Buffer.concat(chunks)).toHaveLength(0);
+  }, 30000);
+});

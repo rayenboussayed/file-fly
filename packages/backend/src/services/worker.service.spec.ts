@@ -38,7 +38,10 @@ vi.mock('node:worker_threads', () => {
       this.stdin = new Writable({ write(_c: any, _e: any, cb: any) { cb(); } });
       Worker.instances.push(this);
       const exitCode = Worker.nextExitCodes.shift() ?? 0;
-      process.nextTick(() => this.emit('exit', exitCode));
+      process.nextTick(() => {
+        if (exitCode === -1) this.emit('error', new Error('worker failed to start'));
+        else this.emit('exit', exitCode);
+      });
     }
     terminate() {
       return Promise.resolve();
@@ -168,4 +171,71 @@ describe('WorkerService coverage branches', () => {
     cached.destroy();
     await fs.rm(cachePath, { force:true }).catch(()=>undefined);
   }, 15000);
+});
+
+describe('WorkerService cache hits and worker errors', () => {
+  beforeEach(async () => {
+    await fs.rm(binPath(['hit-key', './hit.js', 'null']), { force: true }).catch(() => undefined);
+    mockedWorkerInstances().length = 0;
+    (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
+  });
+
+  const makeCls = (cacheKey: string, outcome = { hit: 0 }) => ({
+    cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
+    cacheOutcome: () => ({
+      get: () => undefined,
+      set: (v: unknown) => {
+        if (v === 'hit') outcome.hit += 1;
+      },
+    }),
+    request: () => ({ signal: new AbortController().signal }),
+    sourceStream: () => ({
+      get: () => new Readable({ read() { this.push(null); } }),
+      set: (v: unknown) => v,
+    }),
+  }) as never;
+
+  const drain = async (stream: Readable): Promise<string> => {
+    const chunks: Buffer[] = [];
+    stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+    await new Promise<void>((resolve, reject) => {
+      stream.once('end', () => resolve());
+      stream.once('error', reject);
+    });
+    return Buffer.concat(chunks).toString();
+  };
+
+  it('records a hit and refreshes the entry mtime on cache reads', async () => {
+    const pathInCache = binPath(['hit-key', './hit.js', 'null']);
+    await fs.mkdir(CACHE_DIR, { recursive: true });
+    await fs.writeFile(pathInCache, 'cached-bytes');
+    const old = new Date(Date.now() - 60 * 60 * 1000);
+    await fs.utimes(pathInCache, old, old);
+
+    const outcome = { hit: 0 };
+    const cls = makeCls('hit-key', outcome);
+    const service = new WorkerService(cls);
+    const cached = await service.createWorker('./hit.js');
+    // Touch is async; drain first so the read path runs to completion.
+    expect(await drain(cached)).toBe('cached-bytes');
+    expect(outcome.hit).toBe(1);
+    await new Promise((resolve) => setImmediate(resolve));
+    const stat = await fs.stat(pathInCache);
+    expect(stat.mtimeMs).toBeGreaterThan(old.getTime());
+    expect(mockedWorkerInstances()).toHaveLength(0);
+    await fs.rm(pathInCache, { force: true });
+  });
+
+  it('surfaces a worker spawn error by destroying the output stream with that error', async () => {
+    const cls = makeCls('hit-key');
+    (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.push(-1);
+    const service = new WorkerService(cls);
+    const output = await service.createWorker('./hit.js');
+    const error = await new Promise<Error | undefined>((resolve) => {
+      output.once('error', (err: Error) => resolve(err));
+      output.once('end', () => resolve(undefined));
+      setTimeout(() => resolve(undefined), 2000);
+    });
+    expect(error?.message).toBe('worker failed to start');
+  });
 });

@@ -5,9 +5,17 @@ import {
 } from '@nestjs/common';
 import { zipSync } from 'fflate';
 import { Readable } from 'node:stream';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { OoxmlError, OoxmlReader } from '@/services/ooxml-reader.js';
+import { xml } from '@/services/ooxml-xml.js';
 
 import { DocxService } from './docx.service.js';
+import { DOCX_MIME } from './schema.js';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const CONTENT_TYPES =
   '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
@@ -296,5 +304,217 @@ describe('DocxService.extract', () => {
     expect(result.structure.images.alts).toEqual(['a cat']);
     expect(result.text).toContain('Hello world');
     expect(result.metadata.title).toBe('Fixture Title');
+  });
+
+  it('treats a heading style without a digit as level 1', async () => {
+    const documentXml =
+      '<w:document><w:body><w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr>' +
+      '<w:r><w:t>Named title</w:t></w:r></w:p></w:body></w:document>';
+    const service = makeService(buildDocx(documentXml)).service;
+    const result = await service.extract();
+    expect(result.structure.headings).toEqual([{ level: 1, text: 'Named title' }]);
+  });
+
+  it('resolves anchor-only hyperlinks and ignores empty image descriptions', async () => {
+    const documentXml =
+      '<w:document><w:body>' +
+      '<w:p><w:hyperlink w:anchor="frag"><w:r><w:t>Jump</w:t></w:r></w:hyperlink></w:p>' +
+      '<w:p><w:hyperlink><w:r><w:t>Bare</w:t></w:r></w:hyperlink></w:p>' +
+      '<w:p><w:r><w:drawing><wp:docPr id="1" descr=""/></w:drawing></w:r></w:p>' +
+      '</w:body></w:document>';
+    const service = makeService(buildDocx(documentXml)).service;
+    const result = await service.extract();
+    expect(result.structure.hyperlinks).toEqual([
+      { text: 'Jump', url: '#frag' },
+      { text: 'Bare', url: undefined },
+    ]);
+    expect(result.structure.images.count).toBe(1);
+    expect(result.structure.images.alts).toEqual([]);
+  });
+
+  it('tolerates a null paragraph node in document.xml', async () => {
+    const parse = vi.spyOn(xml, 'parse');
+    parse.mockReturnValueOnce({ document: { body: { p: [null, { r: { t: 'ok' } }] } } } as never);
+    const service = makeService(buildDocx('<w:document/>')).service;
+    const result = await service.extract();
+    expect(result.structure.headings).toEqual([]);
+    expect(result.text).toBe('\nok');
+  });
+});
+
+describe('DocxService body and read caps', () => {
+  it('rejects an unsupported content type with a 415 describing the type', async () => {
+    const service = makeService(Buffer.from('PK'), 'text/plain').service;
+    await expect(service.extract()).rejects.toThrow('Unsupported media type "text/plain" for DOCX input');
+  });
+
+  it('treats a request without headers as an empty unsupported media type', async () => {
+    const stream = Readable.from([Buffer.from('PK')]);
+    const cls = {
+      cacheKey: () => ({ set: vi.fn() }),
+      request: () => undefined,
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(service.extract()).rejects.toThrow('Unsupported media type "" for DOCX input');
+  });
+
+  it('rejects a missing source stream with DOCX_NO_SOURCE', async () => {
+    const cls = {
+      cacheKey: () => ({ set: vi.fn() }),
+      request: () => ({ headers: { 'content-type': DOCX_MIME } }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => null, set: () => undefined }),
+    };
+    const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(service.extract()).rejects.toMatchObject({ response: { code: 'DOCX_NO_SOURCE' } });
+  });
+
+  it('propagates a non-OOXML reader error unchanged', async () => {
+    const boom = new TypeError('reader exploded');
+    vi.spyOn(OoxmlReader, 'readParts').mockImplementation(() => {
+      throw boom;
+    });
+    const service = makeService(buildDocx('<w:document/>')).service;
+    await expect(service.extract()).rejects.toBe(boom);
+  });
+
+  it('maps a total-uncompressed cap violation to a 413', async () => {
+    vi.spyOn(OoxmlReader, 'readParts').mockImplementation(() => {
+      throw new OoxmlError('package exceeds the total uncompressed size cap');
+    });
+    const service = makeService(buildDocx('<w:document/>')).service;
+    const error = await service.metadata().catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(PayloadTooLargeException);
+    expect(error).toHaveProperty('message', 'package exceeds the total uncompressed size cap');
+  });
+
+  it('maps other OOXML package errors to DOCX_INVALID_ZIP', async () => {
+    vi.spyOn(OoxmlReader, 'readParts').mockImplementation(() => {
+      throw new OoxmlError('not a valid zip package');
+    });
+    const service = makeService(buildDocx('<w:document/>')).service;
+    const error = await service.metadata().catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(BadRequestException);
+    expect(error).toHaveProperty('response', {
+      code: 'DOCX_INVALID_ZIP',
+      message: 'not a valid zip package',
+    });
+  });
+});
+
+describe('DocxService.build cross-field validation', () => {
+  const paragraph = (text: string) => ({ runs: [{ text }], type: 'paragraph' as const });
+
+  it('rejects duplicate endnote ids', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(
+      service.build({
+        endnotes: [
+          { children: [paragraph('a')], id: 1 },
+          { children: [paragraph('b')], id: 1 },
+        ],
+        sections: [{ children: [] }],
+      }),
+    ).rejects.toMatchObject({ response: { code: 'DOCX_DUPLICATE_NOTE_ID', message: 'duplicate endnote id 1' } });
+  });
+
+  it('rejects duplicate comment ids', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(
+      service.build({
+        comments: [
+          { author: 'A', children: [paragraph('a')], id: 1 },
+          { author: 'B', children: [paragraph('b')], id: 1 },
+        ],
+        sections: [{ children: [] }],
+      }),
+    ).rejects.toMatchObject({ response: { code: 'DOCX_DUPLICATE_COMMENT_ID', message: 'duplicate comment id 1' } });
+  });
+
+  it('rejects an undeclared endnote reference', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(
+      service.build({ sections: [{ children: [{ runs: [{ endnote: 4, text: 'ref' }], type: 'paragraph' }] }] }),
+    ).rejects.toMatchObject({ response: { code: 'DOCX_UNKNOWN_NOTE_ID', message: 'endnote id 4 is not declared' } });
+  });
+
+  it('rejects a payload over the 50,000 element cap', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
+    const error = await service
+      .build({
+        sections: [
+          { children: [{ runs: Array.from({ length: 50_001 }, () => ({ text: '' })), type: 'paragraph' }] },
+        ],
+      })
+      .catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(PayloadTooLargeException);
+    expect(error).toHaveProperty('message', 'document exceeds the element cap');
+  });
+
+  it('accepts an allowed hyperlink URL and table cells without row spans', async () => {
+    const setCacheKey = vi.fn();
+    const stream = Readable.from([Buffer.from('PK')]);
+    const cls = {
+      cacheKey: () => ({ set: setCacheKey }),
+      request: () => ({ headers: {}, method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const valid = await buildPresentationSafe();
+    const workerService = { createWorker: vi.fn(async () => Readable.from([valid])) };
+    const service = new DocxService(cls as never, workerService as never);
+    const bytes = await service.build({
+      sections: [
+        {
+          children: [
+            { runs: [{ text: 'link' }], type: 'hyperlink', url: 'https://example.com' },
+            {
+              rows: [
+                [{ children: [paragraph('a')] }],
+                [{ children: [paragraph('b')] }],
+              ],
+              type: 'table',
+            },
+          ],
+        },
+      ],
+    });
+    expect(bytes).toEqual(valid);
+    expect(setCacheKey).toHaveBeenCalledOnce();
+    expect(workerService.createWorker).toHaveBeenCalledOnce();
+  });
+
+  it('tolerates malformed table shapes in the defensive rowSpan guards', async () => {
+    // These guards exist precisely to survive shapes the schema would reject.
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const valid = await buildPresentationSafe();
+    const workerService = { createWorker: vi.fn(async () => Readable.from([valid])) };
+    const service = new DocxService(cls as never, workerService as never);
+    const malformed = [
+      { rows: undefined as never, type: 'table' as const },
+      { rows: [null as never], type: 'table' as const },
+      { rows: [[null as never]], type: 'table' as const },
+    ];
+    for (const table of malformed) {
+      await expect(service.build({ sections: [{ children: [table] }] })).resolves.toEqual(valid);
+    }
+    expect(workerService.createWorker).toHaveBeenCalledTimes(3);
+  });
+
+  it('wraps a builder output missing word/document.xml', async () => {
+    const invalid = Buffer.from(zipSync({ '[Content_Types].xml': Buffer.from(CONTENT_TYPES, 'utf8') }));
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const workerService = { createWorker: vi.fn(async () => Readable.from([invalid])) };
+    const service = new DocxService(cls as never, workerService as never);
+    const error = await service.build({ sections: [{ children: [] }] }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toHaveProperty('message', 'docx builder produced an invalid document');
+    expect((error as Error & { cause?: unknown }).cause).toBeDefined();
   });
 });

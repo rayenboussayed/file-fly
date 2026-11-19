@@ -8,6 +8,9 @@ export default defineConfig({
       exclude: [
         'src/bin/**',
         'src/index.ts',
+        // Entry-point glue; the full server (bootstrap, CORS, swagger, hooks)
+        // is exercised by the 129-test e2e suite, which boots dist/main.js.
+        'src/main.ts',
         // Perf/memory suites run outside the 100% coverage gate.
         'test/mem/**',
         '**/*.bench.ts',
