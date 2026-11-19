@@ -36,7 +36,7 @@ Spawns sibling worker threads for CPU-heavy media/document work and serves their
 
 **Kind**: global variable  
 src: packages/backend/src/services/worker.service.ts:68  
-dist: packages/backend/dist/services/worker.service.js:86 (approx.)
+dist: packages/backend/dist/services/worker.service.js:51
 
 * [WorkerService](#WorkerService)
     * [.createWorker(filename, options)](#WorkerService+createWorker) ⇒ <code>Promise&lt;Readable&gt;</code>
@@ -61,7 +61,7 @@ otherwise produced by a worker thread (and cached while streaming).
 | options | <code>CreateWorkerOptions</code> | Worker and cache options. |
 
 src: packages/backend/src/services/worker.service.ts:94  
-dist: packages/backend/dist/services/worker.service.js:123 (approx.)
+dist: packages/backend/dist/services/worker.service.js:66
 <a name="WorkerService+acquireWorkerSlot"></a>
 
 ### workerService.acquireWorkerSlot() ⇒ <code>Promise&lt;void&gt;</code>
@@ -69,7 +69,7 @@ Waits until a worker slot is free, then takes it.
 
 **Kind**: instance method of [<code>WorkerService</code>](#WorkerService)  
 src: packages/backend/src/services/worker.service.ts:127  
-dist: packages/backend/dist/services/worker.service.js:151 (approx.)
+dist: packages/backend/dist/services/worker.service.js:90
 <a name="WorkerService+keyFor"></a>
 
 ### workerService.keyFor(baseKey, filename, workerData) ⇒ <code>string</code>
@@ -85,7 +85,7 @@ Builds the cache key: parts joined with NUL so no component can smuggle separato
 | workerData | <code>unknown</code> | Worker payload mixed into the key. |
 
 src: packages/backend/src/services/worker.service.ts:142  
-dist: packages/backend/dist/services/worker.service.js:165 (approx.)
+dist: packages/backend/dist/services/worker.service.js:96
 <a name="WorkerService+persist"></a>
 
 ### workerService.persist(key, branch, succeeded)
@@ -103,7 +103,7 @@ Failures never affect the client: the entry is unlinked once the worker has sett
 | succeeded | <code>Promise&lt;boolean&gt;</code> | Worker exit status. |
 
 src: packages/backend/src/services/worker.service.ts:163  
-dist: packages/backend/dist/services/worker.service.js:185 (approx.)
+dist: packages/backend/dist/services/worker.service.js:104
 <a name="WorkerService+releaseWorkerSlot"></a>
 
 ### workerService.releaseWorkerSlot()
@@ -111,7 +111,7 @@ Releases a worker slot, waking one queued caller if any.
 
 **Kind**: instance method of [<code>WorkerService</code>](#WorkerService)  
 src: packages/backend/src/services/worker.service.ts:202  
-dist: packages/backend/dist/services/worker.service.js:217 (approx.)
+dist: packages/backend/dist/services/worker.service.js:124
 <a name="WorkerService+touch"></a>
 
 ### workerService.touch(key) ⇒ <code>Promise&lt;void&gt;</code>
@@ -124,7 +124,7 @@ Refreshes the entry's mtime so the janitor's LRU eviction keeps hot entries.
 | key | <code>string</code> | Cache key of the entry. |
 
 src: packages/backend/src/services/worker.service.ts:301  
-dist: packages/backend/dist/services/worker.service.js:307 (approx.)
+dist: packages/backend/dist/services/worker.service.js:199
 <a name="WORKER_ENV_KEYS"></a>
 
 ## WORKER\_ENV\_KEYS
@@ -161,4 +161,4 @@ would otherwise resolve it against the process cwd and fail in production.
 | metaUrl | <code>string</code> | `import.meta.url` of the module that declared the filename. |
 
 src: packages/backend/src/services/worker.service.ts:316  
-dist: packages/backend/dist/services/worker.service.js:324 (approx.)
+dist: packages/backend/dist/services/worker.service.js:209

@@ -29,7 +29,7 @@ Probes the upload’s file signature, stamps the CLS store (signature, hash, cac
 
 **Kind**: global variable  
 src: packages/backend/src/interceptors/file-parser.interceptor.ts:31  
-dist: packages/backend/dist/interceptors/file-parser.interceptor.js:51 (approx.)
+dist: packages/backend/dist/interceptors/file-parser.interceptor.js:22
 <a name="generateCacheKey"></a>
 
 ## generateCacheKey(options) ⇒ <code>string</code>
@@ -64,4 +64,4 @@ reached); the full remainder is dropped without resolving the caller.
 | size | <code>number</code> | Maximum number of bytes to hash. |
 
 src: packages/backend/src/interceptors/file-parser.interceptor.ts:103  
-dist: packages/backend/dist/interceptors/file-parser.interceptor.js:126 (approx.)
+dist: packages/backend/dist/interceptors/file-parser.interceptor.js:71

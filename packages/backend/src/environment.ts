@@ -25,7 +25,9 @@ const numericFromEnv = (fallback: number) =>
 
 const EnvironmentSchema = z
   .object({
+    /** Basic-auth credentials; enforced only when BOTH are set (both-or-neither). */
     AUTH_PASSWORD: z.string().trim().optional(),
+    /** Basic-auth credentials; enforced only when BOTH are set (both-or-neither). */
     AUTH_USERNAME: z.string().trim().optional(),
 
     /** Cache root; the directory is created at startup. */
@@ -96,6 +98,19 @@ const EnvironmentSchema = z
     TESSERACT_TIMEOUT_MS: z.coerce.number().int().positive().catch(60000),
     /** Honor `X-Forwarded-For` for `request.ip` (set only behind a trusted proxy). */
     TRUST_PROXY: z.stringbool().optional().catch(undefined),
+  })
+  .superRefine((env, ctx) => {
+    // Empty strings count as unset (trimmed by the schema already).
+    const hasUser = env.AUTH_USERNAME !== undefined && env.AUTH_USERNAME.length > 0;
+    const hasPassword = env.AUTH_PASSWORD !== undefined && env.AUTH_PASSWORD.length > 0;
+    if (hasUser !== hasPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'AUTH_USERNAME and AUTH_PASSWORD must be set together (basic auth is enabled only when both are set)',
+        path: [hasUser ? 'AUTH_PASSWORD' : 'AUTH_USERNAME'],
+      });
+    }
   })
   .transform((env) => ({
     ...env,

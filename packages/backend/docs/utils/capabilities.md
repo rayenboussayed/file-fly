@@ -23,7 +23,7 @@ Content-Type for each streamable output format.
 
 **Kind**: global constant  
 src: packages/backend/src/utils/capabilities.ts:16  
-dist: packages/backend/dist/utils/capabilities.js:12 (approx.)
+dist: packages/backend/dist/utils/capabilities.js:11
 <a name="MP4_FRAGMENTED_OPTIONS"></a>
 
 ## MP4\_FRAGMENTED\_OPTIONS
@@ -31,7 +31,7 @@ Fragmented-MP4 muxer flags for progressive download without re-muxing.
 
 **Kind**: global constant  
 src: packages/backend/src/utils/capabilities.ts:28  
-dist: packages/backend/dist/utils/capabilities.js:20
+dist: packages/backend/dist/utils/capabilities.js:21
 <a name="isAllowedOutputFormat"></a>
 
 ## isAllowedOutputFormat(format) ⇒ <code>boolean</code>
@@ -43,4 +43,4 @@ dist: packages/backend/dist/utils/capabilities.js:20
 | format | <code>string</code> | Candidate container/codec format name. |
 
 src: packages/backend/src/utils/capabilities.ts:36  
-dist: packages/backend/dist/utils/capabilities.js:30 (approx.)
+dist: packages/backend/dist/utils/capabilities.js:24

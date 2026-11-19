@@ -28,6 +28,7 @@
     "script:union-to-enum": "node scripts/union-to-enum.js --types DemuxerFormat MuxerFormat --unions MuxerFormat --output src/constants/av-formats.ts"
   },
   "dependencies": {
+    "@fastify/basic-auth": "^6.3.1",
     "@fastify/static": "^10.1.10",
     "@gltf-transform/core": "^4.5.1",
     "@gltf-transform/extensions": "^4.5.1",

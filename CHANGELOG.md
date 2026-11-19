@@ -40,6 +40,15 @@ from the commit history (2026-10-31 .. 2026-11-19).
   `docs/screenshots/dashboard-overview.png` and `dashboard-ip-detail.png`.
   Runs via `npm run test:e2e -w file-fly-dashboard`; deliberately excluded
   from `npm run check` (screenshots are refreshed and committed intentionally).
+- Basic auth perimeter via `@fastify/basic-auth` (`src/basic-auth.ts`): engages
+  only when both `AUTH_USERNAME` and `AUTH_PASSWORD` are set (either alone
+  fails boot). When enabled, every route except `/health` requires the pair as
+  `x-auth-username` / `x-auth-password` headers, re-sent on every request —
+  the standard `Authorization` header is never honored and no `WWW-Authenticate`
+  challenge is emitted. Digests are compared with `timingSafeEqual`; the
+  perimeter is a fastify `onRequest` hook, ahead of body parsing. Shared edge
+  wiring now lives in `src/bootstrap.ts` (`configureFastify`), used by both
+  `main.ts` and the e2e harness. See README → Authentication.
 
 ### Changed
 

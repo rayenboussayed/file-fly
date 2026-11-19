@@ -2,10 +2,6 @@ import 'zod/compile';
 
 import './undici.js';
 
-// eslint-disable-next-line n/no-extraneous-import
-import type { FastifyInstance } from 'fastify';
-
-import { BadRequestException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -16,7 +12,6 @@ import {
   SwaggerDocumentOptions,
   SwaggerModule,
 } from '@nestjs/swagger';
-import { supportedMimeTypes } from 'file-type';
 import { Logger } from 'nestjs-pino';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
@@ -24,6 +19,7 @@ import { createSchema } from 'zod-openapi';
 import * as AppHeaders from '@/constants/header.js';
 
 import { AppModule } from './app.module.js';
+import { configureFastify } from './bootstrap.js';
 import { environment, isProduction } from './environment.js';
 import { bootstrapLogger } from './logging/bootstrap-logger.js';
 
@@ -52,7 +48,7 @@ async function bootstrap() {
   // servers cleanly instead of the default blunt exit.
   app.enableShutdownHooks();
 
-  fastify(app.getHttpAdapter().getInstance());
+  await configureFastify(app.getHttpAdapter().getInstance());
 
   if (isProduction) {
     app.enableCors({
@@ -67,29 +63,6 @@ async function bootstrap() {
 
   swagger(app);
   await app.listen(process.env.PORT ?? 3000);
-}
-
-/**
- * Registers the media content-type parsers that accept uploads as raw streams.
- * @param instance - The Fastify instance to configure.
- */
-function fastify(instance: FastifyInstance) {
-  instance.addContentTypeParser(
-    [...supportedMimeTypes, 'application/octet-stream', 'text/csv', 'model/gltf+json'],
-    (request, _, done) => {
-      if (request.method.toUpperCase() === 'GET') return done(null, request.raw);
-      const contentLength = Number.parseInt(
-        request.headers['content-length']?.trim() ?? '0',
-      );
-      return contentLength > 0
-        ? done(null)
-        : done(
-            new BadRequestException(
-              'content-length header must be set and be greater than 0',
-            ),
-          );
-    },
-  );
 }
 
 /**

@@ -5,4 +5,4 @@ Video routes: processor, metadata, DNA, stats and screenshot (binary stream endp
 
 **Kind**: global variable  
 src: packages/backend/src/resources/video/video.controller.ts:35  
-dist: packages/backend/dist/resources/video/video.controller.js:156
+dist: packages/backend/dist/resources/video/video.controller.js:24

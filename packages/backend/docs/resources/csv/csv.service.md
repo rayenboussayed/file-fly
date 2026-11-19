@@ -54,7 +54,7 @@ CSV feature service: builds CSV from rows and parses/metadata-inspects uploads.
 
 **Kind**: global variable  
 src: packages/backend/src/resources/csv/csv.service.ts:68  
-dist: packages/backend/dist/resources/csv/csv.service.js:85 (approx.)
+dist: packages/backend/dist/resources/csv/csv.service.js:44
 
 * [CsvService](#CsvService)
     * [.buildCsv(body)](#CsvService+buildCsv) ⇒ <code>Readable</code>
@@ -75,7 +75,7 @@ Builds the CSV response stream for `POST /csv/build`.
 | body | <code>{ records: (Record&lt;string, unknown&gt; \| unknown[])[]; options?: { [x: string]: any; bom?: boolean; columns?: (string \| { key: string; header?: string; })[]; eof?: boolean; escape?: string; escape\_formulas?: boolean; header?: boolean; header\_as\_comment?: boolean; quote?: string \| false; quote\_record\_delimiter?: boolean; quoted?: boolean; quoted\_empty?: boolean; quoted\_string?: boolean; }; }</code> | Validated build payload (rows plus csv-stringify options). |
 
 src: packages/backend/src/resources/csv/csv.service.ts:77  
-dist: packages/backend/dist/resources/csv/csv.service.js:109 (approx.)
+dist: packages/backend/dist/resources/csv/csv.service.js:49
 <a name="CsvService+extract"></a>
 
 ### csvService.extract(query) ⇒ <code>Promise&lt;{ records: unknown[]; }&gt;</code>
@@ -92,7 +92,7 @@ The first record is treated as data (no header semantics here).
 | query | <code>{ [x: string]: any; bom?: boolean; cast?: boolean; cast\_date?: boolean; columns?: boolean \| string[] \| any[]; comment?: string; comment\_no\_infix?: boolean; delimiter\_auto?: boolean; encoding?: &quot;ascii&quot; \| &quot;utf8&quot; \| &quot;utf16le&quot; \| &quot;ucs2&quot; \| &quot;base64&quot; \| &quot;latin1&quot; \| &quot;binary&quot; \| &quot;hex&quot;; escape?: string; from?: number; from\_line?: number; group\_columns\_by\_name?: boolean; ignore\_last\_delimiters?: boolean; ltrim?: boolean; max\_record\_size?: number; quote?: string \| false; relax\_column\_count?: boolean; relax\_column\_count\_less?: boolean; relax\_column\_count\_more?: boolean; relax\_quotes?: boolean; rtrim?: boolean; skip\_empty\_lines?: boolean; skip\_records\_with\_empty\_values?: boolean; skip\_records\_with\_error?: boolean; to?: number; to\_line?: number; trim?: boolean; }</code> | Validated, flat csv-parse options (file travels in the body). |
 
 src: packages/backend/src/resources/csv/csv.service.ts:90  
-dist: packages/backend/dist/resources/csv/csv.service.js:121 (approx.)
+dist: packages/backend/dist/resources/csv/csv.service.js:52
 <a name="CsvService+metadata"></a>
 
 ### csvService.metadata(query) ⇒ <code>Promise&lt;{ bom: boolean; columns: number; delimiter: string \| string[] \| Buffer&lt;ArrayBufferLike&gt; \| Buffer&lt;ArrayBufferLike&gt;[]; maxRows: number; perColumn: { index: number; types: Record&lt;&quot;string&quot; \| &quot;number&quot; \| &quot;boolean&quot; \| &quot;date&quot; \| &quot;empty&quot;, number&gt;; }[]; recordDelimiter: string \| string[] \| Buffer&lt;ArrayBufferLike&gt; \| Buffer&lt;ArrayBufferLike&gt;[]; rows: number; truncatedTypes: boolean; }&gt;</code>
@@ -111,7 +111,7 @@ winning value back).
 | query | <code>{ [x: string]: any; maxRows: number; trim?: boolean; bom?: boolean; escape?: string; quote?: string \| false; cast\_date?: boolean; comment?: string; comment\_no\_infix?: boolean; delimiter\_auto?: boolean; encoding?: &quot;ascii&quot; \| &quot;utf8&quot; \| &quot;utf16le&quot; \| &quot;ucs2&quot; \| &quot;base64&quot; \| &quot;latin1&quot; \| &quot;binary&quot; \| &quot;hex&quot;; max\_record\_size?: number; relax\_column\_count?: boolean; relax\_column\_count\_less?: boolean; relax\_column\_count\_more?: boolean; relax\_quotes?: boolean; skip\_empty\_lines?: boolean; }</code> | Validated, flat csv-parse options plus `maxRows`. |
 
 src: packages/backend/src/resources/csv/csv.service.ts:118  
-dist: packages/backend/dist/resources/csv/csv.service.js:149 (approx.)
+dist: packages/backend/dist/resources/csv/csv.service.js:70
 <a name="MAX_RECORDS"></a>
 
 ## MAX\_RECORDS
@@ -168,4 +168,4 @@ exact `true`/`false` strings count as boolean (csv-parse does not cast them).
 | value | <code>unknown</code> | One cast field value. |
 
 src: packages/backend/src/resources/csv/csv.service.ts:172  
-dist: packages/backend/dist/resources/csv/csv.service.js:204 (approx.)
+dist: packages/backend/dist/resources/csv/csv.service.js:121

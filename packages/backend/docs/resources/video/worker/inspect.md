@@ -17,5 +17,5 @@ dist: packages/backend/dist/resources/video/worker/inspect.js:5
 
 ## stats() ⇒ <code>Promise&lt;void&gt;</code>
 **Kind**: global function  
-src: packages/backend/src/resources/video/worker/inspect.ts:41  
+src: packages/backend/src/resources/video/worker/inspect.ts:42  
 dist: packages/backend/dist/resources/video/worker/inspect.js:28

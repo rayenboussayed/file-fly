@@ -178,4 +178,30 @@ describe('environment CORS_ORIGIN', () => {
     vi.stubEnv('CORS_ORIGIN', 'not-a-url');
     await expect(importEnvironment()).rejects.toThrow();
   });
+
+  it('accepts both basic-auth credentials together', async () => {
+    vi.stubEnv('AUTH_USERNAME', 'alice');
+    vi.stubEnv('AUTH_PASSWORD', 's3cret');
+    const { environment } = await importEnvironment();
+    expect(environment.AUTH_USERNAME).toBe('alice');
+    expect(environment.AUTH_PASSWORD).toBe('s3cret');
+  });
+
+  it('accepts basic auth being disabled', async () => {
+    const { environment } = await importEnvironment();
+    expect(environment.AUTH_USERNAME).toBeUndefined();
+    expect(environment.AUTH_PASSWORD).toBeUndefined();
+  });
+
+  it('rejects boot when only AUTH_USERNAME is set', async () => {
+    vi.stubEnv('AUTH_USERNAME', 'alice');
+    vi.stubEnv('AUTH_PASSWORD', '');
+    await expect(importEnvironment()).rejects.toThrow(/must be set together/u);
+  });
+
+  it('rejects boot when only AUTH_PASSWORD is set', async () => {
+    vi.stubEnv('AUTH_USERNAME', '');
+    vi.stubEnv('AUTH_PASSWORD', 's3cret');
+    await expect(importEnvironment()).rejects.toThrow(/must be set together/u);
+  });
 });

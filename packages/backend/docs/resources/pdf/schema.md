@@ -195,7 +195,7 @@ Embedded TTF/OTF fonts, referenced by elements via `font`. WinAnsi preflight is 
 
 **Kind**: global variable  
 src: packages/backend/src/resources/pdf/schema.ts:248  
-dist: packages/backend/dist/resources/pdf/schema.js:218 (approx.)
+dist: packages/backend/dist/resources/pdf/schema.js:200
 <a name="PDF_MIME"></a>
 
 ## PDF\_MIME
@@ -211,7 +211,7 @@ Body of `POST /pdf/build`.
 
 **Kind**: global constant  
 src: packages/backend/src/resources/pdf/schema.ts:245  
-dist: packages/backend/dist/resources/pdf/schema.js:215 (approx.)
+dist: packages/backend/dist/resources/pdf/schema.js:198
 <a name="PdfExtractSchema"></a>
 
 ## PdfExtractSchema
@@ -219,7 +219,7 @@ Flat query parameters for `POST /pdf/extract` (empty; rejects junk params).
 
 **Kind**: global constant  
 src: packages/backend/src/resources/pdf/schema.ts:272  
-dist: packages/backend/dist/resources/pdf/schema.js:238 (approx.)
+dist: packages/backend/dist/resources/pdf/schema.js:219
 <a name="PdfMetadataSchema"></a>
 
 ## PdfMetadataSchema
@@ -227,4 +227,4 @@ Flat query parameters for `POST /pdf/metadata` (empty; rejects junk params).
 
 **Kind**: global constant  
 src: packages/backend/src/resources/pdf/schema.ts:274  
-dist: packages/backend/dist/resources/pdf/schema.js:240 (approx.)
+dist: packages/backend/dist/resources/pdf/schema.js:220

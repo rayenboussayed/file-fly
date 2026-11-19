@@ -5,4 +5,4 @@ Rejects /audio requests whose probed signature is not an audio mime (runs after 
 
 **Kind**: global variable  
 src: packages/backend/src/resources/audio/audio-signature.interceptor.ts:14  
-dist: packages/backend/dist/resources/audio/audio-signature.interceptor.js:37 (approx.)
+dist: packages/backend/dist/resources/audio/audio-signature.interceptor.js:13

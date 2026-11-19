@@ -38,7 +38,7 @@ Whether any audio-side option forces a transcode of the audio stream.
 | payload | The validated video processor options. |
 
 src: packages/backend/src/resources/video/worker/processor.ts:150  
-dist: packages/backend/dist/resources/video/worker/processor.js:185 (approx.)
+dist: packages/backend/dist/resources/video/worker/processor.js:165
 <a name="hasVideoTranscoding"></a>
 
 ## hasVideoTranscoding(payload) ⇒ <code>boolean</code>
@@ -52,4 +52,4 @@ Whether any video-side option forces a transcode of the video stream.
 | payload | The validated video processor options. |
 
 src: packages/backend/src/resources/video/worker/processor.ts:159  
-dist: packages/backend/dist/resources/video/worker/processor.js:193 (approx.)
+dist: packages/backend/dist/resources/video/worker/processor.js:168

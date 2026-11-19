@@ -170,6 +170,44 @@ curl 'http://localhost:3000/image?source=https%3A%2F%2Fexample.com%2Fphoto.jpg&f
      -o out.webp
 ```
 
+## Authentication
+
+The app implements HTTP basic auth as a perimeter via
+[`@fastify/basic-auth`](https://www.npmjs.com/package/@fastify/basic-auth).
+It is **opt-in and disabled by default**: it engages only when both
+`AUTH_USERNAME` and `AUTH_PASSWORD` are set (setting just one fails boot).
+
+When enabled, **every route except `/health`** requires the credential on
+**every request**, presented as two plain headers — not as the standard
+`Authorization` header:
+
+```bash
+curl -H "x-auth-username: alice" -H "x-auth-password: s3cret" \
+     http://localhost:3000/metrics
+```
+
+- Missing, incomplete or wrong credentials get `401` (a wrong password gets a
+  constant-time digest comparison). There is no `WWW-Authenticate` challenge —
+  this is a header-pair contract for API clients, not a browser SSO flow.
+- A client-sent `Authorization` header is never honored.
+- `GET /health` stays open so the Docker `HEALTHCHECK` and orchestrators can
+  probe without credentials.
+- The perimeter runs as a fastify `onRequest` hook, so unauthenticated
+  uploads are rejected before body limit checks, virus scanning or workers.
+- When the perimeter is disabled, the app behaves exactly as before — the
+  `METRICS_TOKEN` rules for `/metrics` are unchanged. When it is enabled,
+  `/metrics` sits behind the same perimeter; the existing `METRICS_TOKEN`
+  bearer check still applies underneath (in production, `/metrics` answers
+  `503` unless `METRICS_TOKEN` is also set).
+- **Browser caveat:** browsers cannot set custom headers on plain navigation,
+  so the React dashboard (and Swagger at `/swagger`) are not usable from a
+  stock browser session behind the perimeter. Put the app behind a proxy that
+  injects `x-auth-username`/`x-auth-password` (nginx, Traefik, a gateway), or
+  drive it as an API. Every response the SPA needs is beneath `/metrics` and
+  the same-origin document — a proxy that adds the pair solves both.
+- Credentials are compared via SHA-256 digests with `crypto.timingSafeEqual`,
+  so response time does not leak credential length.
+
 ## Docker
 
 Development stack (watch-mode app + dashboard + ClamAV with bundled signature databases):
@@ -199,6 +237,8 @@ All configuration is via environment variables. Values are validated with zod at
 | --- | --- | --- |
 | `NODE_ENV` | — (required) | `development` or `production` |
 | `PORT` | `3000` | HTTP port |
+| `AUTH_USERNAME` | unset | Basic-auth perimeter username; both or neither with `AUTH_PASSWORD`. Unset ⇒ perimeter disabled |
+| `AUTH_PASSWORD` | unset | Basic-auth perimeter password; both or neither with `AUTH_USERNAME`. Unset ⇒ perimeter disabled. Clients present the pair as `x-auth-username` / `x-auth-password` headers on every request (never `Authorization`) |
 | `CORS_ORIGIN` | unset | Comma-separated allowed origins in production (URLs), e.g. `https://app.example.com,https://dash.example.com`; a bare single URL is accepted too |
 | `CACHE_DIR` | `./cache` (`/data/cache` in Docker) | Cache root; created at startup |
 | `CACHE_TTL_MS` | `86400000` (24 h) | Entries unused for longer are evicted |

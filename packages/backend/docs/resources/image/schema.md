@@ -25,7 +25,7 @@ resize position accepts sharp's corner/edge names plus everything in sharp.gravi
 
 **Kind**: global constant  
 src: packages/backend/src/resources/image/schema.ts:14  
-dist: packages/backend/dist/resources/image/schema.js:9
+dist: packages/backend/dist/resources/image/schema.js:8
 <a name="ImageProcessorSchema"></a>
 
 ## ImageProcessorSchema
@@ -33,7 +33,7 @@ Query parameters for `/image/processor`, `/image/metadata`, `/image/dna` and `/i
 
 **Kind**: global constant  
 src: packages/backend/src/resources/image/schema.ts:23  
-dist: packages/backend/dist/resources/image/schema.js:15
+dist: packages/backend/dist/resources/image/schema.js:14
 <a name="LANG_REGEX"></a>
 
 ## LANG\_REGEX
@@ -44,7 +44,7 @@ URL-encoded (`%2B`), because query-string decoders treat a raw `+` as a space.
 
 **Kind**: global constant  
 src: packages/backend/src/resources/image/schema.ts:58  
-dist: packages/backend/dist/resources/image/schema.js:48 (approx.)
+dist: packages/backend/dist/resources/image/schema.js:38
 <a name="OcrSchema"></a>
 
 ## OcrSchema
@@ -52,4 +52,4 @@ Query schema for the `/image/ocr` endpoint.
 
 **Kind**: global constant  
 src: packages/backend/src/resources/image/schema.ts:63  
-dist: packages/backend/dist/resources/image/schema.js:40
+dist: packages/backend/dist/resources/image/schema.js:39

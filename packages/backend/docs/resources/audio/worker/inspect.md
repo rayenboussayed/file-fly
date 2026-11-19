@@ -34,4 +34,4 @@ dist: packages/backend/dist/resources/audio/worker/inspect.js:5
 | inputData | <code>AudioWorkerData</code> | Description. |
 
 src: packages/backend/src/resources/audio/worker/inspect.ts:44  
-dist: packages/backend/dist/resources/audio/worker/inspect.js:27
+dist: packages/backend/dist/resources/audio/worker/inspect.js:26

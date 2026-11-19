@@ -22,7 +22,7 @@ Image routes: processor, metadata, DNA, stats and OCR (binary stream endpoints).
 
 **Kind**: global variable  
 src: packages/backend/src/resources/image/image.controller.ts:45  
-dist: packages/backend/dist/resources/image/image.controller.js:159
+dist: packages/backend/dist/resources/image/image.controller.js:34
 <a name="SHARP_TO_MIME"></a>
 
 ## SHARP\_TO\_MIME

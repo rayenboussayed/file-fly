@@ -47,7 +47,7 @@ Model feature service: glTF/GLB inspection, extraction, optimization (DRACO/Mesh
 
 **Kind**: global variable  
 src: packages/backend/src/resources/model/model.service.ts:244  
-dist: packages/backend/dist/resources/model/model.service.js:257 (approx.)
+dist: packages/backend/dist/resources/model/model.service.js:195
 
 * [ModelService](#ModelService)
     * [.convert(query)](#ModelService+convert) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -69,7 +69,7 @@ Converts the uploaded GLB between container formats.
 | query | <code>{ to: &quot;glb&quot; \| &quot;gltf&quot;; }</code> | Target container. |
 
 src: packages/backend/src/resources/model/model.service.ts:256  
-dist: packages/backend/dist/resources/model/model.service.js:283 (approx.)
+dist: packages/backend/dist/resources/model/model.service.js:202
 <a name="ModelService+extract"></a>
 
 ### modelService.extract() ⇒ <code>Promise&lt;{ animations: { channels: number; name: string; samplers: number; }[]; format: string; materials: { alphaMode: GLTF.MaterialAlphaMode; baseColorFactor: import(&quot;@gltf-transform/core&quot;).vec4; doubleSided: boolean; emissiveFactor: import(&quot;@gltf-transform/core&quot;).vec3; metallicFactor: number; name: string; roughnessFactor: number; }[]; meshes: { name: string; primitives: { triangles: number; vertices: number; attributes: string[]; material: string; mode: GLTF.MeshPrimitiveMode; targets: number; }[]; }[]; scenes: { name: string; nodes: Record&lt;string, unknown&gt;[]; }[]; skins: { joints: number; name: string; }[]; textures: { bytes: number; mimeType: string; name: string; }[]; }&gt;</code>
@@ -78,7 +78,7 @@ Extracts the scene graph, meshes, materials, textures, animations and skins.
 **Kind**: instance method of [<code>ModelService</code>](#ModelService)  
 **Returns**: <code>Promise&lt;{ animations: { channels: number; name: string; samplers: number; }[]; format: string; materials: { alphaMode: GLTF.MaterialAlphaMode; baseColorFactor: import(&quot;@gltf-transform/core&quot;).vec4; doubleSided: boolean; emissiveFactor: import(&quot;@gltf-transform/core&quot;).vec3; metallicFactor: number; name: string; roughnessFactor: number; }[]; meshes: { name: string; primitives: { triangles: number; vertices: number; attributes: string[]; material: string; mode: GLTF.MeshPrimitiveMode; targets: number; }[]; }[]; scenes: { name: string; nodes: Record&lt;string, unknown&gt;[]; }[]; skins: { joints: number; name: string; }[]; textures: { bytes: number; mimeType: string; name: string; }[]; }&gt;</code> - The structural extraction of the model.  
 src: packages/backend/src/resources/model/model.service.ts:272  
-dist: packages/backend/dist/resources/model/model.service.js:298 (approx.)
+dist: packages/backend/dist/resources/model/model.service.js:213
 <a name="ModelService+metadata"></a>
 
 ### modelService.metadata() ⇒ <code>Promise&lt;{ asset: { generator: string; version: string; }; bounds: { max: [number, number, number]; min: [number, number, number]; }; counts: { accessors: number; animations: number; cameras: number; materials: number; meshes: number; nodes: number; primitives: number; scenes: number; skins: number; textures: number; triangles: number; vertices: number; }; extensionsRequired: string[]; extensionsUsed: string[]; format: string; }&gt;</code>
@@ -87,7 +87,7 @@ Normalized GLB metadata for an uploaded model.
 **Kind**: instance method of [<code>ModelService</code>](#ModelService)  
 **Returns**: <code>Promise&lt;{ asset: { generator: string; version: string; }; bounds: { max: [number, number, number]; min: [number, number, number]; }; counts: { accessors: number; animations: number; cameras: number; materials: number; meshes: number; nodes: number; primitives: number; scenes: number; skins: number; textures: number; triangles: number; vertices: number; }; extensionsRequired: string[]; extensionsUsed: string[]; format: string; }&gt;</code> - Format, asset descriptor, counts, extensions and bounds.  
 src: packages/backend/src/resources/model/model.service.ts:283  
-dist: packages/backend/dist/resources/model/model.service.js:308 (approx.)
+dist: packages/backend/dist/resources/model/model.service.js:219
 <a name="ModelService+optimize"></a>
 
 ### modelService.optimize(query) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -101,7 +101,7 @@ Optimizes the uploaded model in a worker thread and returns GLB bytes.
 | query | <code>{ compress: &quot;none&quot; \| &quot;draco&quot; \| &quot;meshopt&quot;; weld: boolean; simplify?: number; }</code> | Compression codec, simplification ratio and weld. |
 
 src: packages/backend/src/resources/model/model.service.ts:295  
-dist: packages/backend/dist/resources/model/model.service.js:319 (approx.)
+dist: packages/backend/dist/resources/model/model.service.js:225
 <a name="MODE_TRIANGLES"></a>
 
 ## MODE\_TRIANGLES
@@ -192,7 +192,7 @@ Rewrites resource URIs to data URIs so the .gltf is a single self-contained file
 | uri | <code>string</code> | The resource URI. |
 
 src: packages/backend/src/resources/model/model.service.ts:330  
-dist: packages/backend/dist/resources/model/model.service.js:354 (approx.)
+dist: packages/backend/dist/resources/model/model.service.js:251
 <a name="inlineResources"></a>
 
 ## inlineResources(json, resources)
@@ -206,4 +206,4 @@ Rewrites resource URIs to data URIs so the .gltf is a single self-contained file
 | resources | <code>{ [s: string]: Uint8Array&lt;ArrayBuffer&gt;; }</code> | The resource map from writeJSON. |
 
 src: packages/backend/src/resources/model/model.service.ts:346  
-dist: packages/backend/dist/resources/model/model.service.js:376 (approx.)
+dist: packages/backend/dist/resources/model/model.service.js:268
