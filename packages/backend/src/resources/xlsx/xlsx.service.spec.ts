@@ -453,3 +453,27 @@ describe('XlsxService.metadata', () => {
   });
 });
 
+
+describe('XlsxService readBody fallbacks and raw mode', () => {
+  it('rejects a missing content-type header with 415', async () => {
+    const stream = Readable.from([Buffer.from('x')]);
+    const cls = {
+      request: () => ({ method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const service = new XlsxService(cls as never);
+    await expect(service.metadata({ maxCells: 100_000 })).rejects.toMatchObject({ status: 415 });
+  });
+
+  it('raw=true yields null for empty cells instead of an empty string', async () => {
+    const XLSX = await import('xlsx');
+    const workbook = XLSX.utils.book_new();
+    const sheet = XLSX.utils.aoa_to_sheet([['a', 'b'], [1, undefined as never]]);
+    XLSX.utils.book_append_sheet(workbook, sheet, 'People');
+    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+    const service = serviceFor(buffer);
+    const result = await service.extract({ sheet: 'People', maxCells: 100_000, raw: true });
+    expect(result.records).toEqual([{ a: 1, b: null }]);
+  });
+});

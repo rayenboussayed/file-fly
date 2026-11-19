@@ -73,3 +73,15 @@ describe('parseOoxmlMetadata', () => {
     expect(meta.application).toBeUndefined();
   });
 });
+
+describe('parseOoxmlMetadata edge nodes', () => {
+  it('unwraps CDATA sections and numeric-typed values', () => {
+    const parts = read({
+      'docProps/core.xml':
+        '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title><![CDATA[Spreadsheet & Co]]></dc:title><cp:revision>42</cp:revision></cp:coreProperties>',
+    });
+    const meta = parseOoxmlMetadata(parts);
+    expect(meta.title).toBe('Spreadsheet & Co');
+    expect(meta.revision).toBe('42');
+  });
+});

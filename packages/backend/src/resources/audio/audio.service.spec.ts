@@ -28,3 +28,25 @@ describe('AudioService', () => {
     await expect(service.stats()).rejects.toBeTruthy();
   });
 });
+describe('AudioService uncovered paths', () => {
+  it('covers dna with a worker-built response', async () => {
+    const workerService = {
+      createWorker: vi.fn(async () => Readable.from([JSON.stringify({ algorithm: 'aud-pdq' })])),
+    };
+    const service = new AudioService(workerService as never, {
+      fileSignature: () => ({ get: () => ({ ext: 'mp3', mime: 'audio/mpeg' }) }),
+    } as never);
+    await expect(service.dna()).resolves.toEqual({ algorithm: 'aud-pdq' });
+  });
+
+  it('rejects with 415 when the file signature is missing entirely', async () => {
+    const workerService = { createWorker: vi.fn() };
+    const service = new AudioService(workerService as never, {
+      fileSignature: () => ({ get: () => undefined }),
+    } as never);
+    await expect(service.dna()).rejects.toMatchObject({ status: 415 });
+    await expect(service.metadata()).rejects.toMatchObject({ status: 415 });
+    await expect(service.stats()).rejects.toMatchObject({ status: 415 });
+    await expect(service.processor({ payload: {} as never })).rejects.toMatchObject({ status: 415 });
+  });
+});

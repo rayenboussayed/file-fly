@@ -112,3 +112,24 @@ describe('ImageService', () => {
     expect(recognizeCalls[0]![1]).toEqual(expected);
   });
 });
+
+describe('ImageService signature gate', () => {
+  it('rejects with 415 when the signature is missing or not an image', async () => {
+    const workerService = { createWorker: vi.fn() };
+    const missing = new ImageService(
+      { fileSignature: () => ({ get: () => undefined }) } as never,
+      { isImage: () => true } as never,
+      {} as never,
+      workerService as never,
+    );
+    await expect(missing.processor({ payload: {} as never })).rejects.toMatchObject({ status: 415 });
+
+    const notImage = new ImageService(
+      { fileSignature: () => ({ get: () => ({ ext: 'pdf', mime: 'application/pdf' }) }) } as never,
+      { isImage: () => false } as never,
+      {} as never,
+      workerService as never,
+    );
+    await expect(notImage.processor({ payload: {} as never })).rejects.toMatchObject({ status: 415 });
+  });
+});

@@ -204,3 +204,14 @@ describe('CsvService.metadata', () => {
     expect(meta.columns).toBe(2);
   });
 });
+
+describe('CsvService typed cells census', () => {
+  it('counts cast date cells as dates when cast_date is on', async () => {
+    const service = makeService(Buffer.from('name,when\na,"2026-01-02T00:00:00Z"\nb,"2026-01-03T00:00:00Z"\n'));
+    const meta = await service.metadata({ cast: true, cast_date: true, delimiter: ',', maxRows: 100 });
+    expect(meta.perColumn[1]).toEqual({
+      index: 1,
+      types: { boolean: 0, date: 2, empty: 0, number: 0, string: 1 },
+    });
+  });
+});

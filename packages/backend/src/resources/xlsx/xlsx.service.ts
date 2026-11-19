@@ -180,14 +180,14 @@ const sheetIndex = (names: string[], sheet: string | undefined): number => {
   if (sheet === undefined) return 0;
   const exact = names.indexOf(sheet);
   if (exact !== -1) return exact;
-  if (!/^\d+$/.test(sheet ?? '')) {
+  if (!/^\d+$/.test(sheet)) {
     throw new BadRequestException({
       code: 'XLSX_SHEET_NOT_FOUND',
       message: `sheet "${sheet}" not found (have: ${names.join(', ')})`,
     });
   }
   const asNumber = Number(sheet);
-  if (asNumber < 0 || asNumber >= names.length) {
+  if (asNumber >= names.length) {
     throw new BadRequestException({
       code: 'XLSX_SHEET_NOT_FOUND',
       message: `sheet index ${asNumber} out of range (0-${names.length - 1})`,

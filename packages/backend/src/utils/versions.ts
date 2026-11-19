@@ -14,8 +14,8 @@ const require_ = createRequire(import.meta.url);
  * @param name The package name to look up.
  * @returns The package version string.
  */
-function packageVersion(name: string): string {
-  let dir = dirname(require_.resolve(name));
+export function packageVersion(name: string, fromDir?: string): string {
+  let dir = fromDir ?? dirname(require_.resolve(name));
   for (let depth = 0; depth < 6; depth += 1) {
     let raw: string;
     try {

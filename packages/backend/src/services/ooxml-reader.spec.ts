@@ -62,3 +62,22 @@ describe('OoxmlReader.partText', () => {
     expect(OoxmlReader.partText(parts, 'nope.xml')).toBeUndefined();
   });
 });
+
+describe('OoxmlReader edge containers', () => {
+  it('rejects entries with an unsupported compression method', () => {
+    // patch every local + central directory entry to compression method 9
+    const original = Buffer.from(zipSync({ 'a.xml': Buffer.from('<a/>') }));
+    const buffer = Buffer.from(original);
+    for (let offset = buffer.indexOf('PK\x03\x04'); offset !== -1; offset = buffer.indexOf('PK\x03\x04', offset + 4)) {
+      buffer.writeUInt16LE(9, offset + 8); // method = bzip2 (unsupported)
+    }
+    for (let offset = buffer.indexOf('PK\x01\x02'); offset !== -1; offset = buffer.indexOf('PK\x01\x02', offset + 4)) {
+      buffer.writeUInt16LE(9, offset + 10); // central dir method
+    }
+    expect(() => OoxmlReader.readParts(buffer)).toThrow('unsupported compression method');
+  });
+
+  it('rejects a package with zero entries', () => {
+    expect(() => OoxmlReader.readParts(Buffer.from(zipSync({})))).toThrow('package has no readable entries');
+  });
+});
