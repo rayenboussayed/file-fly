@@ -1,6 +1,5 @@
-import sharp from 'sharp';
 import { Readable, Writable } from 'node:stream';
-
+import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ImageProcessorType } from '../schema.js';
@@ -61,21 +60,21 @@ describe('Processor', () => {
       payload({
         blur: 2,
         fit: 'cover',
-        flop: true,
         flip: true,
+        flop: true,
         greyscale: true,
+        height: 8,
         kernel: 'nearest',
         median: 3,
         negate: true,
         normalize: true,
-        position: 'centre',
+        position: 'center',
         rotate: 90,
         sharpen: 2,
         threshold: 128,
-        tint: { b: 10, g: 20, r: 30 },
+        tint: '#1e2832',
         trim: true,
         width: 8,
-        height: 8,
       }),
     );
     const out = await drain();
@@ -96,7 +95,6 @@ describe('Processor', () => {
   });
 
   it('rejects an invalid payload without writing output bytes', async () => {
-    const input = await fixture();
     const chunks: Buffer[] = [];
     const stdout = new Writable({
       write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {

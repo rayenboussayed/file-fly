@@ -41,11 +41,11 @@ const xml = new XMLParser({
 });
 
 const text = (value: unknown): string | undefined => {
+  // Tag values are never coerced by our parser config: leaves are strings or objects.
   if (typeof value === 'string') return value;
-  if (typeof value === 'number') return String(value);
   if (value && typeof value === 'object' && '#text' in value) {
     const inner = (value as { '#text': unknown })['#text'];
-    return typeof inner === 'string' ? inner : String(inner);
+    return String(inner);
   }
   return undefined;
 };

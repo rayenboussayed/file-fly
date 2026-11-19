@@ -1,4 +1,5 @@
-import { Decoder, Demuxer, Encoder, Muxer, pipeline } from 'node-av/api';
+import { Decoder, Demuxer, Encoder, FilterAPI, Muxer, pipeline } from 'node-av/api';
+import { FF_ENCODER_LIBOPUS } from 'node-av/constants';
 import { workerData } from 'node:worker_threads';
 
 import type { MuxerFormat } from '@/constants/av-formats.js';
@@ -63,7 +64,11 @@ export async function processMedia(payload: AudioProcessorType, inputData: Audio
   }
 
   using decoder = await Decoder.create(stream);
-  const filters = buildFilters(payload);
+  // Opus requires an 8..48 kHz rate and s16/flt samples; fltp input is rejected by libopus.
+  const encoderIsOpus = codecFor(format, payload.codec) === FF_ENCODER_LIBOPUS;
+  const filters = encoderIsOpus
+    ? [FilterAPI.create('aresample=48000'), FilterAPI.create('aformat=sample_fmts=flt'), ...buildFilters(payload)]
+    : buildFilters(payload);
   const bitrate: string = payload.bitrate ?? (format === 'ogg' ? '96k' : '128k');
 
   using encoder = await Encoder.create(codecFor(format, payload.codec), {

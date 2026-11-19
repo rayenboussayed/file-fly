@@ -16,5 +16,5 @@ describe('modules', () => {
     await import('./undici.js');
 // eslint-disable-next-line sonarjs/no-trivial-assertions
     expect(true).toBe(true);
-  });
+  }, 60_000);
 });

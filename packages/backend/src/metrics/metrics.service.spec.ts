@@ -375,3 +375,32 @@ describe('MetricsService record', () => {
     service.onApplicationShutdown();
   });
 });
+
+  it('reports zeroed percentiles when only histogram rows are missing', () => {
+    const service = makeService();
+    service.record(record({ durationMs: 42 }));
+    service.flush();
+    const internals = service as never as {
+      db: { exec: (sql: string) => void };
+    };
+    internals.db.exec('DELETE FROM metric_hist');
+    const snapshot = service.snapshot();
+    expect(snapshot.perRoute[0]?.p50).toBe(0);
+    expect(snapshot.perRoute[0]?.p95).toBe(0);
+    expect(snapshot.perRoute[0]?.p99).toBe(0);
+    service.onApplicationShutdown();
+  });
+
+  it('reports avgMs 0 when the duration counter rows are missing', () => {
+    const service = makeService();
+    service.record(record({ durationMs: 42 }));
+    service.flush();
+    const internals = service as never as {
+      db: { exec: (sql: string) => void };
+    };
+    internals.db.exec("DELETE FROM metric_counter WHERE name = 'duration'");
+    const snapshot = service.snapshot();
+    expect(snapshot.perRoute[0]?.avgMs).toBe(0);
+    expect(snapshot.perRoute[0]?.requests).toBe(1);
+    service.onApplicationShutdown();
+  });

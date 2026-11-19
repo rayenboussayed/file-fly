@@ -1,7 +1,7 @@
+/* eslint-disable security/detect-non-literal-fs-filename -- all paths are built from a fresh mkdtemp dir, never from user input */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { packageVersion } from './versions.js';

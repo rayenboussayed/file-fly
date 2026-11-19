@@ -10,9 +10,16 @@ const tinyVideo = () =>
 const originalStdin = process.stdin;
 const originalStdout = process.stdout;
 
-/** Replaces process.stdin with a replay of the tiny fixture. */
-const stubStdin = () => {
-  Object.defineProperty(process, 'stdin', { value: Readable.from([tinyVideo()]), writable: true });
+/**
+ * Replaces process.stdin with a replay of the tiny fixture.
+ * @param bytes
+ */
+/**
+ * Replaces process.stdin with a replay of the fixture.
+ * @param bytes - Bytes to replay (defaults to the tiny video fixture).
+ */
+const stubStdin = (bytes: Buffer = tinyVideo()) => {
+  Object.defineProperty(process, 'stdin', { value: Readable.from([bytes]), writable: true });
 };
 
 /**
@@ -222,5 +229,77 @@ describe('dna trim fallback', () => {
     const parsed = JSON.parse(lines[0] as string) as { algorithm: string; frames: unknown[] };
     expect(parsed.algorithm).toBe('vid-pdq');
     expect(parsed.frames.length).toBeGreaterThan(0);
+  }, 30000);
+});
+
+describe('video worker processMedia passthrough', () => {
+  beforeEach(() => {
+    vi.stubEnv('FILE_FLY_WORKER', '0');
+    stubStdin();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    vi.unstubAllEnvs();
+  });
+
+  it('passes the input through untouched when no transcoding is requested', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'processor', payload: { format: 'mp4' } });
+    await waitForWorker(10_000);
+    const out = Buffer.concat(chunks);
+    expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
+  }, 30000);
+});
+
+describe('processMedia direct calls', () => {
+  it('rejects an unsupported output format', async () => {
+    stubStdin();
+    stubStdout();
+    const { processMedia } = await import('./processor.js');
+    await expect(processMedia({ format: 'bogus' } as never)).rejects.toThrow('Streaming output does not support format: bogus');
+    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+  });
+
+  it('defaults to fragmented mp4 when format is omitted', async () => {
+    stubStdin();
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'processor', payload: {} });
+    await waitForWorker(10_000);
+    const out = Buffer.concat(chunks);
+    expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
+    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+  }, 30000);
+});
+
+describe('video worker screenshot edge cases', () => {
+  beforeEach(() => {
+    vi.stubEnv('FILE_FLY_WORKER', '0');
+    stubStdin();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    vi.unstubAllEnvs();
+  });
+
+  it('fails cleanly when no frames are requested', async () => {
+    const chunks = stubStdout();
+    stubStdin();
+    await importWorker({ inputFormat: 'mp4', operation: 'screenshot', payload: { frames: [] } });
+    await waitForWorker(4000);
+    expect(Buffer.concat(chunks)).toHaveLength(0);
+  }, 30000);
+
+  it('fails cleanly on an audio-only input (no video stream to decode)', async () => {
+    const chunks = stubStdout();
+    stubStdin(fs.readFileSync(path.join('assets', 'audios', 'tiny.mp3')));
+    await importWorker({ inputFormat: 'mp3', operation: 'screenshot', payload: { frames: [0] } });
+    await waitForWorker(4000);
+    expect(Buffer.concat(chunks)).toHaveLength(0);
   }, 30000);
 });

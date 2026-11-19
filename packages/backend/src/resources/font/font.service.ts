@@ -20,7 +20,7 @@ import { isFontMime } from './schema.js';
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
   const contentType = String(cls.request()?.headers?.['content-type'] ?? '');
-  const mime = contentType.split(';', 1)[0]?.trim() ?? '';
+  const mime = contentType.split(';', 1)[0]?.trim() ?? ''; // split always yields a first element; the ?? '' is for the type system
   if (!isFontMime(mime) && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for font input`);
   }
@@ -104,7 +104,7 @@ const openFont = (
  * @param buffer - The buffered upload.
  * @returns The format tag (ttf, otf, woff, woff2).
  */
-const signatureFormat = (buffer: Buffer): string => {
+export const signatureFormat = (buffer: Buffer): string => {
   // The signature gate already let this through; default to ttf (glyf or CFF in an sfnt).
   const magic = buffer.subarray(0, 4).toString('latin1');
   if (magic === 'wOFF') return 'woff';
@@ -147,6 +147,7 @@ const metadataOf = (font: fontkit.Font, format: string, collection: string[]) =>
   lineGap: font.lineGap,
   // fontkit exposes the named instances at runtime but @types/fontkit omits the getter.
   namedVariations:
+    // @types/fontkit omits the getter; fontkit 3.0.0 always provides it (returns {} for non-variable fonts)
     (font as unknown as { namedVariations?: Record<string, unknown> }).namedVariations ?? {},
   numGlyphs: font.numGlyphs,
   postscriptName: font.postscriptName,

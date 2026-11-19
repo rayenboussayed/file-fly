@@ -473,7 +473,7 @@ describe('XlsxService readBody fallbacks and raw mode', () => {
     XLSX.utils.book_append_sheet(workbook, sheet, 'People');
     const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
     const service = serviceFor(buffer);
-    const result = await service.extract({ sheet: 'People', maxCells: 100_000, raw: true });
+    const result = await service.extract({ maxCells: 100_000, raw: true, sheet: 'People' });
     expect(result.records).toEqual([{ a: 1, b: null }]);
   });
 });
@@ -512,5 +512,77 @@ describe('XlsxService.metadata advanced arms', () => {
     const meta = await serviceFor(bytes).metadata({ maxCells: 1000 });
     expect(meta.sheets[0]?.rows).toBe(3);
     expect(meta.sheets[0]?.types).toMatchObject({ b: 2, n: 2, s: 6 });
+  });
+});
+
+describe('XlsxService unit edge coverage', () => {
+  it('extract defaults to the first sheet when no sheet is given', async () => {
+    const bytes = await serviceFor(Buffer.from('x')).build({
+      sheets: [{ rows: [['count', 'name'], [1, 'a']] }],
+    });
+    const result = await serviceFor(bytes).extract({ maxCells: 1000, raw: true });
+    expect(result.sheet).toBe('Sheet1');
+    expect(result.records).toEqual([{ count: 1, name: 'a' }]);
+  });
+
+  it('extract with raw=false yields empty strings for empty cells', async () => {
+    const XLSX = await import('xlsx');
+    const workbook = XLSX.utils.book_new();
+    const sheet = XLSX.utils.aoa_to_sheet([['a', 'b'], [1, undefined as never]]);
+    XLSX.utils.book_append_sheet(workbook, sheet, 'People');
+    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+    const result = await serviceFor(buffer).extract({ maxCells: 1000, raw: false, sheet: 'People' });
+    expect(result.records[0]).toHaveProperty('b', '');
+  });
+
+  it('accepts application/octet-stream uploads', async () => {
+    const stream = Readable.from([Buffer.from('not needed here')]);
+    const cls = {
+      request: () => ({ headers: { 'content-type': 'application/octet-stream' }, method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    // 415 comes before any parse work; octet-stream is allowed through to the OOXML gate.
+    const service = new XlsxService(cls as never);
+    await expect(service.metadata({ maxCells: 1000 })).rejects.toThrow();
+    // The rejection must NOT be the 415 content-type error.
+    await expect(service.metadata({ maxCells: 1000 })).rejects.not.toMatchObject({ status: 415 });
+  });
+
+  it('rejects a workbook with zero sheets with 400', async () => {
+    const { zipSync } = await import('fflate');
+    const empty = zipSync({
+      '[Content_Types].xml': Buffer.from('<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>', 'utf8'),
+      'xl/workbook.xml': Buffer.from('<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets/></workbook>', 'utf8'),
+    });
+    const service = serviceFor(Buffer.from(empty));
+    await expect(service.extract({ maxCells: 1000, raw: true })).rejects.toMatchObject({
+      response: { code: 'XLSX_SHEET_NOT_FOUND' },
+    });
+  });
+
+  it('reports fallbacks for a bare workbook without Props/Names/Workbook', async () => {
+    const XLSX = await import('xlsx');
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([['a'], [1]]), 'Only');
+    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+    const meta = await serviceFor(buffer).metadata({ maxCells: 1000 });
+    expect(meta.sheets).toHaveLength(1);
+    expect(meta.definedNames).toEqual([]);
+    expect(meta.props).toEqual(expect.objectContaining({}));
+    expect(meta.custprops).toEqual({});
+  });
+});
+
+describe('XlsxService content-type fallbacks', () => {
+  it('rejects a missing content-type header with 415', async () => {
+    const stream = Readable.from([Buffer.from('x')]);
+    const cls = {
+      request: () => ({ method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const service = new XlsxService(cls as never);
+    await expect(service.metadata({ maxCells: 1000 })).rejects.toMatchObject({ status: 415 });
   });
 });

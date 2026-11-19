@@ -55,7 +55,7 @@ export function findUnencodableWinAnsi(
 ): Array<{ char: string; codePoint: number }> {
   const seen = new Map<number, string>();
   for (const char of text) {
-    const codePoint = char.codePointAt(0) ?? 0;
+    const codePoint = char.codePointAt(0) ?? 0; // for..of always yields a full code point
     if (!WINANSI.has(codePoint) && !seen.has(codePoint)) {
       seen.set(codePoint, char);
       if (seen.size >= limit) break;

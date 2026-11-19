@@ -12,6 +12,7 @@ const require_ = createRequire(import.meta.url);
  * the directory tree is walked upward until the matching `package.json`
  * is found.
  * @param name The package name to look up.
+ * @param fromDir Optional directory to start the walk-up from (defaults to the resolved package entry's directory).
  * @returns The package version string.
  */
 export function packageVersion(name: string, fromDir?: string): string {

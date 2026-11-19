@@ -463,3 +463,35 @@ describe('ModelService optimize pipeline arms', () => {
     expect(positions === null || positions!.getCount() >= 3).toBe(true);
   });
 });
+
+describe('ModelService deep scene graphs', () => {
+  it('marks depth truncation at level 32 with childrenTruncated', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+    const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+    const mesh = doc.createMesh('deep').addPrimitive(
+      doc.createPrimitive().setAttribute('POSITION', accessor),
+    );
+    let parent = doc.createNode('n0').setMesh(mesh);
+    const scene = doc.createScene('deep');
+    scene.addChild(parent);
+    for (let index = 1; index < 40; index += 1) {
+      const child = doc.createNode(`n${index}`);
+      parent.addChild(child);
+      parent = child;
+    }
+    const bytes = await new NodeIO().writeBinary(doc);
+
+    const { service } = makeService(Buffer.from(bytes));
+    const extract = await service.extract();
+    // descend into the chain until depth 33 (root is depth 1): the 33rd flag appears there
+    // the scene root is depth 0; node n32 sits at depth 32 and carries the truncation marker
+    let node = extract.scenes[0]?.nodes[0];
+    for (let depth = 0; depth < 32 && node !== undefined; depth += 1) {
+      node = (node.children as Array<Record<string, unknown>> | undefined)?.[0] as typeof node;
+    }
+    expect(node?.childrenTruncated).toBe(1);
+  });
+});

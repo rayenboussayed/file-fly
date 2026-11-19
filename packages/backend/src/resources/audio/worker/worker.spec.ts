@@ -86,3 +86,33 @@ describe('audio worker', () => {
     expect(Buffer.concat(chunks)).toHaveLength(0);
   }, 30000);
 });
+
+describe('audio worker passthrough', () => {
+  beforeEach(() => {
+    vi.stubEnv('FILE_FLY_WORKER', '0');
+    stubStdin(tinyAudio());
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    vi.unstubAllEnvs();
+  });
+
+  it('passes the input through untouched when no transcoding is requested', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp3', operation: 'processor', payload: { format: 'mp3' } });
+    await waitForWorker(10_000);
+    const out = Buffer.concat(chunks);
+    expect(out.length).toBeGreaterThan(0);
+  }, 30000);
+
+  it('transcodes to ogg with opus', async () => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp3', operation: 'processor', payload: { codec: 'opus', format: 'ogg' } });
+    await waitForWorker(15_000);
+    const out = Buffer.concat(chunks);
+    expect(out.length).toBeGreaterThan(0);
+    expect(out.subarray(0, 4).toString('latin1')).toBe('OggS');
+  }, 30000);
+});

@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import { PassThrough } from 'node:stream';
 import { Readable } from 'node:stream';
-
 import { describe, expect, it } from 'vitest';
 
 import { FileTypeService } from './file-type.service.js';
@@ -75,6 +74,13 @@ describe('FileTypeService signature download paths', () => {
       ...Array.from({ length: 64 }, () => Buffer.alloc(1024, 0xab)),
     ];
     let pulled = 0;
+    /**
+     *
+     */
+    /**
+     * Replays the fixture chunks while counting them.
+     * @yields The fixture chunks one at a time.
+     */
     async function* counted() {
       for (const chunk of chunks) {
         pulled += 1;
@@ -97,6 +103,13 @@ describe('FileTypeService signature download paths', () => {
     const cls = { fileSignature: () => ({ set: vi.fn() }) };
     const service = new FileTypeService(cls as never);
 
+    /**
+     *
+     */
+    /**
+     * Replays the fixture header, then fails mid-read.
+     * @yields The fixture header, then throws.
+     */
     async function* broken() {
       yield Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
       throw new Error('connection reset');

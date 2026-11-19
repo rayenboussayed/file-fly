@@ -22,9 +22,10 @@ import type { VideoProcessorType } from '../schema.js';
  */
 export function parseBitrate(value: string): number {
   const match = value.match(/^(\d+)([kM])$/i);
-  if (!match) return 2_000_000;
-  const [, amount, unit] = match;
-  return (Number(amount) || 0) * (unit?.toLowerCase() === 'k' ? 1000 : 1_000_000);
+  const amount = match?.[1];
+  const unit = match?.[2];
+  if (amount === undefined || unit === undefined) return 2_000_000;
+  return Number(amount) * (unit.toLowerCase() === 'k' ? 1_000 : 1_000_000);
 }
 
 // eslint-disable-next-line jsdoc/require-returns

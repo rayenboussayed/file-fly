@@ -124,4 +124,19 @@ describe('FileScannerInterceptor', () => {
     await expect(interceptor.intercept(undefined as never, { handle } as never)).rejects.toBe(failure);
     expect(handle).not.toHaveBeenCalled();
   });
+
+  it('throws an internal error when AV is enabled but no source is bound', async () => {
+    antiVirusMock.enabled.mockReturnValue(true);
+    const cls = {
+      request: () => ({ headers: {}, method: 'POST', url: '/font/metadata' }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+    };
+    const { FileScannerInterceptor } = await import('./file-scanner.interceptor.js');
+    const interceptor = new FileScannerInterceptor(cls as never, antiVirusMock as never);
+    await expect(
+      interceptor.intercept(undefined as never, { handle: () => 'next' } as never),
+    ).rejects.toMatchObject({ status: 500 });
+    expect(antiVirusMock.scan).not.toHaveBeenCalled();
+  });
 });

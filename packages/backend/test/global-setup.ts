@@ -59,7 +59,7 @@ export default async function setup() {
 
   // Font fixtures for the /pdf and /font e2es; fail loudly if any is missing.
   fs.copyFileSync('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', path.join(FIXTURES_DIR, 'DejaVuSans.ttf'));
-  for (const name of ['tiny.ttf', 'tiny.ttc', 'tiny.woff', 'tiny.woff2']) {
+  for (const name of ['tiny.ttf', 'tiny.ttc', 'tiny.woff', 'tiny.woff2', 'tiny-empty.ttc', 'tiny-no-os2.ttf', 'tiny-dup.ttf']) {
     fs.copyFileSync(path.join('assets', 'fonts', name), path.join(FIXTURES_DIR, name));
   }
   fs.copyFileSync(path.join('assets', 'models', 'tiny.glb'), path.join(FIXTURES_DIR, 'tiny.glb'));

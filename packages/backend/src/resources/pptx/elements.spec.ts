@@ -231,14 +231,14 @@ describe('buildPresentation', () => {
         data: png.toString('base64'),
         h: 1,
         imageType: 'png',
-        sizing: { type: 'contain', w: 2, h: 2 },
+        sizing: { h: 2, type: 'contain', w: 2 },
         type: 'image',
         w: 4,
         x: 1,
         y: 1,
       },
     ]);
-    const { unzipSync, strFromU8 } = await import('fflate');
+    const { strFromU8, unzipSync } = await import('fflate');
     const parts = unzipSync(bytes);
     const slide = Object.entries(parts).find(([name]) => /slide1\.xml$/.test(name))?.[1];
     expect(strFromU8(slide ?? new Uint8Array())).toContain('sized');
@@ -249,7 +249,7 @@ describe('buildPresentation', () => {
       [{ h: 1, runs: [{ text: 'body' }], type: 'text', w: 4, x: 1, y: 1 }],
       { theme: { bodyFontFace: 'Fixture Body', headFontFace: 'Fixture Head' } },
     );
-    const { unzipSync, strFromU8 } = await import('fflate');
+    const { strFromU8, unzipSync } = await import('fflate');
     const parts = unzipSync(bytes);
     const theme = Object.entries(parts).find(([name]) => /theme1\.xml$/.test(name))?.[1];
     expect(theme).toBeTruthy();
@@ -268,3 +268,15 @@ describe('buildPresentation', () => {
     expect(strFromU8(theme ?? new Uint8Array())).toContain('Fixture Head');
   });
 });
+
+  it('applies a bodyFontFace theme without a headFontFace', async () => {
+    const bytes = await pack(
+      [{ h: 1, runs: [{ text: 'body' }], type: 'text', w: 4, x: 1, y: 1 }],
+      { theme: { bodyFontFace: 'Fixture Body' } },
+    );
+    const { strFromU8, unzipSync } = await import('fflate');
+    const parts = unzipSync(bytes);
+    const theme = Object.entries(parts).find(([name]) => /theme1\.xml$/.test(name))?.[1];
+    expect(theme).toBeTruthy();
+    expect(strFromU8(theme ?? new Uint8Array())).toContain('Fixture Body');
+  });

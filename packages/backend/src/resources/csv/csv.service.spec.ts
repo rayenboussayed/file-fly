@@ -233,3 +233,50 @@ describe('CsvService readBody fallbacks', () => {
     await expect(service.metadata({ maxRows: 10 })).rejects.toMatchObject({ status: 415 });
   });
 });
+
+describe('CsvService readBody octet-stream and typed census', () => {
+  it('accepts application/octet-stream uploads', async () => {
+    const service = makeService(Buffer.from('name,count\nx,1\n'), 'application/octet-stream');
+    await expect(service.metadata({ maxRows: 10 })).resolves.toMatchObject({ rows: 2 });
+  });
+
+  it('casts booleans and counts them in the census', async () => {
+    const service = makeService(Buffer.from('name,flag\na,true\nb,false\n'));
+    const meta = await service.metadata({ maxRows: 10 });
+    expect(meta.perColumn[1]).toEqual({
+      index: 1,
+      types: { boolean: 2, date: 0, empty: 0, number: 0, string: 1 },
+    });
+  });
+
+  it('treats a single string columns option as a one-column header via the schema', async () => {
+    const { CsvExtractSchema } = await import('./schema.js');
+    expect(CsvExtractSchema.parse({ columns: 'only' }).columns).toEqual(['only']);
+    expect(CsvExtractSchema.parse({ columns: 'true' }).columns).toBe(true);
+    const service = makeService(Buffer.from('alpha\nbeta\n'));
+    const result = await service.extract(CsvExtractSchema.parse({ columns: 'only2' }) as never);
+    expect(result.records).toEqual([{ only2: 'alpha' }, { only2: 'beta' }]);
+  });
+});
+
+describe('CsvService.toBadRequest fallbacks', () => {
+  it('uses the error code when one is present (csv-parse style)', async () => {
+    const { toBadRequest } = await import('./csv.service.js');
+    const withCode = Object.assign(new Error('bad input'), { code: 'CSV_PARSE_FAIL' });
+    expect(toBadRequest(withCode).getResponse()).toEqual({ code: 'CSV_PARSE_FAIL', message: 'bad input' });
+  });
+
+  it('falls back to CSV_ERROR for codeless errors and stringifies non-Errors', async () => {
+    const { toBadRequest } = await import('./csv.service.js');
+    expect(toBadRequest(new Error('no code')).getResponse()).toEqual({ code: 'CSV_ERROR', message: 'no code' });
+    expect(toBadRequest('plain string').getResponse()).toEqual({ code: 'CSV_ERROR', message: 'plain string' });
+  });
+});
+
+describe('CsvService columns:true through the service', () => {
+  it('returns object records from the first row as keys', async () => {
+    const service = makeService(Buffer.from('a,b\n1,2\n'));
+    const result = await service.extract({ columns: true, maxRows: 10 } as never);
+    expect(result.records).toEqual([{ a: '1', b: '2' }]);
+  });
+});

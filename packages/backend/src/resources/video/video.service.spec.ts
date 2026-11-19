@@ -56,7 +56,7 @@ describe('VideoService uncovered paths', () => {
     await expect(service.metadata()).rejects.toMatchObject({ status: 415 });
     await expect(service.stats()).rejects.toMatchObject({ status: 415 });
     await expect(service.processor({ payload: {} as never })).rejects.toMatchObject({ status: 415 });
-    await expect(service.screenshot({ payload: { frames: [0] } as never })).rejects.toMatchObject({ status: 415 });
+    await expect(service.screenshot({ payload: { frames: '0' } as never })).rejects.toMatchObject({ status: 415 });
   });
 
   it('rejects screenshot when the signature is not a video', async () => {
@@ -66,6 +66,19 @@ describe('VideoService uncovered paths', () => {
       { fileSignature: () => ({ get: () => ({ ext: 'png', mime: 'image/png' }) }) } as never,
       { isVideo: () => false } as never,
     );
-    await expect(service.screenshot({ payload: { frames: [0] } as never })).rejects.toMatchObject({ status: 415 });
+    await expect(service.screenshot({ payload: { frames: '0' } as never })).rejects.toMatchObject({ status: 415 });
+  });
+});
+
+describe('VideoService demuxer table', () => {
+  it('rejects a video whose container has no demuxer mapping (zxv) with 415', async () => {
+    const workerService = { createWorker: vi.fn() };
+    const service = new VideoService(
+      workerService as never,
+      { fileSignature: () => ({ get: () => ({ ext: 'zxv', mime: 'video/zxv' }) }) } as never,
+      { isVideo: () => true } as never,
+    );
+    await expect(service.screenshot({ payload: { frames: '0' } as never })).rejects.toMatchObject({ status: 415 });
+    expect(workerService.createWorker).not.toHaveBeenCalled();
   });
 });

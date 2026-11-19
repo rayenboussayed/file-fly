@@ -1,5 +1,4 @@
 import { FilterAPI, type NamedStages } from 'node-av/api';
-
 import {
   Decoder,
   Demuxer,
@@ -14,13 +13,13 @@ import {
 import { workerData } from 'node:worker_threads';
 
 import type { MuxerFormat } from '@/constants/av-formats.js';
-import { createWorkerLogger } from '../../../logging/worker-logger.js';
 
 import { isAllowedOutputFormat, MP4_FRAGMENTED_OPTIONS } from '@/utils/capabilities.js';
 
 import type { VideoProcessorType } from '../schema.js';
 import type { VideoWorkerData } from '../type.js';
 
+import { createWorkerLogger } from '../../../logging/worker-logger.js';
 import { parseBitrate, videoEncoderConstant } from './codecs.js';
 import { buildAudioFilters, buildVideoFilters } from './filters.js';
 

@@ -9,6 +9,12 @@ import { trimmed } from '@/utils/zod.js';
 const formatKeys = Object.keys(sharp.format) as Array<keyof FormatEnum>;
 const fitKeys = Object.keys(sharp.fit) as Array<keyof FitEnum>;
 const kernelKeys = Object.keys(sharp.kernel) as Array<keyof KernelEnum>;
+/** resize position accepts sharp's corner/edge names plus everything in sharp.gravity. */
+const positionKeys = [
+  'top', 'right', 'bottom', 'left',
+  'left top', 'right top', 'left bottom', 'right bottom',
+  ...Object.keys(sharp.gravity),
+] as const;
 
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
 
@@ -25,7 +31,7 @@ export const ImageProcessorSchema = SourceSchema.partial().extend({
   median: z.coerce.number().int().positive().optional(),
   negate: z.stringbool().optional(),
   normalize: z.stringbool().optional(),
-  position: z.enum(kernelKeys).optional(),
+  position: z.enum(positionKeys).optional(),
   quality: z.coerce.number().int().positive().optional(),
   rotate: z.coerce.number().int().optional(),
   sharpen: z.coerce.number().int().positive().optional(),

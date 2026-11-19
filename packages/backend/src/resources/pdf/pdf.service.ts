@@ -127,7 +127,8 @@ export class PdfService {
       }
       const { text, totalPages } = await extractText(document, { mergePages: false });
       const meta = await getMeta(document, { parseDates: true });
-      const perPage = Array.isArray(text) ? text : [text];
+      // unpdf with mergePages: false always returns a per-page array (unpdf/dist/index.mjs).
+      const perPage = text;
       return {
         format: 'pdf',
         metadata: {

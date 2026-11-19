@@ -279,8 +279,11 @@ describe('WorkerService onError and stderr cap branches', () => {
   });
 
   it('caps stderr collection at 64 KiB', async () => {
+    // two chunks cross 64 KiB; a third must hit the early-return arm
     (Worker as unknown as { nextStderrChunks: Buffer[] }).nextStderrChunks.push(
-      Buffer.alloc(70 * 1024, 0x61),
+      Buffer.alloc(40 * 1024, 0x61),
+      Buffer.alloc(30 * 1024, 0x62),
+      Buffer.alloc(10 * 1024, 0x63),
     );
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.push(1);
     const cls = {
@@ -296,8 +299,8 @@ describe('WorkerService onError and stderr cap branches', () => {
       output.once('error', resolve);
       setTimeout(resolve, 2000);
     });
-    // Reaching here without throwing means the stderr handler survived 70 KB.
-    expect(true).toBe(true);
+    // The stderr handler survived 70 KB of discarded bytes and the worker still exited.
+    expect(mockedWorkerInstances()).toHaveLength(1);
   });
 
   it('workerPath resolves a worker entry relative to the declaring module', async () => {
@@ -352,6 +355,10 @@ describe('WorkerService debug-branch assertions', () => {
   });
 
   it('destroys the stdin branch when the upload source errors mid-stream', async () => {
+    /**
+     * Yields one chunk then fails mid-stream.
+     * @yields The first chunk, then throws.
+     */
     async function* broken() {
       yield Buffer.from('chunk');
       throw new Error('connection reset');

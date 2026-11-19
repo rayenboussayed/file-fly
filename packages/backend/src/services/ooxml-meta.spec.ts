@@ -74,6 +74,27 @@ describe('parseOoxmlMetadata', () => {
   });
 });
 
+  it('returns undefined for nil elements and missing parts', () => {
+    const parts = read({
+      'docProps/core.xml':
+        '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:creator><dc:inner>nested</dc:inner></dc:creator></cp:coreProperties>',
+    });
+    const meta = parseOoxmlMetadata(parts);
+    expect(meta.creator).toBeUndefined();
+    expect(parseOoxmlMetadata(new Map())).toEqual({
+      application: undefined,
+      company: undefined,
+      created: undefined,
+      creator: undefined,
+      description: undefined,
+      keywords: undefined,
+      lastModifiedBy: undefined,
+      modified: undefined,
+      revision: undefined,
+      subject: undefined,
+      title: undefined,
+    });
+  });
 describe('parseOoxmlMetadata edge nodes', () => {
   it('unwraps CDATA sections and numeric-typed values', () => {
     const parts = read({

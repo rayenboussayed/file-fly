@@ -237,12 +237,13 @@ const buildBorder = (border: { color?: string; size?: number; style: string }) =
   style: BORDER_STYLE[border.style] ?? BorderStyle.SINGLE,
 });
 
-const buildInline = (element: ElementType): ParagraphChild[] => {
+/** Block-level elements buildBlock delegates to buildInline — the inline subset only. */
+type InlineElementType = Extract<ElementType, { type: 'bookmark' | 'commentRef' | 'hyperlink' | 'image' }>;
+
+const buildInline = (element: InlineElementType): ParagraphChild[] => {
   switch (element.type) {
     case 'bookmark':
       return [new Bookmark({ children: buildRunChildren(element.children), id: element.name })];
-    case 'columnBreak':
-      return [new ColumnBreak()];
     case 'commentRef':
       return [new CommentRangeStart(element.id), new CommentRangeEnd(element.id), new CommentReference(element.id)];
     case 'hyperlink': {
@@ -259,11 +260,6 @@ const buildInline = (element: ElementType): ParagraphChild[] => {
     }
     case 'image':
       return [buildImageRun(element)];
-    case 'pageBreak':
-      return [new PageBreak()];
-    default:
-      // Block-level elements are emitted by buildBlock; this matches nothing.
-      return [];
   }
 };
 

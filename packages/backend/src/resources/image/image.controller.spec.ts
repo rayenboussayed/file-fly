@@ -47,6 +47,45 @@ describe('ImageController', () => {
     expect(imageService.processor).toHaveBeenCalledTimes(3);
   });
 
+
+  it('serves webp mime when a known format is requested, octet-stream otherwise', async () => {
+    const processed = Readable.from([]);
+    const imageService = {
+      processor: vi.fn(async () => processed),
+    };
+    const cls = {
+      bytesOut: () => ({ set: vi.fn() }),
+      fileSignature: () => ({ get: () => ({ mime: 'image/jpeg' }) }),
+    };
+    const controller = new ImageController(imageService as never, cls as never);
+
+    const webp = { raw: rawSink(), type: vi.fn() };
+    await controller.main(webp as never, { format: 'webp' } as never);
+    expect(webp.raw.setHeader).toHaveBeenCalledWith('content-type', 'image/webp');
+
+    const raw = { raw: rawSink(), type: vi.fn() };
+    await controller.main(raw as never, { format: 'raw' } as never);
+    expect(raw.raw.setHeader).toHaveBeenCalledWith('content-type', 'application/octet-stream');
+
+    const png = { raw: rawSink(), type: vi.fn() };
+    await controller.main(png as never, { format: 'png' } as never);
+    expect(png.raw.setHeader).toHaveBeenCalledWith('content-type', 'image/png');
+  });
+
+  it('falls back to octet-stream when neither a format nor a signature exists', async () => {
+    const processed = Readable.from([]);
+    const imageService = {
+      processor: vi.fn(async () => processed),
+    };
+    const cls = {
+      bytesOut: () => ({ set: vi.fn() }),
+      fileSignature: () => ({ get: () => undefined }),
+    };
+    const controller = new ImageController(imageService as never, cls as never);
+    const response = { raw: rawSink(), type: vi.fn() };
+    await controller.main(response as never, {} as never);
+    expect(response.raw.setHeader).toHaveBeenCalledWith('content-type', 'application/octet-stream');
+  });
   it('delegates ocr to the service with the query payload', async () => {
     const ocrResult: ImageOcrResult = {
       confidence: 90,

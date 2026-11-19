@@ -2,9 +2,13 @@ import { Buffer } from 'node:buffer';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hoisted = vi.hoisted(() => ({
+  callLogger: false,
   deferred: false,
   deferredResolvers: [] as Array<(value: unknown) => void>,
   failWarm: false,
+  loggerCalls: [] as string[],
+  reinitFails: false,
+  terminateFails: false,
 }));
 
 const BLOCKS_PAGE = {
@@ -16,8 +20,12 @@ const BLOCKS_PAGE = {
 } as const;
 
 vi.mock('tesseract.js', () => ({
-  createWorker: vi.fn(async () => {
+  createWorker: vi.fn(async (_langs: string[], _oem: unknown, config?: { logger?: (info: unknown) => void }) => {
     if (hoisted.failWarm) throw new Error('tesseract preload exploded');
+    if (hoisted.callLogger && config?.logger) {
+      config.logger('boot');
+      hoisted.loggerCalls.push('boot');
+    }
     return {
       recognize: vi.fn(async () => {
         if (hoisted.deferred) {
@@ -27,8 +35,13 @@ vi.mock('tesseract.js', () => ({
         }
         return BLOCKS_PAGE;
       }),
-      reinitialize: vi.fn(async () => undefined),
-      terminate: vi.fn(async () => undefined),
+      reinitialize: vi.fn(async () => {
+        if (hoisted.reinitFails) throw new Error('reinitialize exploded');
+        return undefined;
+      }),
+      terminate: vi.fn(async () => {
+        if (hoisted.terminateFails) throw new Error('terminate exploded');
+      }),
     };
   }),
   OEM: { LSTM_ONLY: 1 },
@@ -48,6 +61,10 @@ describe('TesseractService edge cases', () => {
     hoisted.failWarm = false;
     hoisted.deferred = false;
     hoisted.deferredResolvers.length = 0;
+    hoisted.reinitFails = false;
+    hoisted.terminateFails = false;
+    hoisted.callLogger = false;
+    hoisted.loggerCalls.length = 0;
   });
 
   afterEach(() => {
@@ -56,6 +73,7 @@ describe('TesseractService edge cases', () => {
 
   it('preloads only valid language codes on module init', async () => {
     const { TesseractService } = await importService({ TESSERACT_PRELOAD: 'eng,fra,xx,not a lang' });
+     
     // eslint-disable-next-line n/no-missing-import -- mocked above; no runtime resolution needed
     const { createWorker } = await import('tesseract.js');
     const service = new TesseractService();
@@ -83,6 +101,7 @@ describe('TesseractService edge cases', () => {
 
   it('recycles slots after the configured number of jobs', async () => {
     const { TesseractService } = await importService({ TESSERACT_RECYCLE_JOBS: '1' });
+     
     // eslint-disable-next-line n/no-missing-import -- mocked above; no runtime resolution needed
     const { createWorker } = await import('tesseract.js');
     const service = new TesseractService();
@@ -96,6 +115,7 @@ describe('TesseractService edge cases', () => {
 
   it('queues a waiter when the pool is saturated and hands off the slot', async () => {
     const { TesseractService } = await importService({ TESSERACT_POOL_SIZE: '1' });
+     
     // eslint-disable-next-line n/no-missing-import -- mocked above; no runtime resolution needed
     const { createWorker } = await import('tesseract.js');
     const service = new TesseractService();
@@ -133,6 +153,7 @@ describe('TesseractService line coverage', () => {
 
   it('recognizes when blocks lack paragraphs and lines', async () => {
     const { TesseractService } = await importService({});
+    // eslint-disable-next-line n/no-missing-import -- mocked above; no runtime resolution needed
     const { createWorker } = await import('tesseract.js');
     vi.mocked(createWorker).mockImplementationOnce(async () => ({
       recognize: vi.fn(async () => ({
@@ -140,7 +161,7 @@ describe('TesseractService line coverage', () => {
       })) as never,
       reinitialize: vi.fn(async () => undefined),
       terminate: vi.fn(async () => undefined),
-    }));
+    }) as never);
     const service = new TesseractService();
     const result = await service.recognize(Buffer.from('img'), ['eng']);
     expect(result.lines).toEqual([]);
@@ -149,6 +170,7 @@ describe('TesseractService line coverage', () => {
 
   it('reuses an idle slot for repeat calls with the same languages', async () => {
     const { TesseractService } = await importService({});
+    // eslint-disable-next-line n/no-missing-import -- mocked above; no runtime resolution needed
     const { createWorker } = await import('tesseract.js');
     const service = new TesseractService();
     await service.recognize(Buffer.from('img'), ['eng']);
@@ -160,6 +182,7 @@ describe('TesseractService line coverage', () => {
   it('cleans up the worker when createWorker resolves after the timeout', async () => {
     vi.stubEnv('TESSERACT_TIMEOUT_MS', '20');
     const { TesseractService } = await importService({ TESSERACT_TIMEOUT_MS: '20' });
+    // eslint-disable-next-line n/no-missing-import -- mocked above; no runtime resolution needed
     const { createWorker } = await import('tesseract.js');
     let resolveWorker: ((worker: unknown) => void) | undefined;
     vi.mocked(createWorker).mockImplementationOnce(
@@ -179,6 +202,64 @@ describe('TesseractService line coverage', () => {
     });
     // Give the cleanup .then() a chance to run.
     await new Promise((resolve) => setImmediate(resolve));
+    await service.onModuleDestroy();
+  });
+});
+
+
+describe('TesseractService retire paths', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    hoisted.failWarm = false;
+    hoisted.deferred = false;
+    hoisted.reinitFails = false;
+    hoisted.terminateFails = false;
+    hoisted.callLogger = false;
+    hoisted.loggerCalls.length = 0;
+    hoisted.deferredResolvers.length = 0;
+  });
+
+  it('retires a slot whose reinitialize fails even when terminate rejects', async () => {
+    const { TesseractService } = await importService({ TESSERACT_POOL_SIZE: '1' });
+    const service = new TesseractService();
+    await service.recognize(Buffer.from('img'), ['eng']);
+    hoisted.reinitFails = true;
+    hoisted.terminateFails = true;
+    await expect(service.recognize(Buffer.from('img'), ['fra'])).rejects.toThrow('reinitialize exploded');
+    // dispose for real: terminate rejects in the mock too, but destroy must not throw
+    await expect(service.onModuleDestroy()).resolves.toBeUndefined();
+  });
+
+  it('wakes the next waiter when a retire happens mid-queue', async () => {
+    const { TesseractService } = await importService({ TESSERACT_POOL_SIZE: '1' });
+    const service = new TesseractService();
+
+    hoisted.deferred = true;
+    const first = service.recognize(Buffer.from('img'), ['eng']);
+    await flush();
+    await flush();
+    // two queued waiters with *different* languages
+    const second = service.recognize(Buffer.from('img'), ['fra']);
+    const third = service.recognize(Buffer.from('img'), ['deu']);
+    await flush();
+
+    hoisted.deferred = false;
+    hoisted.reinitFails = true; // second's reinitialize fails -> retire -> wakes third
+    for (const resolve of hoisted.deferredResolvers.splice(0)) resolve(BLOCKS_PAGE);
+
+    await expect(first).resolves.toMatchObject({ langs: ['eng'] });
+    await expect(second).rejects.toThrow('reinitialize exploded');
+    // third must not hang: retire() wakes it, it finds an empty pool and creates a new worker
+    await expect(third).resolves.toMatchObject({ langs: ['deu'] });
+    await service.onModuleDestroy();
+  });
+
+  it('passes a boot logger to the worker factory', async () => {
+    hoisted.callLogger = true;
+    const { TesseractService } = await importService({ TESSERACT_PRELOAD: 'eng' });
+    const service = new TesseractService();
+    await service.recognize(Buffer.from('img'), ['eng']);
+    expect(hoisted.loggerCalls).toContain('boot');
     await service.onModuleDestroy();
   });
 });

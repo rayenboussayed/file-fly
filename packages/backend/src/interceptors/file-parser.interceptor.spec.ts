@@ -181,7 +181,7 @@ describe('FileParserInterceptor prefix hash with a small cap', () => {
       cacheKey: () => ({ get: () => undefined, set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fileHash: () => ({ get: () => store.get(CLS_FILE_HASH), set: (v: any) => store.set(CLS_FILE_HASH, v) }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       fileSignature: () => ({ get: () => undefined, set: () => undefined }),
       request: () => request,
       response: () => ({ header: () => undefined }),
@@ -205,6 +205,9 @@ describe('FileParserInterceptor prefix hash failure path', () => {
   it('rejects when the hashed prefix stream errors mid-read', async () => {
     const { PassThrough } = await import('node:stream');
     const source = new PassThrough();
+    // Discard the source-level error so vitest does not flag an unhandled
+    // stream error; the interceptor under test rejects on its own listener.
+    source.on('error', () => undefined);
     const chunks = [Buffer.from('hello'), null] as const;
     // feed one chunk then error the stream
     source.write(chunks[0]);
@@ -228,12 +231,64 @@ describe('FileParserInterceptor prefix hash failure path', () => {
       sourceDirection: () => ({ get: () => undefined, set: (v: unknown) => v }),
       sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
     };
-    const fileTypeService = { signature: vi.fn(async () => ({ ext: 'png', mime: 'image/png' })) };
+    const clsWithStore = {
+      ...cls,
+      sourceStream: () => ({
+        get: () => store2.current,
+        // Each tee output branch gets the source's error; swallow it here so
+        // the failing branch (the one this test asserts on) is covered but
+        // no unhandled 'error' leaks past the test.
+        set: (v: { on(event: string, cb: () => void): void }) => {
+          store2.current = v as never;
+          v.on('error', () => undefined);
+          return v;
+        },
+      }),
+    };
+    const store2 = { current: source as never };
+    const fileTypeService = {
+      signature: vi.fn(async ({ stream }: { stream: { on(event: string, cb: () => void): void } }) => {
+        // Real signature pump attaches error handlers; do the same here.
+        stream.on('error', () => undefined);
+        return { ext: 'png', mime: 'image/png' };
+      }),
+    };
     const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
     const { of } = await import('rxjs');
-    const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
+    const interceptor = new FileParserInterceptor(clsWithStore as never, fileTypeService as never);
     await expect(
       interceptor.intercept(undefined as never, { handle: () => of('done') } as never),
     ).rejects.toThrow('connection reset');
+  });
+});
+
+describe('FileParserInterceptor missing headers', () => {
+  it('tolerates a missing content-length header', async () => {
+    const { PassThrough } = await import('node:stream');
+    const source = new PassThrough();
+    source.end(Buffer.from('payload-bytes'));
+    const request = {
+      headers: {},
+      method: 'POST',
+      query: {},
+      raw: source,
+      signal: new AbortController().signal,
+      url: '/upload',
+    };
+    const cls = {
+      cacheKey: () => ({ get: () => undefined, set: () => undefined }),
+      cacheOutcome: () => ({ get: () => undefined, set: () => undefined }),
+      fileHash: () => ({ set: () => undefined }),
+      fileSignature: () => ({ get: () => undefined, set: () => undefined }),
+      request: () => request,
+      response: () => ({ header: () => undefined }),
+      sourceDirection: () => ({ get: () => undefined, set: () => undefined }),
+      sourceStream: () => ({ get: () => source, set: () => undefined }),
+    };
+    const fileTypeService = { signature: vi.fn(async () => undefined) };
+    const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
+    const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
+    const handled = Symbol('handled');
+    expect(await interceptor.intercept(undefined as never, { handle: () => handled } as never)).toBe(handled);
   });
 });

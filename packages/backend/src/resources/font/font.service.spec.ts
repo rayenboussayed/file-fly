@@ -239,3 +239,44 @@ describe('FontService.shape direction=auto', () => {
     expect(run.direction).toBe('ltr');
   });
 });
+
+describe('FontService empty collections and no-OS/2', () => {
+  const fixture = (name: string) => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- name is a test constant
+    return fs.readFileSync(path.join('assets', 'fonts', name));
+  };
+
+  it('rejects an empty collection with 400 FONT_UNREADABLE', async () => {
+    await expect(
+      makeService(fixture('tiny-empty.ttc'), 'font/collection').metadata({}),
+    ).rejects.toMatchObject({ response: { code: 'FONT_UNREADABLE' } });
+  });
+
+  it('rejects an unknown member on an empty collection with 400 FONT_UNKNOWN_MEMBER', async () => {
+    await expect(
+      makeService(fixture('tiny-empty.ttc'), 'font/collection').metadata({ font: 'Anything' }),
+    ).rejects.toMatchObject({ response: { code: 'FONT_UNKNOWN_MEMBER' } });
+  });
+
+  it('maps a font without an OS/2 table to 400 FONT_UNREADABLE', async () => {
+    await expect(
+      makeService(fixture('tiny-no-os2.ttf'), 'font/ttf').metadata({}),
+    ).rejects.toMatchObject({ response: { code: 'FONT_UNREADABLE' } });
+  });
+
+  it('back-maps every code point of a shared glyph in extract', async () => {
+    const extract = await makeService(fixture('tiny-dup.ttf'), 'font/ttf').extract({});
+    const glyph = extract.glyphs.find((record) => record.id === 8);
+    expect(glyph?.codePoints).toEqual(expect.arrayContaining([65, 160]));
+  });
+});
+
+describe('signatureFormat magics', () => {
+  it('maps wOFF/wOF2/OTTO to the container tags and defaults to ttf', async () => {
+    const { signatureFormat } = await import('./font.service.js');
+    expect(signatureFormat(Buffer.from('wOFF...'))).toBe('woff');
+    expect(signatureFormat(Buffer.from('wOF2...'))).toBe('woff2');
+    expect(signatureFormat(Buffer.from('OTTO...'))).toBe('otf');
+    expect(signatureFormat(Buffer.from('true....'))).toBe('ttf');
+  });
+});

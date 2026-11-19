@@ -28,7 +28,7 @@ class RecordCapError extends Error {}
  * @param error - The library error (carries `code` and `message`).
  * @returns A 400 exception carrying the library's code and message.
  */
-const toBadRequest = (error: unknown): BadRequestException => {
+export const toBadRequest = (error: unknown): BadRequestException => {
   if (error instanceof RecordCapError) {
     return new PayloadTooLargeException(error.message);
   }
@@ -50,7 +50,7 @@ const toBadRequest = (error: unknown): BadRequestException => {
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
   const contentType = String(cls.request()?.headers?.['content-type'] ?? '');
-  const mime = contentType.split(';', 1)[0]?.trim() ?? '';
+  const mime = contentType.split(';', 1)[0]?.trim() ?? ''; // split always yields a first element; the ?? '' is for the type system
   if (mime !== 'text/csv' && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for CSV input`);
   }
@@ -171,7 +171,6 @@ export class CsvService {
  */
 const kindOf = (value: unknown): 'boolean' | 'date' | 'empty' | 'number' | 'string' => {
   if (value === null || value === undefined || value === '') return 'empty';
-  if (typeof value === 'boolean') return 'boolean';
   if (value === 'true' || value === 'false') return 'boolean';
   if (typeof value === 'number' || typeof value === 'bigint') return 'number';
   if (value instanceof Date) return 'date';

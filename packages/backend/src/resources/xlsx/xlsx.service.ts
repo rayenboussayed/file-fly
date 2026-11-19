@@ -315,14 +315,16 @@ export class XlsxService {
     } catch {
       throw new BadRequestException({ code: 'XLSX_PARSE_ERROR', message: 'unreadable workbook' });
     }
-    // SheetNames and Sheets[] are both in creation order; zip them by iterator, no indexing.
-    const nameIt = workbook.SheetNames[Symbol.iterator]();
+    // SheetNames and Workbook.Sheets[] share creation order; zip them in one pass.
+    // (Sheets themselves stay keyed by name via findSheet; this zip only carries visibility.)
     const sheetProps = (workbook.Workbook?.Sheets ?? [])[Symbol.iterator]();
-    const hiddenByName = new Map<string, number>();
-    for (const name of nameIt) hiddenByName.set(name, sheetProps.next().value?.Hidden ?? 0);
+    const parts = workbook.SheetNames.map((name) => ({
+      hidden: sheetProps.next().value?.Hidden ?? 0,
+      name,
+    }));
 
     let totalCells = 0;
-    const sheets = workbook.SheetNames.map((name) => {
+    const sheets = parts.map(({ hidden, name }) => {
       const worksheet = findSheet(workbook.Sheets, name);
       const range = worksheet?.['!ref'];
       if (!worksheet || !range) {
@@ -331,7 +333,7 @@ export class XlsxService {
           cells: 0,
           cols: 0,
           formulas: 0,
-          hidden: (hiddenByName.get(name) ?? 0) !== 0,
+          hidden: hidden !== 0,
           merges: 0,
           name,
           ref: null,
@@ -358,7 +360,7 @@ export class XlsxService {
         cells,
         cols,
         formulas,
-        hidden: (hiddenByName.get(name) ?? 0) !== 0,
+        hidden: hidden !== 0,
         merges: worksheet['!merges']?.length ?? 0,
         name,
         ref: range,

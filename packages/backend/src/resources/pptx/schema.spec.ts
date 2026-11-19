@@ -14,7 +14,7 @@ describe('PptxBuildSchema scatter refinement', () => {
     }));
 
   it('rejects a scatter chart with fewer than two series', () => {
-    const result = parse({ chartType: 'scatter', series: scatterSeries(1), type: 'chart', x: 0, y: 0, w: 4, h: 3 });
+    const result = parse({ chartType: 'scatter', h: 3, series: scatterSeries(1), type: 'chart', w: 4, x: 0, y: 0 });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toBe('scatter charts need at least two series (X and Y)');
@@ -22,10 +22,10 @@ describe('PptxBuildSchema scatter refinement', () => {
   });
 
   it('accepts a scatter chart with two series', () => {
-    expect(parse({ chartType: 'scatter', series: scatterSeries(2), type: 'chart', x: 0, y: 0, w: 4, h: 3 }).success).toBe(true);
+    expect(parse({ chartType: 'scatter', h: 3, series: scatterSeries(2), type: 'chart', w: 4, x: 0, y: 0 }).success).toBe(true);
   });
 
   it('accepts a single-series bar chart', () => {
-    expect(parse({ chartType: 'bar', series: scatterSeries(1), type: 'chart', x: 0, y: 0, w: 4, h: 3 }).success).toBe(true);
+    expect(parse({ chartType: 'bar', h: 3, series: scatterSeries(1), type: 'chart', w: 4, x: 0, y: 0 }).success).toBe(true);
   });
 });

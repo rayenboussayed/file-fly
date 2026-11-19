@@ -499,8 +499,8 @@ describe('PptxService remaining branches', () => {
     const entry = Buffer.alloc(33 * 1024 * 1024, 0x41);
     const bytes = Buffer.from(zipSync({
       '[Content_Types].xml': Buffer.from('<Types/>', 'utf8'),
-      'ppt/presentation.xml': Buffer.from('<p:presentation xmlns:p="p"><p:sldIdLst/></p:presentation>', 'utf8'),
       'ppt/media/big.bin': entry,
+      'ppt/presentation.xml': Buffer.from('<p:presentation xmlns:p="p"><p:sldIdLst/></p:presentation>', 'utf8'),
     }, { level: 0 }));
     const service = makeService(bytes).service;
     await expect(service.metadata()).rejects.toMatchObject({ status: 413 });
@@ -541,12 +541,12 @@ describe('PptxService remaining branches', () => {
       slides: [
         {
           elements: Array.from({ length: 51_000 }, () => ({
-            type: 'text',
+            h: 1,
             runs: [{ text: 'x' }],
+            type: 'text',
+            w: 1,
             x: 0,
             y: 0,
-            w: 1,
-            h: 1,
           })),
         },
       ],
@@ -565,7 +565,7 @@ describe('PptxService remaining branches', () => {
       slides: [
         {
           elements: [
-            { type: 'table', rows: 'not-an-array', x: 0, y: 0, w: 4, h: 2 },
+            { h: 2, rows: 'not-an-array', type: 'table', w: 4, x: 0, y: 0 },
           ],
         },
       ],
@@ -585,12 +585,12 @@ describe('PptxService remaining branches', () => {
         {
           elements: [
             {
-              type: 'table',
+              h: 2,
               rows: [['x'], 'not-a-row'],
+              type: 'table',
+              w: 4,
               x: 0,
               y: 0,
-              w: 4,
-              h: 2,
             },
           ],
         },
@@ -609,15 +609,15 @@ describe('PptxService remaining branches', () => {
           {
             elements: [
               {
-                type: 'table',
+                h: 2,
                 rows: [
-                  [{ text: 'a' }, { text: 'b', options: { colspan: 2 } }],
-                  [{ text: 'c' }, { text: 'd', options: { rowspan: 9 } }],
+                  [{ text: 'a' }, { options: { colspan: 2 }, text: 'b' }],
+                  [{ text: 'c' }, { options: { rowspan: 9 }, text: 'd' }],
                 ],
+                type: 'table',
+                w: 4,
                 x: 0,
                 y: 0,
-                w: 4,
-                h: 2,
               } as never,
             ],
           },
@@ -636,30 +636,30 @@ describe('PptxService remaining branches', () => {
             '</Types>',
           'utf8',
         ),
-        'ppt/presentation.xml': Buffer.from(
-          '<p:presentation xmlns:p="p" xmlns:r="r"><p:sldIdLst><p:sldId id="256" r:id="rIdX"/></p:sldIdLst></p:presentation>',
-          'utf8',
-        ),
         'ppt/_rels/presentation.xml.rels': Buffer.from(
           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
             '<Relationship Id="rIdX" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>' +
             '</Relationships>',
           'utf8',
         ),
-        'ppt/slides/slide1.xml': Buffer.from(
-          '<p:sld xmlns:p="p"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>x</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
+        'ppt/notesSlides/notesSlide2.xml': Buffer.from(
+          '<p:notes xmlns:p="p" xmlns:a="a"><p:cSld><p:sp><p:txBody><a:p><a:r><a:t>two</a:t></a:r></a:p></p:txBody></p:sp></p:cSld></p:notes>',
           'utf8',
         ),
         'ppt/notesSlides/notesSlide10.xml': Buffer.from(
           '<p:notes xmlns:p="p" xmlns:a="a"><p:cSld><p:sp><p:txBody><a:p><a:r><a:t>ten</a:t></a:r></a:p></p:txBody></p:sp></p:cSld></p:notes>',
           'utf8',
         ),
-        'ppt/notesSlides/notesSlide2.xml': Buffer.from(
-          '<p:notes xmlns:p="p" xmlns:a="a"><p:cSld><p:sp><p:txBody><a:p><a:r><a:t>two</a:t></a:r></a:p></p:txBody></p:sp></p:cSld></p:notes>',
-          'utf8',
-        ),
         'ppt/notesSlides/notesSlideX.xml': Buffer.from(
           '<p:notes xmlns:p="p" xmlns:a="a"><p:cSld><p:sp><p:txBody><a:p><a:r><a:t>zzz</a:t></a:r></a:p></p:txBody></p:sp></p:cSld></p:notes>',
+          'utf8',
+        ),
+        'ppt/presentation.xml': Buffer.from(
+          '<p:presentation xmlns:p="p" xmlns:r="r"><p:sldIdLst><p:sldId id="256" r:id="rIdX"/></p:sldIdLst></p:presentation>',
+          'utf8',
+        ),
+        'ppt/slides/slide1.xml': Buffer.from(
+          '<p:sld xmlns:p="p"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>x</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
           'utf8',
         ),
       }),
@@ -674,14 +674,82 @@ describe('PptxService remaining branches', () => {
 describe('PptxService total uncompressed cap', () => {
   it('answers 413 when the package total exceeds the cap even if each entry fits', async () => {
     const { zipSync } = await import('fflate');
-    const entry = Buffer.alloc(33 * 1024 * 1024, 0x42);
+    // Each entry is under the 32 MiB per-entry cap, but the 30+30+30+2 = 92 MiB total exceeds the 64 MiB cap.
+    const entry = Buffer.alloc(30 * 1024 * 1024, 0x42);
     const bytes = Buffer.from(zipSync({
       '[Content_Types].xml': Buffer.from('<Types/>', 'utf8'),
-      'ppt/presentation.xml': Buffer.from('<p:presentation xmlns:p="p"><p:sldIdLst/></p:presentation>', 'utf8'),
       'ppt/media/a.bin': entry,
-      'ppt/media/b.bin': Buffer.alloc(33 * 1024 * 1024, 0x43),
+      'ppt/media/b.bin': Buffer.alloc(30 * 1024 * 1024, 0x43),
+      'ppt/media/c.bin': Buffer.alloc(30 * 1024 * 1024, 0x44),
+      'ppt/media/d.bin': Buffer.alloc(2 * 1024 * 1024, 0x45),
+      'ppt/presentation.xml': Buffer.from('<p:presentation xmlns:p="p"><p:sldIdLst/></p:presentation>', 'utf8'),
     }, { level: 0 }));
     const service = makeService(bytes).service;
     await expect(service.metadata()).rejects.toMatchObject({ status: 413 });
+  });
+});
+
+describe('PptxService content-type and relationship edges', () => {
+  it('rejects a missing content-type header with 415', async () => {
+    const stream = Readable.from([Buffer.from('x')]);
+    const cls = {
+      request: () => ({ method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const service = new PptxService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(service.metadata()).rejects.toMatchObject({ status: 415 });
+  });
+
+  it('rejects a slide whose r:id has no matching relationship with 400', async () => {
+    const { zipSync } = await import('fflate');
+    const bytes = Buffer.from(
+      zipSync({
+        '[Content_Types].xml': Buffer.from(
+          '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+            '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>' +
+            '</Types>',
+          'utf8',
+        ),
+        'ppt/_rels/presentation.xml.rels': Buffer.from(
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>',
+          'utf8',
+        ),
+        'ppt/presentation.xml': Buffer.from(
+          '<p:presentation xmlns:p="p" xmlns:r="r"><p:sldIdLst><p:sldId id="256"/></p:sldIdLst></p:presentation>',
+          'utf8',
+        ),
+      }),
+    );
+    const service = makeService(bytes).service;
+    await expect(service.extract()).rejects.toMatchObject({
+      response: { code: 'PPTX_SLIDE_MISSING' },
+    });
+  });
+
+  it('rejects a slide whose relationship target is listed but unresolvable', async () => {
+    const { zipSync } = await import('fflate');
+    const bytes = Buffer.from(
+      zipSync({
+        '[Content_Types].xml': Buffer.from(
+          '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+            '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>' +
+            '</Types>',
+          'utf8',
+        ),
+        'ppt/_rels/presentation.xml.rels': Buffer.from(
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>',
+          'utf8',
+        ),
+        'ppt/presentation.xml': Buffer.from(
+          '<p:presentation xmlns:p="p" xmlns:r="r"><p:sldIdLst><p:sldId id="256" r:id="rIdMissing"/></p:sldIdLst></p:presentation>',
+          'utf8',
+        ),
+      }),
+    );
+    const service = makeService(bytes).service;
+    await expect(service.extract()).rejects.toMatchObject({
+      response: { code: 'PPTX_SLIDE_MISSING', message: 'slide relationship rIdMissing is missing or unresolvable' },
+    });
   });
 });

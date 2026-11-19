@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Replace fontkit for this file only: the stub's `layout`/`encode`/`getGlyph` throw,
 // exercising the service's 400 error mapping. `gate.cff` flips the font between
 // TrueType and CFF-outline flavors per test.
-const gate = vi.hoisted(() => ({ cff: true }));
+const gate = vi.hoisted(() => ({ cff: true, getNameThrows: false, throwString: false }));
 
 vi.mock('fontkit', async () => {
   const actual = await vi.importActual<typeof import('fontkit')>('fontkit');
@@ -19,6 +19,7 @@ vi.mock('fontkit', async () => {
     createSubset() {
       return {
         encode(): Uint8Array {
+          if (gate.throwString) throw 'subset string explosion' as never;
           throw new Error('subset exploded');
         },
         includeGlyph() {
@@ -36,6 +37,7 @@ vi.mock('fontkit', async () => {
       throw new Error('glyph directory exploded');
     },
     getName() {
+      if (gate.getNameThrows) throw new Error('name table exploded');
       return 'stub-license';
     },
     glyphsForString() {
@@ -43,6 +45,7 @@ vi.mock('fontkit', async () => {
     },
     italicAngle: 0,
     layout(): never {
+      if (gate.throwString) throw 'shaper string explosion' as never;
       throw new Error('shaper exploded');
     },
     lineGap: 0,
@@ -118,5 +121,34 @@ describe('FontService error mapping (stubbed fontkit)', () => {
     await expect(service.extract({})).rejects.toMatchObject({
       response: { code: 'FONT_UNREADABLE' },
     });
+  });
+  it('maps a non-Error shaper failure to 400 with String(error)', async () => {
+    gate.cff = false;
+    gate.throwString = true;
+    const service = makeService(fixture());
+    await expect(service.shape({ text: 'Hello' })).rejects.toMatchObject({
+      response: { code: 'FONT_SHAPE_FAILED', message: 'shaping failed: shaper string explosion' },
+    });
+    gate.throwString = false;
+  });
+
+  it('maps a non-Error subset failure to 400 with String(error)', async () => {
+    gate.cff = false;
+    gate.throwString = true;
+    const service = makeService(fixture());
+    await expect(service.subset({ text: 'Hello' })).rejects.toMatchObject({
+      response: { code: 'FONT_SUBSET_FAILED', message: 'subset failed: subset string explosion' },
+    });
+    gate.throwString = false;
+  });
+
+  it('maps a getName explosion in metadata to 400 FONT_UNREADABLE', async () => {
+    gate.cff = false;
+    gate.getNameThrows = true;
+    const service = makeService(fixture());
+    await expect(service.metadata({})).rejects.toMatchObject({
+      response: { code: 'FONT_UNREADABLE' },
+    });
+    gate.getNameThrows = false;
   });
 });
