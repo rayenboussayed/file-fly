@@ -61,7 +61,7 @@ environment schema enforces pair-ness at boot; this pure helper mirrors it
 **Kind**: global function  
 **Returns**: <code>boolean</code> - True when `AUTH_USERNAME` and `AUTH_PASSWORD` are both non-empty.  
 src: packages/backend/src/basic-auth.ts:18  
-dist: packages/backend/dist/basic-auth.js:12 (approx.)
+dist: packages/backend/dist/basic-auth.js:5
 <a name="isHealthPath"></a>
 
 ## isHealthPath(url) ⇒ <code>boolean</code>
@@ -77,7 +77,7 @@ query string or trailing slash) is exempt from the perimeter so Docker
 | url | <code>string</code> | The raw request URL, if available. |
 
 src: packages/backend/src/basic-auth.ts:29  
-dist: packages/backend/dist/basic-auth.js:22 (approx.)
+dist: packages/backend/dist/basic-auth.js:8
 <a name="registerBasicAuth"></a>
 
 ## registerBasicAuth(instance) ⇒ <code>Promise&lt;void&gt;</code>
@@ -101,7 +101,7 @@ No-op (with a single boot warning) unless both `AUTH_USERNAME` and
 | instance | <code>FastifyInstance&lt;import(&quot;fastify&quot;).RawServerDefault, import(&quot;http&quot;).IncomingMessage, import(&quot;http&quot;).ServerResponse&lt;import(&quot;http&quot;).IncomingMessage&gt;, import(&quot;fastify&quot;).FastifyBaseLogger, import(&quot;fastify&quot;).FastifyTypeProviderDefault&gt;</code> | The Fastify instance to decorate, passed by the bootstrap. |
 
 src: packages/backend/src/basic-auth.ts:50  
-dist: packages/backend/dist/basic-auth.js:43 (approx.)
+dist: packages/backend/dist/basic-auth.js:14
 <a name="resolveBasicAuthEnabled"></a>
 
 ## resolveBasicAuthEnabled(username, password) ⇒ <code>boolean</code>
@@ -120,7 +120,7 @@ Pure decision for the both-or-neither rule.
 | password | <code>string</code> | The configured `AUTH_PASSWORD`, if any. |
 
 src: packages/backend/src/basic-auth.ts:107  
-dist: packages/backend/dist/basic-auth.js:40
+dist: packages/backend/dist/basic-auth.js:49
 <a name="synthAuthorizationHeader"></a>
 
 ## synthAuthorizationHeader(username, password) ⇒ <code>string</code>
@@ -136,7 +136,7 @@ Builds the `Authorization` header value for the plugin from the custom
 | password | <code>string</code> | The `x-auth-password` header value, if any. |
 
 src: packages/backend/src/basic-auth.ts:128  
-dist: packages/backend/dist/basic-auth.js:107 (approx.)
+dist: packages/backend/dist/basic-auth.js:57
 <a name="credentialsMatch"></a>
 
 ## credentialsMatch(provided, expected) ⇒ <code>boolean</code>
@@ -151,4 +151,4 @@ Compares two credential strings in constant time (via SHA-256 digests of equal l
 | expected | <code>string</code> | The configured credential. |
 
 src: packages/backend/src/basic-auth.ts:150  
-dist: packages/backend/dist/basic-auth.js:69
+dist: packages/backend/dist/basic-auth.js:67

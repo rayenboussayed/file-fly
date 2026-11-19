@@ -208,6 +208,59 @@ curl -H "x-auth-username: alice" -H "x-auth-password: s3cret" \
 - Credentials are compared via SHA-256 digests with `crypto.timingSafeEqual`,
   so response time does not leak credential length.
 
+## Observability (OpenTelemetry)
+
+OpenTelemetry is **opt-in and disabled by default**: the SDK is never even
+constructed unless an OTLP traces endpoint is set.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `OTEL_TRACE_EXPORTER_URL` | unset | OTLP/HTTP traces endpoint, e.g. `http://collector:4318/v1/traces`; the standard `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` is also honored. Unset ⇒ no telemetry at all |
+| `OTEL_METRICS_PORT` | `9464` | Prometheus host-metrics exposition port (only when telemetry is enabled) |
+
+When enabled, `src/app.tracing.ts` starts a `NodeSDK` **before** NestFactory,
+so Fastify plugin registration is captured: W3C + B3 + baggage propagation,
+batched OTLP exporter, `FastifyOtelInstrumentation` (per-request and lifecycle
+hook spans, `ignorePaths: '/health'`), Node auto-instrumentations
+(`http`, `nestjs-core`, `pino` (trace ids in logs), `undici` (`source=`
+downloads), `pg`, `runtime-node`), and host metrics on the Prometheus exporter
+(`http://localhost:9464/metrics` — `target_info{service_name="file-fly-backend"}`
+plus `nodejs_eventloop_*`, v8 heap and process metrics).
+Spans from unauthenticated requests (401s) are recorded too.
+
+This is independent of the built-in JSON `/metrics` endpoint (SQLite counters,
+served to the dashboard): `/metrics` stays the operational dashboard feed; the
+OTel exporter is the collector feed. Nest's SIGTERM hook
+(`OtelShutdownService` in `app.module.ts`) flushes pending spans on shutdown.
+
+The dashboard SPA ships with a browser tracer (`packages/dashboard/src/telemetry.ts`):
+active only in production builds with `VITE_OTEL_OTLP_ENDPOINT` set (e.g.
+`VITE_OTEL_OTLP_ENDPOINT=http://localhost:4318`). It uses
+`WebTracerProvider` + zone context + W3C propagation, so the dashboard's own
+fetches (`/metrics` polls) carry `traceparent` to the backend. Development and
+unit-test builds never load it.
+
+Notes and limits:
+
+- `instrumentation-fs` is off (OTel default); the media pipeline's file
+  traffic would drown the collector otherwise.
+- Worker threads (`packages/backend/src/resources/*/worker/`) are opaque to
+  OTel: spans do not cross `worker_threads` boundaries, so per-transcode
+  timing inside workers is not traced (would need manual `traceparent`
+  injection into `workerData`).
+- Browsers cannot reach the SPA unless you serve it on the same origin as the
+  backend (it is) or a proxy that lets it through — telemetry headers are
+  same-origin and need no CORS entries; cross-origin setups must add
+  `traceparent`/`tracestate`/`baggage` to the allowed headers.
+- The liveness probe `/health` produces no spans.
+
+```bash
+OTEL_TRACE_EXPORTER_URL=http://localhost:4318/v1/traces npm run start
+# ...
+curl -s http://localhost:9464/metrics | head     # host metrics (Prometheus)
+curl -s http://localhost:3000/metrics | head    # JSON metrics (in-process)
+```
+
 ## Docker
 
 Development stack (watch-mode app + dashboard + ClamAV with bundled signature databases):
@@ -262,6 +315,8 @@ All configuration is via environment variables. Values are validated with zod at
 | `METRICS_RETENTION_DAYS` | `35` | Days of hourly buckets to keep per route/histogram and daily per-IP buckets |
 | `METRICS_FLUSH_INTERVAL_MS` | `1000` | Flush interval for the in-memory metrics delta buffer |
 | `DASHBOARD_DIR` | `packages/dashboard/dist` (`/app/dashboard` in Docker) | Static root of the prebuilt dashboard; missing dir = dashboard not served |
+| `OTEL_TRACE_EXPORTER_URL` | unset | OTLP/HTTP traces endpoint; unset (and `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` unset) ⇒ OpenTelemetry fully disabled |
+| `OTEL_METRICS_PORT` | `9464` | Prometheus host-metrics exposition port; only bound when telemetry is enabled |
 | `TRUST_PROXY` | `false` | Honor `X-Forwarded-For` for `request.ip`; set only behind a proxy you control |
 
 ## Testing

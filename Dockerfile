@@ -47,6 +47,10 @@ ENV DASHBOARD_DIR=/app/dashboard
 USER node
 
 EXPOSE 3000
+# OpenTelemetry host-metrics endpoint (prometheus exposition), served only when
+# OTEL_TRACE_EXPORTER_URL (or OTEL_EXPORTER_OTLP_TRACES_ENDPOINT) is set; the
+# application works the same with it unpublished.
+EXPOSE 9464
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT ?? 3000) + '/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 CMD ["node", "packages/backend/dist/main"]

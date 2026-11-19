@@ -204,4 +204,24 @@ describe('environment CORS_ORIGIN', () => {
     vi.stubEnv('AUTH_PASSWORD', 's3cret');
     await expect(importEnvironment()).rejects.toThrow(/must be set together/u);
   });
+
+  it('defaults OTEL_METRICS_PORT to 9464', async () => {
+    vi.stubEnv('OTEL_TRACE_EXPORTER_URL', '');
+    const { environment } = await importEnvironment();
+    expect(environment.OTEL_METRICS_PORT).toBe(9464);
+    expect(environment.OTEL_TRACE_EXPORTER_URL).toBeUndefined();
+  });
+
+  it('parses an OTLP traces endpoint and port', async () => {
+    vi.stubEnv('OTEL_TRACE_EXPORTER_URL', 'http://localhost:4318/v1/traces');
+    vi.stubEnv('OTEL_METRICS_PORT', '9999');
+    const { environment } = await importEnvironment();
+    expect(environment.OTEL_TRACE_EXPORTER_URL).toBe('http://localhost:4318/v1/traces');
+    expect(environment.OTEL_METRICS_PORT).toBe(9999);
+  });
+
+  it('rejects an invalid OTEL_TRACE_EXPORTER_URL at boot', async () => {
+    vi.stubEnv('OTEL_TRACE_EXPORTER_URL', 'not-a-url');
+    await expect(importEnvironment()).rejects.toThrow();
+  });
 });

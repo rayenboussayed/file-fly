@@ -58,6 +58,12 @@
 <dt><a href="#METRICS_TOKEN">METRICS_TOKEN</a></dt>
 <dd><p>Bearer token for <code>GET /metrics</code>; production refuses requests without it. Unset in development = open.</p>
 </dd>
+<dt><a href="#OTEL_METRICS_PORT">OTEL_METRICS_PORT</a></dt>
+<dd><p>Port the Prometheus host-metrics exporter serves on (9464 is the conventional Prometheus exposition port; 8888 is the reference example&#39;s port and often already taken).</p>
+</dd>
+<dt><a href="#OTEL_TRACE_EXPORTER_URL">OTEL_TRACE_EXPORTER_URL</a></dt>
+<dd><p>OTLP/HTTP traces endpoint for OpenTelemetry (<code>/v1/traces</code> appended when only the base is given). Blank/unset ⇒ tracing disabled. The standard <code>OTEL_EXPORTER_OTLP_TRACES_ENDPOINT</code> is also honored.</p>
+</dd>
 <dt><a href="#TESSERACT_DIR">TESSERACT_DIR</a></dt>
 <dd><p>Language data for tesseract.js; defaults to <code>&lt;CACHE_DIR&gt;/tesseract</code>.</p>
 </dd>
@@ -251,22 +257,38 @@ Bearer token for `GET /metrics`; production refuses requests without it. Unset i
 **Kind**: global variable  
 src: packages/backend/src/environment.ts:89  
 dist: packages/backend/dist/environment.js:38
+<a name="OTEL_METRICS_PORT"></a>
+
+## OTEL\_METRICS\_PORT
+Port the Prometheus host-metrics exporter serves on (9464 is the conventional Prometheus exposition port; 8888 is the reference example's port and often already taken).
+
+**Kind**: global variable  
+src: packages/backend/src/environment.ts:94  
+dist: packages/backend/dist/environment.js:40
+<a name="OTEL_TRACE_EXPORTER_URL"></a>
+
+## OTEL\_TRACE\_EXPORTER\_URL
+OTLP/HTTP traces endpoint for OpenTelemetry (`/v1/traces` appended when only the base is given). Blank/unset ⇒ tracing disabled. The standard `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` is also honored.
+
+**Kind**: global variable  
+src: packages/backend/src/environment.ts:96  
+dist: packages/backend/dist/environment.js:40
 <a name="TESSERACT_DIR"></a>
 
 ## TESSERACT\_DIR
 Language data for tesseract.js; defaults to `<CACHE_DIR>/tesseract`.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:94  
-dist: packages/backend/dist/environment.js:40
+src: packages/backend/src/environment.ts:103  
+dist: packages/backend/dist/environment.js:42
 <a name="TRUST_PROXY"></a>
 
 ## TRUST\_PROXY
 Honor `X-Forwarded-For` for `request.ip` (set only behind a trusted proxy).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:100  
-dist: packages/backend/dist/environment.js:45
+src: packages/backend/src/environment.ts:109  
+dist: packages/backend/dist/environment.js:47
 <a name="DEFAULT_CACHE_DIR"></a>
 
 ## DEFAULT\_CACHE\_DIR
@@ -297,16 +319,16 @@ dist: packages/backend/dist/environment.js:5
 Validated process environment; parsed once at import time (fail-fast on invalid values).
 
 **Kind**: global constant  
-src: packages/backend/src/environment.ts:122  
-dist: packages/backend/dist/environment.js:62
+src: packages/backend/src/environment.ts:131  
+dist: packages/backend/dist/environment.js:64
 <a name="isProduction"></a>
 
 ## isProduction
 True when `NODE_ENV=production`.
 
 **Kind**: global constant  
-src: packages/backend/src/environment.ts:125  
-dist: packages/backend/dist/environment.js:63
+src: packages/backend/src/environment.ts:134  
+dist: packages/backend/dist/environment.js:65
 <a name="numericFromEnv"></a>
 
 ## numericFromEnv(fallback) ⇒ <code>z.ZodPreprocess&lt;z.ZodCatch&lt;z.ZodCoercedNumber&lt;unknown&gt;&gt;, unknown&gt;</code>

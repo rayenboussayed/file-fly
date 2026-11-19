@@ -11,6 +11,9 @@ export default defineConfig({
         // Entry-point glue; the full server (bootstrap, CORS, swagger, hooks)
         // is exercised by the 129-test e2e suite, which boots dist/main.js.
         'src/main.ts',
+        // Telemetry wiring; started only when an OTLP traces endpoint is
+        // configured — a no-op in tests and unit coverage.
+        'src/app.tracing.ts',
         // Module-init wiring (pino bootstrap logger, Nest module setup, undici
         // global dispatcher): runs at import time, exercised by every e2e boot.
         'src/logging/bootstrap-logger.ts',

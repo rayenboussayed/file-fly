@@ -90,6 +90,15 @@ const EnvironmentSchema = z
 
     NODE_ENV: z.enum(['development', 'production']),
 
+    /** Port the Prometheus host-metrics exporter serves on (9464 is the conventional Prometheus exposition port; 8888 is the reference example's port and often already taken). */
+    OTEL_METRICS_PORT: numericFromEnv(9464),
+    /** OTLP/HTTP traces endpoint for OpenTelemetry (`/v1/traces` appended when only the base is given). Blank/unset ⇒ tracing disabled. The standard `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` is also honored. */
+    OTEL_TRACE_EXPORTER_URL: z.preprocess(
+      (value) =>
+        typeof value === 'string' && value.trim().length === 0 ? undefined : value,
+      z.url().optional(),
+    ),
+
     /** Language data for tesseract.js; defaults to `<CACHE_DIR>/tesseract`. */
     TESSERACT_DIR: z.string().trim().min(1).optional().catch(undefined),
     TESSERACT_POOL_SIZE: z.coerce.number().int().min(1).max(8).catch(2),

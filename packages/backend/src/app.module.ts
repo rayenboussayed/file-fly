@@ -1,12 +1,14 @@
 // eslint-disable-next-line n/no-extraneous-import
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { Module, RequestMethod } from '@nestjs/common';
+import { Injectable, Module, OnApplicationShutdown, RequestMethod } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CLS_REQ, CLS_RES, ClsInterceptor, ClsModule } from 'nestjs-cls';
+import { OpenTelemetryModule } from 'nestjs-otel';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AppController } from './app.controller.js';
+import { otelSDK, otelTracingEnabled } from './app.tracing.js';
 import { DashboardStaticModule } from './dashboard-static.module.js';
 import { environment, isProduction } from './environment.js';
 import { buildPinoHttpOptions } from './logging/pino-options.js';
@@ -28,6 +30,17 @@ import { FileTypeService } from './services/file-type.service.js';
 import { NormalizedClsService } from './services/normalized-cls.service.js';
 import { WorkerService } from './services/worker.service.js';
 
+/** Flushes pending spans and host metrics when Nest closes on SIGTERM; a no-op when telemetry is disabled. */
+@Injectable()
+class OtelShutdownService implements OnApplicationShutdown {
+  /** @returns Settles once the OpenTelemetry SDK has flushed and released resources. */
+  async onApplicationShutdown(): Promise<void> {
+    if (otelTracingEnabled && otelSDK) {
+      await otelSDK.shutdown();
+    }
+  }
+}
+
 /** Root module: imports every feature module, global metrics/logging and the static dashboard. */
 @Module({
   controllers: [AppController],
@@ -41,6 +54,9 @@ import { WorkerService } from './services/worker.service.js';
         level: environment.LOG_LEVEL,
       }),
     }),
+    // Host metrics (CPU, memory, event loop) flow to the Prometheus exporter;
+    // the tracing SDK itself lives in app.tracing.ts.
+    OpenTelemetryModule.forRoot({ metrics: { hostMetrics: true } }),
     ClsModule.forRoot({
       global: true,
       interceptor: {
@@ -79,6 +95,7 @@ import { WorkerService } from './services/worker.service.js';
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
     },
+    OtelShutdownService,
     AntiVirusService,
     CacheJanitorService,
     FileTypeService,

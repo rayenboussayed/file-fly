@@ -49,6 +49,17 @@ from the commit history (2026-10-31 .. 2026-11-19).
   perimeter is a fastify `onRequest` hook, ahead of body parsing. Shared edge
   wiring now lives in `src/bootstrap.ts` (`configureFastify`), used by both
   `main.ts` and the e2e harness. See README → Authentication.
+- OpenTelemetry bridge (opt-in): `src/app.tracing.ts` starts a `NodeSDK`
+  (auto-instrumentations incl. http/nestjs-core/pino/undici +
+  `@fastify/otel` with `/health` ignored) **before** NestFactory when
+  `OTEL_TRACE_EXPORTER_URL` (or `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`) is set;
+  the SDK is never constructed otherwise. Host metrics flow to a Prometheus
+  exporter on `OTEL_METRICS_PORT` (default 9464; the conventional 8888 default
+  collided with the reference setup) via `nestjs-otel`'s `OpenTelemetryModule`
+  (`hostMetrics`). `/metrics` (JSON, dashboard) is unchanged and separate.
+  The dashboard gained a gated browser tracer (`src/telemetry.ts`,
+  `WebTracerProvider` + W3C propagation, prod builds with
+  `VITE_OTEL_OTLP_ENDPOINT` only).
 
 ### Changed
 
