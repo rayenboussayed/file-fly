@@ -37,6 +37,8 @@ and passes everything through — this is the dev/test default. **Production
 deployments must set them**, otherwise uploads and downloads go through
 unscanned.
 
+All document-family **binary** routes (`/csv/*`, `/xlsx/*`, `/docx/*`, `/pptx/*`, `/pdf/*`, `/font/*`, `/model/*`, all `POST`) are bound to the same `FileScannerInterceptor`; JSON build routes are not. An `Infected` verdict from ClamAV on those routes rejects with `422` before the signature gate runs.
+
 ## Endpoints
 
 Both live on the root controller and accept `GET` and `POST`:

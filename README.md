@@ -21,6 +21,9 @@ npm workspaces monorepo:
 - **Audio processing** — transcode and filter (trim, fade, gain, speed, normalize, compress, denoise) via FFmpeg. `GET|POST /audio`
 - **Video processing** — transcode (h264 / vp9 / av1), scale, fps, crf, trim, denoise, deinterlace, grayscale, normalize, sharpen; frame screenshots served as `multipart/mixed`. `GET|POST /video`, `GET|POST /video/screenshot`
 - **Perceptual fingerprints ("DNA")** — PDQ for images, Chromaprint for audio, frame-sequence PDQ for video. For deduplication and triage, never identity. `GET|POST /{image,audio,video}/dna`
+- **Documents, spreadsheets and office formats** — CSV/XLSX/DOCX/PPTX/PDF build, extract and metadata (JSON schemas, ClamAV-scanned binary uploads). `POST /csv/{build,extract,metadata}`, `POST /xlsx/…`, `POST /docx/…`, `POST /pptx/…`, `POST /pdf/…`
+- **Fonts** — metadata, glyph inventory, OpenType shaping and minimal-for-embedding subsetting. `POST /font/{metadata,extract,shape,subset}`
+- **3D models** — GLB metadata, structural extraction, meshopt/draco optimization and container conversion. `POST /model/{metadata,extract,optimize,convert}`
 - **Metadata & statistics** — container/stream metadata and channel-level statistics for image, audio and video. `GET|POST /{image,audio,video}/metadata`, `GET|POST /{image,audio,video}/stats`
 - **Malware scanning** — every media route is scanned with ClamAV (fail-closed) before processing starts; `GET|POST /virus-scan` reports the verdict, `GET|POST /signature` reports the detected file signature.
 - **Streaming output cache** — filesystem-backed, atomic `tmp → rename` writes, TTL + LRU size cap, background janitor.
@@ -89,6 +92,29 @@ All routes accept `GET` (media fetched server-side from `?source=<url>`; client 
 | `GET\|POST /virus-scan` | ClamAV verdict — `{ isInfected, viruses }` (answers `503` when ClamAV is not configured; infected payloads are rejected with `422` before the handler runs) |
 | `GET /health` | Liveness probe — `{ status, uptimeSeconds, timestamp }` |
 | `GET /metrics` | Metrics payload for the dashboard; bearer-token gated in production (`METRICS_TOKEN`, open in development) |
+| `POST /csv/build` | Records → CSV. Body: `{ records: [{ … }], options?: { delimiter, header, escape_formulas … } }` |
+| `POST /csv/extract` | CSV → JSON records. Query: `columns`, `delimiter`, `cast`, `cast_date`, `trim`, `maxRows` |
+| `POST /csv/metadata` | CSV census: rows/columns/delimiter/per-column types. Query: `maxRows` |
+| `POST /xlsx/build` | JSON → .xlsx. Sheets with rows (objects or arrays), cols, merges, autofilter, visibility, workbook props / defined names |
+| `POST /xlsx/extract` | .xlsx → records for one sheet. Query: `sheet`, `header`, `raw` |
+| `POST /xlsx/metadata` | Workbook + per-sheet metadata: dims, typed census, merges, defined names, props. Query: `maxCells` |
+| `POST /docx/build` | JSON → .docx (paragraphs, tables, images, TOC, hyperlinks, foot/endnotes, comments). Body: `{ sections, metadata?, … }` |
+| `POST /docx/extract` | .docx → structure (paragraphs, tables, images, hyperlinks, fields, notes) |
+| `POST /docx/metadata` | docProps/core.xml + app.xml merged |
+| `POST /pptx/build` | JSON → .pptx. Body: `{ layout?, theme?, metadata?, slides: [{ elements }] }` |
+| `POST /pptx/extract` | .pptx → slide tree (text, images, shapes, tables, charts, notes) |
+| `POST /pptx/metadata` | docProps/core.xml + app.xml merged (slide count …) |
+| `POST /pdf/build` | JSON → .pdf (text/line/rect/ellipse/image/table/fields/pageNumber, WinAnsi or embedded fonts) |
+| `POST /pdf/extract` | .pdf → text + info dict (`unpdf`/`pdfjs`) |
+| `POST /pdf/metadata` | Same info dict + derived facts (encrypted?, tagged?, AcroForm?) |
+| `POST /font/metadata` | Font metrics, fsType embedding bits, feature inventory, variation axes. Query: `font` (collection member) |
+| `POST /font/extract` | Per-glyph inventory (id, name, code points, advance, bbox, marks). Query: `limit` |
+| `POST /font/shape` | OpenType shaping of `text` with `script`/`language`/`direction`/`features` |
+| `POST /font/subset` | Minimal sfnt for PDF embedding (no cmap). Header `x-font-subset: pdf-embed` |
+| `POST /model/metadata` | GLB asset/extensions/bounds/counts |
+| `POST /model/extract` | GLB scene tree, meshes (vertices/triangles), materials, textures, animations, skins |
+| `POST /model/optimize` | Dedup→prune→weld→simplify?→compress (meshopt/draco/none) in a worker. Query: `compress`, `simplify`, `weld` |
+| `POST /model/convert` | GLB ↔ self-contained glTF JSON (data-URI inlined resources). Query: `to=glb\|gltf` |
 | `GET /swagger` | Swagger UI |
 
 ## Quick start
@@ -211,6 +237,7 @@ Deep-dives live in `docs/`:
 - [docs/ocr.md](docs/ocr.md) — OCR pipeline, query parameters, limits
 - [docs/antivirus.md](docs/antivirus.md) — ClamAV integration, fail-closed behaviour, EICAR testing
 - [docs/metrics.md](docs/metrics.md) — metrics: schema, definitions, payload, security posture
+- [docs/documents.md](docs/documents.md) — document/spreadsheet/font/GLB endpoints: payloads, limits, fixture notes
 - [docs/performance.md](docs/performance.md) — benchmark and memory-regression suites
 
 ## Media streaming (audio / video)
