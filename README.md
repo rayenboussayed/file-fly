@@ -193,7 +193,7 @@ All configuration is via environment variables. Values are validated with zod at
 | --- | --- | --- |
 | `NODE_ENV` | — (required) | `development` or `production` |
 | `PORT` | `3000` | HTTP port |
-| `CORS_ORIGIN` | unset | Allowed origins in production (URLs) |
+| `CORS_ORIGIN` | unset | Comma-separated allowed origins in production (URLs), e.g. `https://app.example.com,https://dash.example.com`; a bare single URL is accepted too |
 | `CACHE_DIR` | `./cache` (`/data/cache` in Docker) | Cache root; created at startup |
 | `CACHE_TTL_MS` | `86400000` (24 h) | Entries unused for longer are evicted |
 | `CACHE_MAX_BYTES` | `2147483648` (2 GiB) | Total cache size cap; oldest-used entries evicted first |
@@ -209,6 +209,7 @@ All configuration is via environment variables. Values are validated with zod at
 | `TESSERACT_RECYCLE_JOBS` | `500` | Recycle an OCR worker after N jobs |
 | `TESSERACT_TIMEOUT_MS` | `60000` | Per-recognition timeout |
 | `FILE_HASH_HEADER_SIZE` | `65536` | Bytes hashed (SHA-512 prefix) for the upload cache key when no `x-file-hash` request header is sent |
+| `LOG_LEVEL` | unset | pino log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`); unset = `info` in production, `debug` otherwise |
 | `METRICS_DIR` | `./metrics` (`/data/metrics` in Docker) | Directory holding `metrics.db` (SQLite); kept outside `CACHE_DIR` on purpose |
 | `METRICS_TOKEN` | unset | Bearer token for `GET /metrics`. Production refuses the route without it (503); development is open |
 | `METRICS_RETENTION_DAYS` | `35` | Days of hourly buckets to keep per route/histogram and daily per-IP buckets |

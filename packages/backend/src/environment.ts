@@ -48,7 +48,15 @@ const EnvironmentSchema = z
     /** Clamd socket connect timeout passed to clamdscan. */
     CLAMAV_TIMEOUT_MS: numericFromEnv(60000),
 
-    CORS_ORIGIN: z.array(z.url().trim()).optional(),
+    /** Allowed origins in production; comma-separated URLs (a bare string is accepted as a single origin). */
+    CORS_ORIGIN: z.preprocess(
+      (value) => {
+        if (typeof value !== 'string') return value;
+        const origins = value.split(',').map((part) => part.trim()).filter((part) => part.length > 0);
+        return origins.length === 0 ? undefined : origins;
+      },
+      z.array(z.url().trim()).optional(),
+    ),
     /** Static root for the dashboard build (`packages/dashboard/dist`); missing dir = dashboard not served. */
     DASHBOARD_DIR: z.string().trim().min(1).catch(DEFAULT_DASHBOARD_DIR),
 

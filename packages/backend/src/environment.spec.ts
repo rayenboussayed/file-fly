@@ -139,3 +139,43 @@ describe('environment', () => {
     );
   });
 });
+
+describe('environment CORS_ORIGIN', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('is unset when only whitespace is given', async () => {
+    vi.stubEnv('CORS_ORIGIN', '   ');
+    const { environment } = await importEnvironment();
+    expect(environment.CORS_ORIGIN).toBeUndefined();
+  });
+
+  it('parses a single origin string (docker-friendly default)', async () => {
+    vi.stubEnv('CORS_ORIGIN', 'https://app.example.com');
+    const { environment } = await importEnvironment();
+    expect(environment.CORS_ORIGIN).toEqual(['https://app.example.com']);
+  });
+
+  it('parses a comma-separated list of origins and trims whitespace', async () => {
+    vi.stubEnv('CORS_ORIGIN', 'https://app.example.com, https://dashboard.example.com ,https://admin.example.com');
+    const { environment } = await importEnvironment();
+    expect(environment.CORS_ORIGIN).toEqual([
+      'https://app.example.com',
+      'https://dashboard.example.com',
+      'https://admin.example.com',
+    ]);
+  });
+
+  it('drops empty segments from the list', async () => {
+    vi.stubEnv('CORS_ORIGIN', 'https://app.example.com,, ');
+    const { environment } = await importEnvironment();
+    expect(environment.CORS_ORIGIN).toEqual(['https://app.example.com']);
+  });
+
+  it('rejects an invalid origin at boot', async () => {
+    vi.stubEnv('CORS_ORIGIN', 'not-a-url');
+    await expect(importEnvironment()).rejects.toThrow();
+  });
+});

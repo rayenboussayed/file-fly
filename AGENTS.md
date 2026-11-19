@@ -38,6 +38,8 @@
 - Metrics behavior is controlled by `METRICS_DIR`, `METRICS_TOKEN`, `METRICS_RETENTION_DAYS`, and `METRICS_FLUSH_INTERVAL_MS`; the SPA static root is `DASHBOARD_DIR`; `TRUST_PROXY=true` honors `X-Forwarded-For` for `request.ip` (set only behind a proxy you control).
 - OCR/tesseract behavior is controlled by `TESSERACT_DIR` (defaults to `<CACHE_DIR>/tesseract`), `TESSERACT_POOL_SIZE`, `TESSERACT_PRELOAD`, `TESSERACT_RECYCLE_JOBS`, and `TESSERACT_TIMEOUT_MS`.
 - `NODE_ENV` must be `development` or `production`; production enables restrictive security headers / CSRF.
+- `CORS_ORIGIN` in production is a comma-separated list of allowed origins (URLs); a single bare URL is accepted as a one-element list.
+- `LOG_LEVEL` sets the pino log level (`fatal`/`error`/`warn`/`info`/`debug`/`trace`); unset means `info` in production, `debug` otherwise; invalid values reject boot.
 
 ## Testing
 - Unit specs match `**/*.spec.ts` (dashboard uses `**/*.spec.{ts,tsx}`); E2E specs match `**/*.e2e-spec.ts`. Benchmark files match `packages/backend/test/perf/*.bench.ts`; memory specs live in `packages/backend/test/mem/*.spec.ts` and are excluded from the unit config.
