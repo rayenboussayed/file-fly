@@ -8,7 +8,7 @@
 /** The set of unicode code points representable in WinAnsiEncoding. */
 const WINANSI = new Set<number>();
 
-for (let cp = 0x00; cp <= 0x7f; cp += 1) WINANSI.add(cp);
+for (let cp = 0x20; cp <= 0x7e; cp += 1) WINANSI.add(cp);
 for (let cp = 0xa0; cp <= 0xff; cp += 1) WINANSI.add(cp);
 // cp1252 higher range (0x80-0x9f), excluding the undefined slots 0x81/0x8d/0x8f/0x90/0x9d.
 for (const cp of [

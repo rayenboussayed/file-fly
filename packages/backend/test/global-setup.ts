@@ -57,6 +57,9 @@ export default async function setup() {
     XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer,
   );
 
+  // Embedded-font fixture for the /pdf e2e; fail loudly if the font is missing.
+  fs.copyFileSync('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', path.join(FIXTURES_DIR, 'DejaVuSans.ttf'));
+
   const clamd = await startFakeClamd(FAKE_CLAMD_PORT);
 
   // vitest globalSetup supports returning an async teardown; close the fake clamd when the run is done.
