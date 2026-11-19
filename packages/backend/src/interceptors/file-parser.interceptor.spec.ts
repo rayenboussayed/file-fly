@@ -152,3 +152,88 @@ describe('FileParserInterceptor cache keys', () => {
     expect(store.get(CLS_CACHE_KEY)).toBeDefined();
   });
 });
+
+
+describe('FileParserInterceptor prefix hash with a small cap', () => {
+  it('honors FILE_HASH_HEADER_SIZE and drops chunks past the prefix', async () => {
+    vi.stubEnv('FILE_HASH_HEADER_SIZE', '8');
+    vi.resetModules();
+    const { PassThrough } = await import('node:stream');
+    const source = new PassThrough();
+    // three chunks: under-cap, overshoot (subarray path), post-cap (dropped)
+    source.write(Buffer.from('abcd'));
+    source.write(Buffer.alloc(60, 0x61));
+    source.write(Buffer.alloc(20, 0x62));
+    source.end();
+
+    const request = {
+      headers: { 'content-length': '84' },
+      method: 'POST',
+      query: {},
+      raw: source,
+      signal: new AbortController().signal,
+      url: '/upload',
+    };
+    const store = new Map<symbol, unknown>();
+    store.set(CLS_SOURCE_STREAM, source);
+    const cls = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cacheKey: () => ({ get: () => undefined, set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fileHash: () => ({ get: () => store.get(CLS_FILE_HASH), set: (v: any) => store.set(CLS_FILE_HASH, v) }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fileSignature: () => ({ get: () => undefined, set: () => undefined }),
+      request: () => request,
+      response: () => ({ header: () => undefined }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sourceDirection: () => ({ get: () => store.get(CLS_SOURCE_DIRECTION), set: (v: any) => store.set(CLS_SOURCE_DIRECTION, v) }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sourceStream: () => ({ get: () => store.get(CLS_SOURCE_STREAM), set: (v: any) => store.set(CLS_SOURCE_STREAM, v) }),
+    };
+    const fileTypeService = { signature: vi.fn(async () => undefined) };
+    const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
+    const { of } = await import('rxjs');
+    const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
+    await interceptor.intercept(undefined as never, { handle: () => of('done') } as never);
+    expect(typeof store.get(CLS_FILE_HASH)).toBe('string');
+    expect(String(store.get(CLS_FILE_HASH))).toHaveLength(88); // sha512 base64 = 88 chars
+    vi.unstubAllEnvs();
+  });
+});
+
+describe('FileParserInterceptor prefix hash failure path', () => {
+  it('rejects when the hashed prefix stream errors mid-read', async () => {
+    const { PassThrough } = await import('node:stream');
+    const source = new PassThrough();
+    const chunks = [Buffer.from('hello'), null] as const;
+    // feed one chunk then error the stream
+    source.write(chunks[0]);
+    process.nextTick(() => source.destroy(new Error('connection reset')));
+
+    const request = {
+      headers: { 'content-length': '100' },
+      method: 'POST',
+      query: {},
+      raw: source,
+      signal: new AbortController().signal,
+      url: '/upload',
+    };
+    const cls = {
+      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      fileHash: () => ({ set: (v: unknown) => v }),
+      fileSignature: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      request: () => request,
+      response: () => ({ header: () => undefined }),
+      sourceDirection: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
+    };
+    const fileTypeService = { signature: vi.fn(async () => ({ ext: 'png', mime: 'image/png' })) };
+    const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
+    const { of } = await import('rxjs');
+    const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
+    await expect(
+      interceptor.intercept(undefined as never, { handle: () => of('done') } as never),
+    ).rejects.toThrow('connection reset');
+  });
+});

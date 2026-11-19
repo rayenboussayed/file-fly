@@ -215,3 +215,21 @@ describe('CsvService typed cells census', () => {
     });
   });
 });
+
+describe('CsvService readBody fallbacks', () => {
+  it('accepts application/octet-stream uploads', async () => {
+    const service = makeService(Buffer.from('name,count\nx,1\n'), 'application/octet-stream');
+    await expect(service.metadata({ maxRows: 10 })).resolves.toMatchObject({ rows: 2 });
+  });
+
+  it('rejects a missing content-type header with 415', async () => {
+    const stream = Readable.from([Buffer.from('name\nx\n')]);
+    const cls = {
+      request: () => ({ method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const service = new CsvService(cls as never);
+    await expect(service.metadata({ maxRows: 10 })).rejects.toMatchObject({ status: 415 });
+  });
+});

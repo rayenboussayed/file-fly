@@ -218,3 +218,24 @@ describe('FontService.extract limit', () => {
     expect(extract.returnedGlyphs).toBe(10);
   });
 });
+
+describe('FontService readBody fallbacks', () => {
+  it('rejects a missing content-type header with 415', async () => {
+    const stream = Readable.from([Buffer.from('x')]);
+    const cls = {
+      request: () => ({ method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const service = new FontService(cls as never);
+    await expect(service.metadata({})).rejects.toMatchObject({ status: 415 });
+  });
+});
+
+describe('FontService.shape direction=auto', () => {
+  it('treats auto as "defer to the shaper"', async () => {
+    const service = makeService(fontBuffer());
+    const run = await service.shape({ direction: 'auto', text: 'hello' });
+    expect(run.direction).toBe('ltr');
+  });
+});

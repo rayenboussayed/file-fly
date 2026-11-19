@@ -305,3 +305,73 @@ describe('WorkerService onError and stderr cap branches', () => {
     expect(workerPath('./worker/index.js', 'file:///a/b/mod.js')).toBe('/a/b/worker/index.js');
   });
 });
+
+describe('WorkerService debug-branch assertions', () => {
+  beforeEach(async () => {
+    mockedWorkerInstances().length = 0;
+    (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
+    await fs.rm(binPath(['spy-key', './spy.js', 'null']), { force: true, recursive: true }).catch(() => undefined);
+    await fs.rm(binPath(['spy-key', './spy.js', 'null']), { force: true }).catch(() => undefined);
+  });
+
+  it('logs cache-write failures via the onError debug branch', async () => {
+    // Pre-create the cache path as a directory so the StreamCache write fails.
+    await fs.mkdir(binPath(['spy-key', './spy.js', 'null']), { recursive: true });
+
+    const cls = {
+      cacheKey: () => ({ get: () => 'spy-key', set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      request: () => ({ signal: new AbortController().signal }),
+      sourceStream: () => ({
+        get: () => new Readable({ read() { this.push(null); } }),
+        set: (v: unknown) => v,
+      }),
+    } as never;
+
+    const service = new WorkerService(cls);
+    const logger = (service as unknown as { logger: { debug: (msg: string) => void } }).logger;
+    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => undefined);
+
+    const output = await service.createWorker('./spy.js');
+    const text = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      output.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+      output.once('end', () => resolve(Buffer.concat(chunks).toString()));
+      output.once('error', reject);
+    });
+    // The worker still serves its output even though the cache write failed.
+    expect(text).toBe('cached');
+    // The failure took the onError debug branch (not the catch-all path).
+    // fill() fails only at the final rename, after the branch has ended, so
+    // poll until the cache-write pipeline has settled instead of racing it.
+    await vi.waitFor(() => {
+      expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('cache write failed'));
+    });
+    // The rollback removed the temp file: the pre-created directory is empty.
+    expect(await fs.readdir(binPath(['spy-key', './spy.js', 'null']))).toEqual([]);
+  });
+
+  it('destroys the stdin branch when the upload source errors mid-stream', async () => {
+    async function* broken() {
+      yield Buffer.from('chunk');
+      throw new Error('connection reset');
+    }
+    const source = Readable.from(broken());
+    const cls = {
+      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      request: () => ({ signal: new AbortController().signal }),
+      sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
+    } as never;
+
+    const service = new WorkerService(cls);
+    const output = await service.createWorker('./fail.js');
+    await new Promise<void>((resolve) => {
+      output.once('end', resolve);
+      output.once('error', resolve);
+      setTimeout(resolve, 2000);
+    });
+    // Reaching here without hanging proves the stdin pipeline error was contained.
+    expect(source.destroyed).toBe(true);
+  });
+});

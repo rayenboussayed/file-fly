@@ -15,4 +15,14 @@ describe('AudioSignatureInterceptor', () => {
     const rejecting = new AudioSignatureInterceptor({ isAudio: () => false } as never, cls as never);
     expect(() => rejecting.intercept(undefined as never, { handle: () => 'next' } as never)).toThrow();
   });
+
+  it('lets other routes pass through untouched', () => {
+    const cls = {
+      fileSignature: () => ({ get: () => ({ mime: 'audio/mpeg' }) }),
+      request: () => ({ url: '/health' }),
+    };
+    const next = { handle: () => 'next' };
+    const passthrough = new AudioSignatureInterceptor({ isAudio: () => false } as never, cls as never);
+    expect(passthrough.intercept(undefined as never, next as never)).toBe('next');
+  });
 });

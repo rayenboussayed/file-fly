@@ -188,3 +188,39 @@ describe('video worker processMedia matrix', () => {
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
   }, 30000);
 });
+
+describe('dna edge cases', () => {
+  it('fails cleanly on an audio-only input (NO_VIDEO_STREAM)', async () => {
+    vi.resetModules();
+    vi.doMock('node:worker_threads', () => ({
+      workerData: { inputFormat: 'mp3', operation: 'dna' },
+    }));
+    const chunks = stubStdout();
+    stubStdin(fs.readFileSync(path.join('assets', 'audios', 'tiny.mp3')));
+    await import('./index.js');
+    await new Promise((resolve) => setImmediate(resolve));
+    await waitForWorker(4000);
+    // In in-process mode the worker swallows the error; the parent only sees
+    // it through a non-zero exit code (standalone) or no bytes here.
+    expect(Buffer.concat(chunks)).toHaveLength(0);
+  }, 30000);
+});
+
+describe('dna trim fallback', () => {
+  it('falls back to untrimmed bytes when the trim produces a sub-64px frame', async () => {
+    const chunks = stubStdout();
+    stubStdin(fs.readFileSync(path.join('assets', 'videos', 'tiny32.mp4')));
+    vi.resetModules();
+    vi.doMock('node:worker_threads', () => ({
+      workerData: { inputFormat: 'mp4', operation: 'dna' },
+    }));
+    await import('./index.js');
+    await new Promise((resolve) => setImmediate(resolve));
+    await waitForWorker(4000);
+    const lines = Buffer.concat(chunks).toString('utf8').trim().split('\n').filter(Boolean);
+    expect(lines.length).toBeGreaterThan(0);
+    const parsed = JSON.parse(lines[0] as string) as { algorithm: string; frames: unknown[] };
+    expect(parsed.algorithm).toBe('vid-pdq');
+    expect(parsed.frames.length).toBeGreaterThan(0);
+  }, 30000);
+});

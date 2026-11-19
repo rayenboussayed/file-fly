@@ -670,3 +670,18 @@ describe('PptxService remaining branches', () => {
     expect(result.structure.notes).toEqual(['zzz', 'two', 'ten']);
   });
 });
+
+describe('PptxService total uncompressed cap', () => {
+  it('answers 413 when the package total exceeds the cap even if each entry fits', async () => {
+    const { zipSync } = await import('fflate');
+    const entry = Buffer.alloc(33 * 1024 * 1024, 0x42);
+    const bytes = Buffer.from(zipSync({
+      '[Content_Types].xml': Buffer.from('<Types/>', 'utf8'),
+      'ppt/presentation.xml': Buffer.from('<p:presentation xmlns:p="p"><p:sldIdLst/></p:presentation>', 'utf8'),
+      'ppt/media/a.bin': entry,
+      'ppt/media/b.bin': Buffer.alloc(33 * 1024 * 1024, 0x43),
+    }, { level: 0 }));
+    const service = makeService(bytes).service;
+    await expect(service.metadata()).rejects.toMatchObject({ status: 413 });
+  });
+});

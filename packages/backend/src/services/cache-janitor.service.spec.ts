@@ -113,3 +113,54 @@ describe('CacheJanitorService', () => {
     expect(await fs.readdir(dir)).toEqual([]);
   });
 });
+
+describe('CacheJanitorService failure paths', () => {
+  it('skips entries whose stat fails (e.g. broken symlinks)', async () => {
+    vi.stubEnv('CACHE_DIR', dir);
+    const { CacheJanitorService } = await import('./cache-janitor.service.js');
+
+    await fs.writeFile(path.join(dir, 'ok.cache'), 'keep');
+    await fs.symlink(path.join(dir, 'definitely-missing-target'), path.join(dir, 'broken.cache'));
+
+    const service = new CacheJanitorService();
+    await service.onModuleInit();
+    await service.sweep();
+    service.onModuleDestroy();
+
+    expect(await fs.readdir(dir)).toContain('ok.cache');
+  });
+
+  it('logs and continues when the initial sweep fails', async () => {
+    vi.stubEnv('CACHE_DIR', dir);
+    const { CacheJanitorService } = await import('./cache-janitor.service.js');
+
+    const service = new CacheJanitorService();
+    const sweepSpy = vi.spyOn(
+      service as unknown as { sweep: () => Promise<void> },
+      'sweep',
+    ).mockRejectedValueOnce(new Error('sweep exploded'));
+    // The catch must absorb the failure instead of rejecting onModuleInit.
+    await expect(service.onModuleInit()).resolves.toBeUndefined();
+    expect(sweepSpy).toHaveBeenCalledOnce();
+    await service.onModuleDestroy();
+    sweepSpy.mockRestore();
+  });
+
+  it('logs and continues when a scheduled sweep fails', async () => {
+    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_SWEEP_INTERVAL_MS', '1');
+    const { CacheJanitorService } = await import('./cache-janitor.service.js');
+
+    await fs.writeFile(path.join(dir, 'ok.cache'), 'keep');
+    const service = new CacheJanitorService();
+    const realSweep = service.sweep.bind(service);
+    vi.spyOn(service, 'sweep')
+      .mockRejectedValueOnce(new Error('initial sweep exploded'))
+      .mockRejectedValue(new Error('scheduled sweep exploded'));
+    await service.onModuleInit();
+    // Let a couple of interval ticks fire with a failing sweep.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    service.onModuleDestroy();
+    expect(realSweep).toBeDefined();
+  });
+});

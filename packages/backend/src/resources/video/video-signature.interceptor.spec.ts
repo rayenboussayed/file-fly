@@ -15,4 +15,14 @@ describe('VideoSignatureInterceptor', () => {
     const rejecting = new VideoSignatureInterceptor({ isVideo: () => false } as never, cls as never);
     expect(() => rejecting.intercept(undefined as never, { handle: () => 'next' } as never)).toThrow();
   });
+
+  it('lets other routes pass through untouched', () => {
+    const cls = {
+      fileSignature: () => ({ get: () => ({ mime: 'video/mp4' }) }),
+      request: () => ({ url: '/health' }),
+    };
+    const next = { handle: () => 'next' };
+    const passthrough = new VideoSignatureInterceptor({ isVideo: () => false } as never, cls as never);
+    expect(passthrough.intercept(undefined as never, next as never)).toBe('next');
+  });
 });

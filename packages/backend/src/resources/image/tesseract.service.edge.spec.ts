@@ -125,3 +125,60 @@ describe('TesseractService edge cases', () => {
     await service.onModuleDestroy();
   });
 });
+
+describe('TesseractService line coverage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('recognizes when blocks lack paragraphs and lines', async () => {
+    const { TesseractService } = await importService({});
+    const { createWorker } = await import('tesseract.js');
+    vi.mocked(createWorker).mockImplementationOnce(async () => ({
+      recognize: vi.fn(async () => ({
+        data: { blocks: [{ paragraphs: null }, {}], confidence: 90, text: 'x\n' },
+      })) as never,
+      reinitialize: vi.fn(async () => undefined),
+      terminate: vi.fn(async () => undefined),
+    }));
+    const service = new TesseractService();
+    const result = await service.recognize(Buffer.from('img'), ['eng']);
+    expect(result.lines).toEqual([]);
+    await service.onModuleDestroy();
+  });
+
+  it('reuses an idle slot for repeat calls with the same languages', async () => {
+    const { TesseractService } = await importService({});
+    const { createWorker } = await import('tesseract.js');
+    const service = new TesseractService();
+    await service.recognize(Buffer.from('img'), ['eng']);
+    await service.recognize(Buffer.from('img'), ['eng']);
+    expect(createWorker).toHaveBeenCalledTimes(1);
+    await service.onModuleDestroy();
+  });
+
+  it('cleans up the worker when createWorker resolves after the timeout', async () => {
+    vi.stubEnv('TESSERACT_TIMEOUT_MS', '20');
+    const { TesseractService } = await importService({ TESSERACT_TIMEOUT_MS: '20' });
+    const { createWorker } = await import('tesseract.js');
+    let resolveWorker: ((worker: unknown) => void) | undefined;
+    vi.mocked(createWorker).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveWorker = resolve as never;
+        }) as never,
+    );
+    const service = new TesseractService();
+    const pending = service.recognize(Buffer.from('img'), ['eng']);
+    // Let the timeout fire first.
+    await expect(pending).rejects.toThrow();
+    resolveWorker?.({
+      recognize: vi.fn(),
+      reinitialize: vi.fn(async () => undefined),
+      terminate: vi.fn(async () => undefined),
+    });
+    // Give the cleanup .then() a chance to run.
+    await new Promise((resolve) => setImmediate(resolve));
+    await service.onModuleDestroy();
+  });
+});

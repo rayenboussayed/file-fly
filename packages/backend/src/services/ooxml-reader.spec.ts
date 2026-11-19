@@ -81,3 +81,20 @@ describe('OoxmlReader edge containers', () => {
     expect(() => OoxmlReader.readParts(Buffer.from(zipSync({})))).toThrow('package has no readable entries');
   });
 });
+
+describe('OoxmlReader total-size cap', () => {
+  it('rejects a package whose combined entries exceed the total cap', () => {
+    const entry = Buffer.alloc(25 * 1024 * 1024, 0x43);
+    const bytes = Buffer.from(
+      zipSync(
+        {
+          'a.xml': entry,
+          'b.xml': entry,
+          'c.xml': entry,
+        },
+        { level: 0 },
+      ),
+    );
+    expect(() => OoxmlReader.readParts(bytes, { maxTotalUncompressed: 64 * 1024 * 1024 })).toThrow('total uncompressed');
+  });
+});

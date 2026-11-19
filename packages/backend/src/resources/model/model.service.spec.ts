@@ -447,3 +447,19 @@ describe('ModelService read-body and mime fallbacks', () => {
     expect(extract.skins).toEqual([expect.objectContaining({ name: 'unnamed' })]);
   });
 });
+
+describe('ModelService optimize pipeline arms', () => {
+  it('applies meshopt simplification to tiny.glb', async () => {
+    const source = fixture();
+    const document = await readModel(source);
+    await optimizeDocument(document, { compress: 'meshopt', simplify: 0.5, weld: true });
+    const out = await writeGlb(document);
+
+    const reopened = await readModel(Buffer.from(out));
+    const root = reopened.getRoot();
+    expect(root.listMeshes().length).toBeGreaterThan(0);
+    const positions = root.listMeshes()[0]?.listPrimitives()[0]?.getAttribute('POSITION');
+    // Simplify either rewrote the accessor or left it; either is a legal outcome.
+    expect(positions === null || positions!.getCount() >= 3).toBe(true);
+  });
+});

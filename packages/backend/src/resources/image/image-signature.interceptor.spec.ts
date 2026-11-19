@@ -16,4 +16,14 @@ describe('ImageSignatureInterceptor', () => {
     const rejecting = new ImageSignatureInterceptor({ isImage: () => false } as never, cls as never);
     expect(() => rejecting.intercept(undefined as never, next as never)).toThrow();
   });
+
+  it('lets other routes pass through untouched', () => {
+    const cls = {
+      fileSignature: () => ({ get: () => ({ mime: 'image/png' }) }),
+      request: () => ({ url: '/health' }),
+    };
+    const next = { handle: () => 'next' };
+    const passthrough = new ImageSignatureInterceptor({ isImage: () => false } as never, cls as never);
+    expect(passthrough.intercept(undefined as never, next as never)).toBe('next');
+  });
 });

@@ -127,17 +127,13 @@ const applyMetadata = (pdfDoc: PDFDocument, body: PdfBuildType): void => {
 export const buildPdfDocument = async (body: PdfBuildType): Promise<Uint8Array> => {
   const segments = segmentPages(body.pages);
   const pdfDoc = await PDFDocument.create();
-  const pages = segments.map((segment) => pdfDoc.addPage(pageSizeOf(segment.page)));
-  const numPages = pages.length;
+  const pagePairs = segments.map((segment) => [segment, pdfDoc.addPage(pageSizeOf(segment.page))] as const);
+  const numPages = pagePairs.length;
 
   const ctx = await embedFonts(pdfDoc, body, segments);
   const images = await embedImages(pdfDoc, segments);
 
-  segments.forEach((segment, index) => {
-    // `segment.page` is read from the array the builder created, no prototype lookup.
-    // eslint-disable-next-line security/detect-object-injection
-    const page = pages[index];
-    if (page === undefined) throw new Error('segment/page pairing lost');
+  pagePairs.forEach(([segment, page], index) => {
     for (const element of segment.elements) {
       drawElement(pdfDoc, page, element, ctx, images, numPages, index + 1);
     }
