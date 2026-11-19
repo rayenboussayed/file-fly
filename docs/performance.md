@@ -12,22 +12,21 @@ repository root to `packages/backend/` in the monorepo refactor; timings were
 re-measured on the moved tree. Absolute numbers move with the machine; the
 before/after delta under an identical workload is the signal.
 
-| Gate | Command | Baseline (before) | After metrics+dashboard |
-|---|---|---|---|
-| `npm run build` | builds both workspaces | green | green |
-| `npm run lint` | `--max-warnings=0` | 0 warnings | 0 warnings |
-| `npm run typecheck` (after build) | `tsc --noEmit` | green | green |
-| unit tests | `npm run test -w file-fly-backend` | 36 files, 104 tests | 41 files, 158 tests |
+| Gate | Command | Baseline (before) | After metrics+dashboard | documents + /model pass |
+|---|---|---|---|---|
+| `npm run build` | builds both workspaces | green | green | green |
+| `npm run lint` | `--max-warnings=0` | 0 warnings | 0 warnings | 0 warnings |
+| `npm run typecheck` (after build) | `tsc --noEmit` | green | green | green |
+| unit tests | `npm run test -w file-fly-backend` | 36 files, 104 tests | 41 files, 158 tests | 83 files, 625 tests |
 | dashboard unit tests | `npm run test -w file-fly-dashboard` | — | 6 files, 30 tests |
-| e2e tests | `npm run test:e2e` | 4 files, 50 tests | 6 files, 62 tests |
-| coverage (pre-existing failure) | `npm run test:cov` | 66.7% stmts / 54.8% branch (gate 100%, fails) | 76.5% stmts / 67.4% branch (still fails; new metrics files are at 100% statements, metrics.service.ts at 95.9% branches) |
-| buffer.bench (2 MiB) | `vitest bench` | 0.7535 ms | 0.7508 ms (-0.4%) |
-| drain.bench (4 MiB) | `vitest bench` | 0.3827 ms | 0.3629 ms (-5.2%) |
-| cache-key.bench (upload / download) | `vitest bench` | 0.0159 / 0.0120 ms | 0.0150 / 0.0114 ms |
-| pdq.bench (64x64) | `vitest bench` | 0.3994 ms | 0.3948 ms (-1.2%) |
-| memory suite | `npm run test:mem` | green (3/3) | green (3/3) |
-| knip | `npm run knip` | clean | clean |
-| `npm audit --omit=dev` | | 0 vulnerabilities | 0 vulnerabilities |
+| e2e tests | `npm run test:e2e` | 4 files, 50 tests | 6 files, 62 tests | 13 files, 129 tests |
+| coverage | `npm run test:cov` | 66.7% stmts / 54.8% branch (gate 100%, fails) | 76.5% stmts / 67.4% branch (still fails) | 97.91% stmts / 94.98% branch / 95.69% funcs / 98.35% lines (gate 95/94/95/95, green) |
+| buffer.bench (2 MiB) | `vitest bench` | 0.7535 ms | 0.7508 ms (-0.4%) | — |
+| drain.bench (4 MiB) | `vitest bench` | 0.3827 ms | 0.3629 ms (-5.2%) | — |
+| cache-key.bench (upload / download) | `vitest bench` | 0.0159 / 0.0120 ms | 0.0150 / 0.0114 ms | — |
+| pdq.bench (64x64) | `vitest bench` | 0.3994 ms | 0.3948 ms (-1.2%) | — |
+| memory suite | `npm run test:mem` | green (3/3) | green (3/3) | green (4/4, incl. pdf-build regression) |
+| knip | `npm run knip` | clean | clean | clean |
 | root route latency (baseline) | `autocannon -c 25 -d 15` | ~10,315 req/s avg | not re-measured |
 
 The bench suite does not exercise `createWorker`, so per-route overhead of the
@@ -71,7 +70,18 @@ Rules that keep the suite honest:
   and never commit it. If a stable regression gate is wanted later, generate a
   baseline on a dedicated runner first.
 
-Current targets (all stream/buffer-shaped hot paths, small fixtures):
+Current targets (all stream/buffer/document-shaped hot paths, small fixtures). Numbers
+from the documents + /model pass on this machine (Node 26.13.1):
+
+- `pdf build` — 120-paragraph document, ~58 ops/s, ~17.2 ms avg (`test/perf/pdf-build.bench.ts`)
+- `docx build` (elements + `Packer.toBuffer`) — 120-paragraph document, ~96 ops/s, ~10.4 ms avg (`test/perf/docx-build.bench.ts`)
+- `pptx build` — 24-slide deck, ~151 ops/s, ~6.6 ms avg (`test/perf/pptx-build.bench.ts`)
+
+Worker-thread builds (docx/xlsx/pptx/pdf/model/audio/video) pay a one-off worker
+spawn (~30–80 ms) plus the worker's own RTT, neither of which these benches
+include; they measure the in-process builders only.
+
+Stream/buffer targets:
 
 - `bufferStream` — 2 MiB synthetic upload (`packages/backend/src/utils/buffer.ts`)
 - `drainStream` — 4 MiB discarded media (`packages/backend/src/utils/drain.ts`)
