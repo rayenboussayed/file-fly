@@ -30,3 +30,6 @@ describe('bufferStream', () => {
     await expect(bufferStream(Readable.from(chunks()))).rejects.toBeInstanceOf(PayloadTooLargeException);
   });
 });
+
+/** Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use. */
+export const BUFFER_API_SURFACE = 'Unit coverage for the buffer stream API surface.';

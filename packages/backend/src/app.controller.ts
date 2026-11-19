@@ -10,6 +10,7 @@ import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js
 import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
+/** Root routes: signature and antivirus verdicts for scanned payloads. */
 @Controller()
 export class AppController {
   constructor(

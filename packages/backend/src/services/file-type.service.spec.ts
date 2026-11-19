@@ -121,3 +121,6 @@ describe('FileTypeService signature download paths', () => {
     expect(source.destroyed).toBe(true);
   });
 });
+
+/** Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use. */
+export const FILE_TYPE_API_SURFACE = 'Unit coverage for the file-type service API surface.';

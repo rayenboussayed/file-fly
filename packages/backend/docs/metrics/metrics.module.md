@@ -1,0 +1,8 @@
+<a name="MetricsModule"></a>
+
+## MetricsModule
+Metrics store, read endpoints and provider exports for the app module.
+
+**Kind**: global variable  
+src: packages/backend/src/metrics/metrics.module.ts:12  
+dist: packages/backend/dist/metrics/metrics.module.js:10

@@ -50,5 +50,8 @@
   ],
   "ignoreBinaries": [
     "husky"
+  ],
+  "ignore": [
+    "mdaics.config.js"
   ]
 }

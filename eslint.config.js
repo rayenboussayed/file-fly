@@ -25,7 +25,7 @@ const JS_FILES = '**/*.{ts,tsx,mts,cts}';
 const TS_FILES = '**/*.{ts,tsx,mts,cts}';
 
 export default defineConfig([
-  globalIgnores(['node_modules', '**/node_modules', 'dist', '**/dist', 'package-lock.json', '**/test/results/**', '**/cache/**', '.cache-dist-bak']),
+  globalIgnores(['node_modules', '**/node_modules', 'dist', '**/dist', 'package-lock.json', '**/test/results/**', '**/cache/**', '.cache-dist-bak', 'packages/backend/docs', 'packages/dashboard/docs']),
   {
     files: [JS_FILES, TS_FILES],
     plugins: { js, unicorn, depend, deprecate, n: node, '@stylistic': stylistic },

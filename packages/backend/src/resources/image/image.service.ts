@@ -16,6 +16,7 @@ import type { ImageDnaResult, ImageOcrResult } from './type.js';
 
 import { TesseractService } from './tesseract.service.js';
 
+/** Image feature service. */
 @Injectable()
 export class ImageService {
   private readonly logger = new Logger(ImageService.name);

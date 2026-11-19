@@ -62,7 +62,7 @@ export class XlsxController {
   /**
    * Extracts one sheet as typed JSON.
    * @param query - Flat reader options.
-   * @returns `{ sheet, records }` (201).
+   * @returns The records and sheet name (201).
    */
   @Post('extract')
   @UseInterceptors(FileScannerInterceptor)

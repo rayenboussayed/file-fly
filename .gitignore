@@ -67,6 +67,7 @@ cache
 # temporary: root-owned dist backup from the container run; delete with: sudo rm -rf .cache-dist-bak
 .cache-dist-bak/
 .agent-swarm/
+.mdaicscache/
 
 # metrics sqlite store files (runtime output; source lives in src/metrics/)
 **/metrics/metrics.db*

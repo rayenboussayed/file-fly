@@ -57,7 +57,7 @@ export class CsvController {
   /**
    * Parses an uploaded CSV into typed JSON records.
    * @param query - Flat csv-parse options.
-   * @returns `{ records }` (201).
+   * @returns The parsed records (201).
    */
   @Post('extract')
   @UseInterceptors(FileScannerInterceptor)
