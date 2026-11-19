@@ -1,1 +1,1 @@
-npm audit fix || true; npm audit --omit=dev --fix || true; npm run check
+npm audit fix || true; npm run check
