@@ -62,6 +62,7 @@ export default async function setup() {
   for (const name of ['tiny.ttf', 'tiny.ttc', 'tiny.woff', 'tiny.woff2']) {
     fs.copyFileSync(path.join('assets', 'fonts', name), path.join(FIXTURES_DIR, name));
   }
+  fs.copyFileSync(path.join('assets', 'models', 'tiny.glb'), path.join(FIXTURES_DIR, 'tiny.glb'));
 
   const clamd = await startFakeClamd(FAKE_CLAMD_PORT);
 

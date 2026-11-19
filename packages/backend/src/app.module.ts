@@ -17,6 +17,7 @@ import { CsvModule } from './resources/csv/csv.module.js';
 import { DocxModule } from './resources/docx/docx.module.js';
 import { FontModule } from './resources/font/font.module.js';
 import { ImageModule } from './resources/image/image.module.js';
+import { ModelModule } from './resources/model/model.module.js';
 import { PdfModule } from './resources/pdf/pdf.module.js';
 import { PptxModule } from './resources/pptx/pptx.module.js';
 import { VideoModule } from './resources/video/video.module.js';
@@ -58,6 +59,7 @@ import { WorkerService } from './services/worker.service.js';
     CsvModule,
     DocxModule,
     FontModule,
+    ModelModule,
     PptxModule,
     PdfModule,
     DashboardStaticModule,

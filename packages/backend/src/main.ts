@@ -76,7 +76,7 @@ async function bootstrap() {
  */
 function fastify(instance: FastifyInstance) {
   instance.addContentTypeParser(
-    [...supportedMimeTypes, 'application/octet-stream', 'text/csv'],
+    [...supportedMimeTypes, 'application/octet-stream', 'text/csv', 'model/gltf+json'],
     (request, _, done) => {
       if (request.method.toUpperCase() === 'GET') return done(null, request.raw);
       const contentLength = Number.parseInt(

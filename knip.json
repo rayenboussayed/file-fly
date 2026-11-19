@@ -19,6 +19,7 @@
         "test/helpers.ts",
         "test/fake-clamd.ts",
         "test/*.e2e-spec.ts",
+        "src/**/worker/*.ts",
         "src/**/*.spec.ts",
         "test/perf/*.bench.ts",
         "test/mem/*.spec.ts"
