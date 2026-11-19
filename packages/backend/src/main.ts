@@ -5,6 +5,7 @@ import './undici.js';
 // eslint-disable-next-line n/no-extraneous-import
 import type { FastifyInstance } from 'fastify';
 
+import { BadRequestException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
@@ -84,7 +85,7 @@ function fastify(instance: FastifyInstance) {
       return contentLength > 0
         ? done(null)
         : done(
-            new Error(
+            new BadRequestException(
               'content-length header must be set and be greater than 0',
             ),
           );

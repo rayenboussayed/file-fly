@@ -5,6 +5,7 @@ describe('modules', () => {
     await import('./resources/audio/audio.module.js');
     await import('./resources/csv/csv.module.js');
     await import('./resources/docx/docx.module.js');
+    await import('./resources/font/font.module.js');
     await import('./resources/pdf/pdf.module.js');
     await import('./resources/pptx/pptx.module.js');
     await import('./resources/image/image.module.js');

@@ -57,8 +57,11 @@ export default async function setup() {
     XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer,
   );
 
-  // Embedded-font fixture for the /pdf e2e; fail loudly if the font is missing.
+  // Font fixtures for the /pdf and /font e2es; fail loudly if any is missing.
   fs.copyFileSync('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', path.join(FIXTURES_DIR, 'DejaVuSans.ttf'));
+  for (const name of ['tiny.ttf', 'tiny.ttc', 'tiny.woff', 'tiny.woff2']) {
+    fs.copyFileSync(path.join('assets', 'fonts', name), path.join(FIXTURES_DIR, name));
+  }
 
   const clamd = await startFakeClamd(FAKE_CLAMD_PORT);
 

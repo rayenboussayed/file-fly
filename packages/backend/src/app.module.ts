@@ -15,6 +15,7 @@ import { MetricsModule } from './metrics/metrics.module.js';
 import { AudioModule } from './resources/audio/audio.module.js';
 import { CsvModule } from './resources/csv/csv.module.js';
 import { DocxModule } from './resources/docx/docx.module.js';
+import { FontModule } from './resources/font/font.module.js';
 import { ImageModule } from './resources/image/image.module.js';
 import { PdfModule } from './resources/pdf/pdf.module.js';
 import { PptxModule } from './resources/pptx/pptx.module.js';
@@ -56,6 +57,7 @@ import { WorkerService } from './services/worker.service.js';
     AudioModule,
     CsvModule,
     DocxModule,
+    FontModule,
     PptxModule,
     PdfModule,
     DashboardStaticModule,
