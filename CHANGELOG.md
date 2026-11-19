@@ -33,6 +33,13 @@ from the commit history (2026-10-31 .. 2026-11-19).
 - mdaics-generated API documentation site, committed; `npm run docs` and
   `docs/documents.md` deep-dive (`37bc335`, `e6ac120`); in-process production
   smoke of the built images; static Docker audit (no daemon available).
+- Dashboard screenshot e2e (`packages/dashboard/test/e2e/`): headless Playwright
+  boots the built backend with a throwaway metrics store and a port of the fake
+  clamd (port 33332), seeds demo traffic from documentation-range IPs via
+  `X-Forwarded-For`, and rewrites the committed screenshots
+  `docs/screenshots/dashboard-overview.png` and `dashboard-ip-detail.png`.
+  Runs via `npm run test:e2e -w file-fly-dashboard`; deliberately excluded
+  from `npm run check` (screenshots are refreshed and committed intentionally).
 
 ### Changed
 
@@ -47,6 +54,9 @@ from the commit history (2026-10-31 .. 2026-11-19).
 
 ### Fixed
 
+- Dashboard rendered with no component styles at all: `@astryxdesign/core/astryx.css`
+  was never imported (only `reset.css` + the neutral theme). Imported in
+  `packages/dashboard/src/main.tsx`; caught by the new screenshot e2e.
 - WebM output kept legal — forced Opus audio, dropped dead block
   (`3924408`).
 - Boot-blocking production bug: bare or comma-separated `CORS_ORIGIN` now

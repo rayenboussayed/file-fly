@@ -6,7 +6,8 @@ sources (`package.json`, configs, `src/`) when in doubt.
 ## Commands
 
 - Whole project: `npm run check` — build → typecheck → lint → `test:full` (backend unit + e2e, dashboard specs) → knip. This is the definition of done.
-- Unit tests only: `npm run test`. E2E only: `npm run test:e2e` — note the backend e2e script runs `npm run build` first, so `dist/` is always rebuilt before e2e.
+- Unit tests only: `npm run test`. E2E only: `npm run test:e2e` — note the backend e2e script runs `npm run build` first, so `dist/` is always rebuilt before e2e. At the root, `test:e2e` fans out to both workspaces.
+- Dashboard screenshot e2e: `npm run test:e2e -w file-fly-dashboard` — rebuilds backend + SPA, boots the built backend with a fake clamd and a throwaway metrics store, seeds demo traffic from synthetic IPs, screenshots the SPA into `docs/screenshots/` (committed; regenerate deliberately). Not part of `npm run check` or the hook.
 - Backend single spec: `npx vitest run src/path/to/file.spec.ts` (from `packages/backend`). Single e2e spec: `npx vitest run --config ./vitest.config.e2e.ts test/csv.e2e-spec.ts`.
 - Dashboard dev server: `npm run dev -w file-fly-dashboard`.
 - Perf/memory suites (opt-in, NOT in `npm run check`): `npm run test:perf`, `npm run test:mem`; see `docs/performance.md`.
@@ -40,12 +41,14 @@ sources (`package.json`, configs, `src/`) when in doubt.
 
 - Units: `**/*.spec.ts` (`.tsx` on dashboard); e2e: `**/*.e2e-spec.ts`; benchmarks: `packages/backend/test/perf/*.bench.ts`; memory specs: `packages/backend/test/mem/**` (excluded from unit config; own runner).
 - E2E boots the built backend; the harness (`test/global-setup.ts`) starts a fake clamd on `127.0.0.1:33331`, pins `EGRESS_ALLOWLIST=127.0.0.1`, `CLAMAV_HOST=127.0.0.1:33331` and writes under `test/results/` (gitignored). Unit-shaped worker tests and e2e must stay `fileParallelism: false`.
+- The dashboard's Playwright screenshot suite (`packages/dashboard/test/e2e/`) is separate from vitest e2e: `test/e2e/global-setup.ts` starts a port of the fake clamd on `33332`, spawns the built backend as a child process with a fresh `mkdtemp` metrics/cache tree (`METRICS_FLUSH_INTERVAL_MS=50`, `TRUST_PROXY=true`), seeds ~7 requests from documentation-range IPs (203.0.113.7, 198.51.100.42, 192.0.2.23) via `X-Forwarded-For`, and chromium screenshots `/` and `/ip/203.0.113.7` into `docs/screenshots/` (committed). Needs OS Playwright deps once per machine: `npx playwright install-deps chromium` (system packages, not repo state). The SPA is a fixed-height Astryx app shell — the document never scrolls and `fullPage` screenshots clip; `shootFullHeight` resizes the viewport to the content's intrinsic height instead. `npm run test:e2e -w file-fly-dashboard` runs it; it is deliberately excluded from `npm run check` (screenshots would churn every commit). Timestamp labels (`uptime`, `updated …`) change every run — refresh screenshots intentionally and commit them with the UI change that motivated them.
 - Coverage floor is 95/94/95/95 (statements/branches/functions/lines) — do not lower it and do not "fix" gaps by gaming tests. Accepted exceptions are documented in `docs/advisories.md` (xlsx@0.18.5; `image-size` override for pptxgenjs) — read it before touching dependencies.
 - Real worker smoke tests use `packages/backend/assets/`. Cache writes in tests go to `CACHE_DIR`; keep them from polluting the production `cache/`.
 
 ## Conventions and gotchas
 
 - Lint: `eslint . --fix --max-warnings=0` — zero errors, zero warnings. Never disable a rule globally; inline disables need an exact line and a reason comment.
+- The dashboard must import `@astryxdesign/core/astryx.css` (alongside `reset.css` and the theme css) — without it every page renders with no component styles (only the reset and CSS variables apply). The screenshot e2e caught this; keep the import in `packages/dashboard/src/main.tsx`.
 - Commits: conventional commits; body lines ≤ 100 chars (commitlint). The pre-commit hook runs the full check — budget time for it.
 - Markdown is linted too: `[bracket-shaped]` text in headings or prose is parsed as a label reference and fails `markdown/no-missing-label-refs` — avoid bracketed pseudo-labels in `.md` files (headings like `## Unreleased`, not `## [Unreleased]`).
 - Strict TypeScript; alias `@/*` → `src`. Avoid `any` and unsafe `as`; justify with a comment when unavoidable. TSDoc on exports — generated API docs render from it.

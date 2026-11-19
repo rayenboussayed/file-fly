@@ -71,3 +71,6 @@ cache
 
 # metrics sqlite store files (runtime output; source lives in src/metrics/)
 **/metrics/metrics.db*
+
+# Playwright output (screenshots suite artifacts on failure)
+**/test-results/

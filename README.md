@@ -63,6 +63,12 @@ Aggregates live in a SQLite database at `METRICS_DIR` (default `./metrics/metric
 
 `GET /metrics` returns one JSON payload with everything the dashboard needs. In production, requests to `/metrics` require `Authorization: Bearer $METRICS_TOKEN` (503 without it, never public by accident); in development the endpoint is open with a boot warning. The dashboard at `/` renders it; `/ip/<addr>` deep-links into per-client stats.
 
+| Overview | Per-client drill-down |
+|----------|----------------------|
+| ![file-fly dashboard overview](docs/screenshots/dashboard-overview.png) | ![file-fly dashboard per-IP detail](docs/screenshots/dashboard-ip-detail.png) |
+
+Screenshots are rendered by headless Playwright in the dashboard e2e (`npm run test:e2e -w file-fly-dashboard`): it boots the built backend with a throwaway metrics store and a fake clamd, seeds demo traffic from synthetic documentation IPs, and rewrites `docs/screenshots/*.png`. Regenerate and commit them deliberately when the UI changes; the `uptime`/`updated` labels always change between runs.
+
 ```bash
 curl -s http://localhost:3000/metrics | head -c 400
 curl -s http://localhost:3000/health
@@ -223,13 +229,14 @@ All configuration is via environment variables. Values are validated with zod at
 ```bash
 npm run test        # unit tests (vitest, serial), both workspaces
 npm run test:e2e    # build + e2e tests (fake clamd fixture)
+npm run test:e2e -w file-fly-dashboard  # headless-chromium dashboard e2e; refreshes docs/screenshots/
 npm run test:cov    # unit tests with coverage
 npm run test:perf   # opt-in micro-benchmarks (tinybench)
 npm run test:mem    # opt-in memory-regression specs (--expose-gc)
 npm run check       # typecheck + lint + build + unit & e2e tests + knip
 ```
 
-Unit specs match `**/*.spec.ts` (dashboard: `**/*.spec.tsx`); e2e specs match `**/*.e2e-spec.ts`. Test files run serially (`fileParallelism: false`); real-worker smoke tests use fixtures under `packages/backend/assets/`; generated output goes under `packages/backend/test/results/`.
+Unit specs match `**/*.spec.ts` (dashboard: `**/*.spec.tsx`); e2e specs match `**/*.e2e-spec.ts`. Test files run serially (`fileParallelism: false`); real-worker smoke tests use fixtures under `packages/backend/assets/`; generated output goes under `packages/backend/test/results/`. The dashboard also has a Playwright screenshot e2e (`packages/dashboard/test/e2e/`) — it runs via `npm run test:e2e -w file-fly-dashboard`, rebuilds the backend and SPA, and refreshes `docs/screenshots/`. It is not part of `npm run check`.
 
 ## Documentation
 
