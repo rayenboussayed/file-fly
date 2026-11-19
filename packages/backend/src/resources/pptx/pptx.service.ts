@@ -103,17 +103,10 @@ const validateTableSpans = (table: Record<string, unknown>): void => {
       if (!cell || typeof cell !== 'object') continue;
       const record = cell as Record<string, unknown>;
       const rowSpan = Number(record['rowSpan'] ?? (record['options'] as Record<string, unknown> | undefined)?.['rowspan'] ?? 1);
-      const colSpan = Number(record['colSpan'] ?? (record['options'] as Record<string, unknown> | undefined)?.['colspan'] ?? 1);
       if (rowSpan > rows.length - rowIndex) {
         throw new BadRequestException({
           code: 'PPTX_ROWSPAN_EXCEEDS_ROWS',
           message: `rowSpan ${rowSpan} exceeds the ${rows.length - rowIndex} row(s) remaining`,
-        });
-      }
-      if (colSpan > gridWidth) {
-        throw new BadRequestException({
-          code: 'PPTX_COLSPAN_EXCEEDS_GRID',
-          message: `colSpan ${colSpan} exceeds the table grid width ${gridWidth}`,
         });
       }
     }

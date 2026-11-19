@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename -- all paths are built from a fresh mkdtemp dir, never from user input */
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,8 +21,8 @@ describe('CacheJanitorService', () => {
     vi.stubEnv('CACHE_DIR', dir);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-    const fresh = path.join(dir, 'fresh.cache');
-    const stale = path.join(dir, 'stale.cache');
+        const fresh = path.join(dir, 'fresh.cache');
+        const stale = path.join(dir, 'stale.cache');
     await fs.writeFile(fresh, 'fresh-bytes');
     await fs.writeFile(stale, 'stale-bytes');
     const old = new Date(Date.now() - 60_000);
@@ -76,8 +77,9 @@ describe('CacheJanitorService', () => {
     expect(await fs.readdir(dir)).toContain('inflight.tmp');
   });
 
-  it('continues the sweep when an entry cannot be removed', async () => {
-    if (process.getuid?.() === 0) return; // root ignores the read-only directory
+  const isRoot = process.getuid?.() === 0;
+
+  it.skipIf(isRoot)('continues the sweep when an entry cannot be removed', async () => {
     vi.stubEnv('CACHE_DIR', dir);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
@@ -85,6 +87,7 @@ describe('CacheJanitorService', () => {
     await fs.mkdir(lockedDir);
     await fs.writeFile(path.join(lockedDir, 'keep.cache'), 'keep');
     // Read-only directory: rm() must fail and the janitor must survive.
+    // eslint-disable-next-line sonarjs/file-permissions -- intentional read-only probe for the unlink-failure path
     await fs.chmod(lockedDir, 0o555);
 
     const service = new CacheJanitorService();
@@ -93,6 +96,7 @@ describe('CacheJanitorService', () => {
     await service.sweep({ maxBytes: Number.MAX_SAFE_INTEGER, ttlMs: 0 });
     service.onModuleDestroy();
 
+    // eslint-disable-next-line sonarjs/file-permissions -- restore write permission so the temp dir can be cleaned up
     await fs.chmod(lockedDir, 0o755);
     expect(await fs.readdir(lockedDir)).toEqual(['keep.cache']);
   });
@@ -105,6 +109,7 @@ describe('CacheJanitorService', () => {
     await service.onModuleInit();
     await Promise.all([service.sweep(), service.sweep(), service.sweep()]);
     service.onModuleDestroy();
-    expect(true).toBe(true);
+    // The concurrent sweep completed without creating or corrupting anything.
+    expect(await fs.readdir(dir)).toEqual([]);
   });
 });

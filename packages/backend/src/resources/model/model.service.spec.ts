@@ -268,3 +268,182 @@ describe('ModelService with animated/skinned documents and adversarial graphs', 
     });
   });
 });
+
+describe('ModelService metadata and mime coverage', () => {
+  it('reports dequantized bounds for KHR_mesh_quantization accessors', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+    // Asymmetric quantized positions: dequantized min/max differ from raw ints.
+    const positions = new Uint16Array([32768, 16384, 0, 65535, 32768, 0]);
+    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setNormalized(true).setBuffer(buffer);
+    const mesh = doc.createMesh('mesh').addPrimitive(doc.createPrimitive().setAttribute('POSITION', accessor));
+    doc.createNode('node').setMesh(mesh);
+    doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
+    const bytes = await new NodeIO().writeBinary(doc);
+
+    const { service } = makeService(Buffer.from(bytes));
+    const meta = await service.metadata();
+    expect(meta.bounds?.min?.[0]).toBeCloseTo(32768 / 65535, 5);
+    expect(meta.bounds?.min?.[1]).toBeCloseTo(16384 / 65535, 5);
+    expect(meta.bounds?.min?.[2]).toBe(0);
+    expect(meta.bounds?.max?.[0]).toBeCloseTo(1, 5);
+    expect(meta.bounds?.max?.[1]).toBeCloseTo(32768 / 65535, 5);
+    expect(meta.bounds?.max?.[2]).toBe(0);
+  });
+
+  it('reports no bounds when no primitive carries POSITION', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+    const texcoords = new Float32Array([0, 0, 1, 0]);
+    const accessor = doc.createAccessor('texcoords').setType('VEC2').setArray(texcoords).setBuffer(buffer);
+    const mesh = doc.createMesh('mesh').addPrimitive(doc.createPrimitive().setAttribute('TEXCOORD_0', accessor));
+    doc.createNode('node').setMesh(mesh);
+    doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
+    const bytes = await new NodeIO().writeBinary(doc);
+
+    const { service } = makeService(Buffer.from(bytes));
+    const meta = await service.metadata();
+    expect(meta.bounds).toBeUndefined();
+  });
+
+  it('reports extensionsUsed from optimized output (meshopt)', async () => {
+    const source = fixture();
+    const document = await readModel(source);
+    await optimizeDocument(document, { compress: 'meshopt', simplify: 1, weld: true });
+    const optimized = Buffer.from(await writeGlb(document));
+
+    const { service } = makeService(optimized);
+    const meta = await service.metadata();
+    expect(meta.extensionsUsed).toContain('EXT_meshopt_compression');
+    expect(meta.extensionsRequired).toContain('EXT_meshopt_compression');
+  });
+
+  it('falls back to "unnamed" and tolerates textures without image bytes', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+    const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+    // Unnamed node and mesh on purpose.
+    const texture = doc.createTexture().setMimeType('image/png').setImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
+    const material = doc.createMaterial().setBaseColorTexture(texture);
+    const mesh = doc.createMesh().addPrimitive(
+      doc.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material),
+    );
+    const node = doc.createNode().setMesh(mesh);
+    const scene = doc.createScene();
+    scene.addChild(node);
+    const bytes = await new NodeIO().writeBinary(doc);
+
+    const { service } = makeService(Buffer.from(bytes));
+    const extract = await service.extract();
+    expect(extract.meshes[0]?.name).toBe('unnamed');
+    expect(extract.materials.some((material) => material.name === 'unnamed')).toBe(true);
+    expect(extract.textures[0]).toMatchObject({ bytes: 4, mimeType: 'image/png', name: 'unnamed' });
+  });
+
+  it('maps texture mime types to data URIs in convert(to=gltf)', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    for (const [mime, uriPrefix] of [
+      ['image/ktx2', 'data:image/ktx2'],
+      ['image/avif', 'data:image/avif'],
+      ['image/webp', 'data:image/webp'],
+      ['image/gif', 'data:image/gif'],
+      ['image/png', 'data:image/png'],
+      ['image/jpeg', 'data:image/jpeg'],
+    ] as const) {
+      const doc = new Document();
+      const buffer = doc.createBuffer();
+      const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+      const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+      const texture = doc.createTexture('slot').setImage(new Uint8Array([0x00, 0x01, 0x02])).setMimeType(mime);
+      const material = doc.createMaterial('m').setBaseColorTexture(texture);
+      doc.createMesh('mesh').addPrimitive(doc.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material));
+      doc.createNode('node').setMesh(doc.getRoot().listMeshes()[0]!);
+      doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
+      const bytes = await new NodeIO().writeBinary(doc);
+
+      const { service } = makeService(Buffer.from(bytes));
+      const out = await service.convert({ to: 'gltf' });
+      const json = JSON.parse(out.toString('utf8')) as { images: Array<{ uri: string }> };
+      expect(json.images[0]?.uri.startsWith(uriPrefix)).toBe(true);
+    }
+  });
+});
+
+describe('ModelService read-body and mime fallbacks', () => {
+  it('rejects a non-GLB content type with 415 before any parse work', async () => {
+    const { service } = makeService(fixture(), 'image/png');
+    await expect(service.metadata()).rejects.toMatchObject({ status: 415 });
+  });
+
+  it('rejects when the request headers are missing entirely', async () => {
+    const stream = Readable.from([fixture()]);
+    const cls = {
+      request: () => ({ method: 'POST', raw: stream }),
+      sourceDirection: () => ({ set: () => undefined }),
+      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    };
+    const service = new ModelService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(service.metadata()).rejects.toMatchObject({ status: 415 });
+  });
+
+  it('falls back to application/octet-stream for unknown resource extensions', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+    const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+    const texture = doc.createTexture('vector').setImage(new Uint8Array([0x3c, 0x3f])).setMimeType('image/svg+xml');
+    const material = doc.createMaterial('m').setBaseColorTexture(texture);
+    doc.createMesh('mesh').addPrimitive(
+      doc.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material),
+    );
+    doc.createNode('node').setMesh(doc.getRoot().listMeshes()[0]!);
+    doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
+    const bytes = await new NodeIO().writeBinary(doc);
+
+    const { service } = makeService(Buffer.from(bytes));
+    const out = await service.convert({ to: 'gltf' });
+    const json = JSON.parse(out.toString('utf8')) as { images: Array<{ uri: string }> };
+    expect(json.images[0]?.uri.startsWith('data:application/octet-stream')).toBe(true);
+  });
+
+  it('reports unnamed animations and skins as unnamed', async () => {
+    const { Document, NodeIO } = await import('@gltf-transform/core');
+    const doc = new Document();
+    const buffer = doc.createBuffer();
+    const positionAccessor = doc.createAccessor('positions')
+      .setType('VEC3')
+      .setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]))
+      .setBuffer(buffer);
+    const ibmAccessor = doc.createAccessor('ibm')
+      .setType('MAT4')
+      .setArray(new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]))
+      .setBuffer(buffer);
+    const times = doc.createAccessor('times').setType('SCALAR').setArray(new Float32Array([0, 1])).setBuffer(buffer);
+    const translations = doc.createAccessor('translations')
+      .setType('VEC3')
+      .setArray(new Float32Array([0, 0, 0, 5, 0, 0]))
+      .setBuffer(buffer);
+    const mesh = doc.createMesh().addPrimitive(doc.createPrimitive().setAttribute('POSITION', positionAccessor));
+    const jointNode = doc.createNode();
+    const skinnedNode = doc.createNode().setMesh(mesh);
+    const skin = doc.createSkin().addJoint(jointNode).setInverseBindMatrices(ibmAccessor);
+    skinnedNode.setSkin(skin);
+    const scene = doc.createScene();
+    scene.addChild(skinnedNode).addChild(jointNode);
+    // Unnamed animation and unnamed channel/sampler sources.
+    const sampler = doc.createAnimationSampler().setInput(times).setOutput(translations).setInterpolation('LINEAR');
+    const channel = doc.createAnimationChannel().setTargetNode(jointNode).setTargetPath('translation').setSampler(sampler);
+    doc.createAnimation().addChannel(channel).addSampler(sampler);
+
+    const bytes = await new NodeIO().writeBinary(doc);
+    const { service } = makeService(Buffer.from(bytes));
+    const extract = await service.extract();
+    expect(extract.animations).toEqual([expect.objectContaining({ name: 'unnamed' })]);
+    expect(extract.skins).toEqual([expect.objectContaining({ name: 'unnamed' })]);
+  });
+});

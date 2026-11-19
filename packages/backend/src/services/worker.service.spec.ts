@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename -- cache paths are built from constants, not user input */
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
@@ -14,6 +15,21 @@ import { CACHE_DIR } from '@/constants/fs.js';
  */
 const binPath = (keyParts: readonly string[]): string =>
   join(CACHE_DIR, `${createHash('sha256').update(keyParts.join('\0')).digest('hex')}.bin`);
+
+/**
+ * Reads a stream to EOF and returns its decoded contents.
+ * @param stream - The stream to consume.
+ * @returns The decoded stream contents.
+ */
+const drainToString = async (stream: Readable): Promise<string> => {
+  const chunks: Buffer[] = [];
+  stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+  await new Promise<void>((resolve, reject) => {
+    stream.once('end', () => resolve());
+    stream.once('error', reject);
+  });
+  return Buffer.concat(chunks).toString();
+};
 
 vi.mock('node:worker_threads', () => {
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -84,30 +100,20 @@ describe('WorkerService', () => {
      * @param stream - Stream to consume.
      * @returns The decoded stream contents.
      */
-    const drain = async (stream: Readable): Promise<string> => {
-      const chunks: Buffer[] = [];
-      stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-      await new Promise<void>((resolve, reject) => {
-        stream.once('end', () => resolve());
-        stream.once('error', reject);
-      });
-      return Buffer.concat(chunks).toString();
-    };
-
     const service = new WorkerService(makeCls('cache-key', undefined));
     const first = await service.createWorker('./m.js');
-    expect(await drain(first)).toBe('cached'); // produced by the mocked worker
+    expect(await drainToString(first)).toBe('cached'); // produced by the mocked worker
     expect(mockedWorkerInstances()).toHaveLength(1);
 
     // Same instance: the call waits on the in-flight persist (or reads the
     // finished entry) — either way the worker is not re-run.
     const second = await service.createWorker('./m.js');
-    expect(await drain(second)).toBe('cached');
+    expect(await drainToString(second)).toBe('cached');
     expect(mockedWorkerInstances()).toHaveLength(1);
 
     // A different filename yields a different key: cache miss, worker re-runs.
     const third = await service.createWorker('./other.js');
-    expect(await drain(third)).toBe('cached');
+    expect(await drainToString(third)).toBe('cached');
     expect(mockedWorkerInstances()).toHaveLength(2);
   });
 
@@ -133,14 +139,14 @@ describe('WorkerService', () => {
     });
     expect(['end', 'error']).toContain(outcome);
     // No entry may be left behind for a failed worker.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- binPath is built from constants, not user input
+     
     await expect(fs.stat(binPath(['fail-key', './fail.js', 'null']))).rejects.toThrow();
   });
 });
 describe('WorkerService coverage branches', () => {
   beforeEach(async () => {
     await fs.rm(binPath(['base-key', './m.js', 'null']), { force: true }).catch(() => undefined);
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- CACHE_DIR from src/constants/fs.ts, not user input
+     
     await fs.mkdir(CACHE_DIR, { recursive: true });
   });
 
@@ -158,7 +164,7 @@ describe('WorkerService coverage branches', () => {
     await fs.rm(binPath(['base-key', './m.js', 'null']), { force: true }).catch(() => undefined);
     // trigger a cache hit using a real entry with deterministic path
     const cachePath = binPath(['base-key', './m.js', 'null']);
-// eslint-disable-next-line security/detect-non-literal-fs-filename
+ 
     await fs.writeFile(cachePath, 'cached');
     const cls2 = {
       cacheKey: () => ({ get: () => 'base-key', set: (v: unknown) => v }),
@@ -180,7 +186,7 @@ describe('WorkerService cache hits and worker errors', () => {
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
   });
 
-  const makeCls = (cacheKey: string, outcome = { hit: 0 }) => ({
+  const makeCls = (cacheKey: string | undefined, outcome = { hit: 0 }) => ({
     cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
     cacheOutcome: () => ({
       get: () => undefined,
@@ -195,16 +201,6 @@ describe('WorkerService cache hits and worker errors', () => {
     }),
   }) as never;
 
-  const drain = async (stream: Readable): Promise<string> => {
-    const chunks: Buffer[] = [];
-    stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-    await new Promise<void>((resolve, reject) => {
-      stream.once('end', () => resolve());
-      stream.once('error', reject);
-    });
-    return Buffer.concat(chunks).toString();
-  };
-
   it('records a hit and refreshes the entry mtime on cache reads', async () => {
     const pathInCache = binPath(['hit-key', './hit.js', 'null']);
     await fs.mkdir(CACHE_DIR, { recursive: true });
@@ -217,7 +213,7 @@ describe('WorkerService cache hits and worker errors', () => {
     const service = new WorkerService(cls);
     const cached = await service.createWorker('./hit.js');
     // Touch is async; drain first so the read path runs to completion.
-    expect(await drain(cached)).toBe('cached-bytes');
+    expect(await drainToString(cached)).toBe('cached-bytes');
     expect(outcome.hit).toBe(1);
     await new Promise((resolve) => setImmediate(resolve));
     const stat = await fs.stat(pathInCache);
@@ -227,7 +223,7 @@ describe('WorkerService cache hits and worker errors', () => {
   });
 
   it('surfaces a worker spawn error by destroying the output stream with that error', async () => {
-    const cls = makeCls('hit-key');
+    const cls = makeCls(undefined);
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.push(-1);
     const service = new WorkerService(cls);
     const output = await service.createWorker('./hit.js');
