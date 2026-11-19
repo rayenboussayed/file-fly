@@ -26,9 +26,8 @@ import { buildAudioFilters, buildVideoFilters } from './filters.js';
 const data: VideoWorkerData = workerData;
 
 /**
- *
- * @param payload Description.
- * @returns Result.
+ * Transcodes the upload stdin into the requested format/codec and streams it out.
+ * @param payload - The validated video processor options (format, codec, bitrate, filters...).
  */
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export async function processMedia(payload: VideoProcessorType) {
@@ -40,12 +39,14 @@ export async function processMedia(payload: VideoProcessorType) {
   const videoTranscoding = hasVideoTranscoding(payload);
   const audioTranscoding = hasAudioTranscoding(payload);
 
+  // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
   await using input = await Demuxer.open(process.stdin as never, {
     format: data.inputFormat,
     options: { analyzeduration: 5_000_000, probesize: 5_000_000 },
   });
 
   await using output = await Muxer.open(process.stdout, {
+    // isAllowedOutputFormat already narrowed format to a streamable muxer literal
     format: format as MuxerFormat,
     options: format === 'mp4' ? { movflags: MP4_FRAGMENTED_OPTIONS.movflags } : undefined,
   });
@@ -77,8 +78,9 @@ export async function processMedia(payload: VideoProcessorType) {
   const filters: FilterAPI[] = [];
   const stages = {} as NamedStages<'audio' | 'video'>;
 
-  if (videoClip) {
-    const decoder = await Decoder.create(videoStream!);
+  // videoClip truthy implies videoStream is truthy; the && re-check lets TS narrow without a non-null assertion.
+  if (videoClip && videoStream) {
+    const decoder = await Decoder.create(videoStream);
     const videoFilters = buildVideoFilters(payload);
     const videoEnc = videoEncoderConstant(payload.codec);
     const encoder = await Encoder.create(
@@ -100,8 +102,9 @@ export async function processMedia(payload: VideoProcessorType) {
     stages.video = 'passthrough';
   }
 
-  if (audioClip) {
-    const decoder = await Decoder.create(audioStream!);
+  // audioClip truthy implies audioStream is truthy; the && re-check lets TS narrow without a non-null assertion.
+  if (audioClip && audioStream) {
+    const decoder = await Decoder.create(audioStream);
     // Opus mandates 8..48 kHz sample rates and s16/flt samples; fltp is unsupported.
     const requestedCodec = payload.audioCodec ?? (webmAudioForced ? 'opus' : 'aac');
     const opusFilters = requestedCodec === 'opus' ? [
@@ -139,23 +142,19 @@ export async function processMedia(payload: VideoProcessorType) {
   }
 }
 
-// eslint-disable-next-line jsdoc/require-returns
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
-// eslint-disable-next-line jsdoc/require-param-description
- * @param payload Description.
+ * Whether any audio-side option forces a transcode of the audio stream.
+ * @param payload - The validated video processor options.
+ * @returns True when the audio stream must be re-encoded.
  */
 function hasAudioTranscoding(payload: VideoProcessorType) {
   return [payload.audioBitrate, payload.audioChannels, payload.audioCodec, payload.audioNormalize, payload.audioSampleRate].some(Boolean);
 }
 
-// eslint-disable-next-line jsdoc/require-returns
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
-// eslint-disable-next-line jsdoc/require-param-description
- * @param payload Description.
+ * Whether any video-side option forces a transcode of the video stream.
+ * @param payload - The validated video processor options.
+ * @returns True when the video stream must be re-encoded.
  */
 function hasVideoTranscoding(payload: VideoProcessorType) {
   return [payload.bitrate, payload.codec, payload.crf, payload.deinterlace, payload.denoise, payload.flip, payload.flop, payload.fps, payload.grayscale, payload.height, payload.normalize, payload.preset, payload.rotate, payload.sharpen, payload.trimEnd, payload.trimStart, payload.width].some(Boolean);

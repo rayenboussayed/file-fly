@@ -16,7 +16,7 @@ class Discard extends Writable {
  *
  */
 export async function metadata() {
-  const transformer = sharp();
+  const transformer = sharp({ limitInputPixels: 100_000_000 });
   const metadataPromise = transformer.metadata();
 
   const pipePromise = pipeline(process.stdin, transformer, new Discard());
@@ -30,7 +30,7 @@ export async function metadata() {
  *
  */
 export async function stats() {
-  const transformer = sharp();
+  const transformer = sharp({ limitInputPixels: 100_000_000 });
   const statsPromise = transformer.stats();
 
   const pipePromise = pipeline(process.stdin, transformer, new Discard());

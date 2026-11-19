@@ -52,6 +52,7 @@ export async function pipeToReply(
       raw.destroy();
       if (outMeter) {
         outMeter.unpipe(raw);
+        outMeter.destroy();
       } else {
         source.unpipe(raw);
       }

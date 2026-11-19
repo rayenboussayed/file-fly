@@ -8,9 +8,6 @@ export const Route = createFileRoute('/ip/$ip')({
 });
 
 /**
- *
- */
-/**
  * Reads the route param and renders the IP detail page.
  * @returns The IP detail page element.
  */

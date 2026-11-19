@@ -37,9 +37,7 @@ process.on('uncaughtException', (error) => {
   logger.error(`uncaughtException: ${error.stack ?? String(error)}`);
 });
 
-/**
- *
- */
+/** Boots the Nest application: pino logging, metrics shutdown hooks, CORS/security headers in production, Swagger, and the listener. */
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -60,7 +58,8 @@ async function bootstrap() {
     app.enableCors({
       credentials: true,
       exposedHeaders: Object.values(AppHeaders),
-      origin: environment.CORS_ORIGIN,
+      // Unset CORS_ORIGIN = cross-origin browser reads disabled, not wide open.
+      origin: environment.CORS_ORIGIN ?? false,
     });
     app.useSecurityHeaders();
     app.enableCsrfProtection();
@@ -94,8 +93,8 @@ function fastify(instance: FastifyInstance) {
 }
 
 /**
- *
- * @param app Description.
+ * Mounts Swagger/OpenAPI docs at `/api` with a zod-to-OpenAPI schema converter.
+ * @param app - The Nest application instance.
  */
 function swagger(app: NestFastifyApplication) {
   const config = new DocumentBuilder()

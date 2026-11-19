@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { SourceSchema } from '@/schema.js';
 import { trimmed } from '@/utils/zod.js';
 
+// Object.keys of sharp's own format/fit/kernel enums is exactly the enum key set by construction.
 const formatKeys = Object.keys(sharp.format) as Array<keyof FormatEnum>;
 const fitKeys = Object.keys(sharp.fit) as Array<keyof FitEnum>;
 const kernelKeys = Object.keys(sharp.kernel) as Array<keyof KernelEnum>;
@@ -18,31 +19,33 @@ const positionKeys = [
 
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
 
+/** Query parameters for `/image/processor`, `/image/metadata`, `/image/dna` and `/image/stats` uploads. */
 export const ImageProcessorSchema = SourceSchema.partial().extend({
   background: color.optional(),
-  blur: z.coerce.number().int().positive().optional(),
+  blur: z.coerce.number().int().positive().max(1000).optional(),
   fit: z.enum(fitKeys).optional(),
   flip: z.stringbool().optional(),
   flop: z.stringbool().optional(),
   format: z.enum(formatKeys).optional(),
   greyscale: z.stringbool().optional(),
-  height: z.coerce.number().int().positive().optional(),
+  height: z.coerce.number().int().positive().max(3840).optional(),
   kernel: z.enum(kernelKeys).optional(),
-  median: z.coerce.number().int().positive().optional(),
+  median: z.coerce.number().int().positive().max(1000).optional(),
   negate: z.stringbool().optional(),
   normalize: z.stringbool().optional(),
   position: z.enum(positionKeys).optional(),
-  quality: z.coerce.number().int().positive().optional(),
-  rotate: z.coerce.number().int().optional(),
-  sharpen: z.coerce.number().int().positive().optional(),
-  threshold: z.coerce.number().int().positive().optional(),
+  quality: z.coerce.number().int().positive().max(100).optional(),
+  rotate: z.coerce.number().int().min(0).max(360).optional(),
+  sharpen: z.coerce.number().int().positive().max(10).optional(),
+  threshold: z.coerce.number().int().positive().max(255).optional(),
   tint: color.optional(),
   trim: z.stringbool().optional(),
-  width: z.coerce.number().int().positive().optional(),
+  width: z.coerce.number().int().positive().max(7680).optional(),
   withoutEnlargement: z.stringbool().optional(),
   withoutReduction: z.stringbool().optional(),
 });
 
+/** Validated options for the image processor routes. */
 export type ImageProcessorType = z.infer<typeof ImageProcessorSchema>;
 
 /**
@@ -61,4 +64,5 @@ export const OcrSchema = SourceSchema.partial().extend({
   lang: trimmed(z.string().regex(LANG_REGEX, 'Invalid language code')).optional(),
 });
 
+/** Query parameters for `POST /image/ocr` (Tesseract OCR). */
 export type OcrType = z.infer<typeof OcrSchema>;

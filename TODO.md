@@ -13,7 +13,7 @@
 - OCR is a bounded pool of 2 by default (`TESSERACT_POOL_SIZE`); no per-request language pack downloads beyond `TESSERACT_PRELOAD`.
 - No authentication/authorization layer anywhere; unauthenticated endpoints by design (see README); deploy behind a reverse proxy with auth if untrusted networks remain in scope.
 - Metrics: single-process SQLite; no multi-instance sharing.
-- Cache Janitor: `CACHE_TTL_MS=0` disables TTL eviction entirely (documented as intentional).
+- Security advisories: xlsx@0.18.5 accepted (see docs/advisories.md); image-size pinned to ^2.1.0 via override. Janitor can evict between the cache `getOriginalSize` check and `read` (tiny race on the miss path; the read then errors out and the request fails cleanly). fflate's per-part `originalSize` header is trusted for the inflate `out` buffer — memory-safe but a forged oversize part is truncated rather than rejected.
 
 ## Wanted but blocked
 

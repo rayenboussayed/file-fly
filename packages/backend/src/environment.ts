@@ -57,8 +57,18 @@ const EnvironmentSchema = z
       },
       z.array(z.url().trim()).optional(),
     ),
+
     /** Static root for the dashboard build (`packages/dashboard/dist`); missing dir = dashboard not served. */
     DASHBOARD_DIR: z.string().trim().min(1).catch(DEFAULT_DASHBOARD_DIR),
+    /** Comma-separated bare hostnames the `source=` media download may fetch (dotted suffixes allowed for subdomains); unset = only the built-in scheme and private-literal rules apply. */
+    EGRESS_ALLOWLIST: z.preprocess(
+      (value) => {
+        if (typeof value !== 'string') return value;
+        const entries = value.split(',').map((part) => part.trim().toLowerCase()).filter((part) => part.length > 0);
+        return entries.length === 0 ? undefined : entries;
+      },
+      z.array(z.string().trim().min(1).max(253)).optional(),
+    ),
 
     FILE_HASH_HEADER_SIZE: z.coerce.number().int().positive().catch(65536), // 64 KB
     /** pino log level; unset (or blank) = `info` in production, `debug` otherwise. Invalid values are rejected at boot. */
@@ -69,9 +79,9 @@ const EnvironmentSchema = z
     ),
     /** Directory holding `metrics.db`; created at startup. Kept out of `CACHE_DIR` on purpose. */
     METRICS_DIR: z.string().trim().min(1).catch(DEFAULT_METRICS_DIR),
-    /** Flush interval for the in-memory metric deltas. `0` disables the timer. */
+    /** Flush interval for the in-memory metric deltas; invalid values fall back to 1s (0 is not accepted here). */
     METRICS_FLUSH_INTERVAL_MS: numericFromEnv(1000),
-    /** Retention for the metrics tables. `0` disables the sweep; defaults to 35 days. */
+    /** Retention for the metrics tables; invalid values fall back to 35 days. */
     METRICS_RETENTION_DAYS: numericFromEnv(35),
     /** Bearer token for `GET /metrics`; production refuses requests without it. Unset in development = open. */
     METRICS_TOKEN: z.string().trim().min(1).optional().catch(undefined),
@@ -93,6 +103,8 @@ const EnvironmentSchema = z
       env.TESSERACT_DIR ?? path.join(env.CACHE_DIR, 'tesseract'),
   }));
 
+/** Validated process environment; parsed once at import time (fail-fast on invalid values). */
 export const environment = EnvironmentSchema.parse(process.env);
 
+/** True when `NODE_ENV=production`. */
 export const isProduction = environment.NODE_ENV === 'production';

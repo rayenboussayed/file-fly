@@ -21,6 +21,7 @@ export const ModelOptimizeSchema = z
     weld: boolParam,
   })
   .strict();
+/** Query parameters for `POST /model/optimize`. */
 export type ModelOptimizeType = z.infer<typeof ModelOptimizeSchema>;
 
 /** Flat query parameters for `POST /model/convert`. */
@@ -30,6 +31,7 @@ export const ModelConvertSchema = z
     to: z.enum(['glb', 'gltf']).default('glb'),
   })
   .strict();
+/** Query parameters for `POST /model/convert`. */
 export type ModelConvertType = z.infer<typeof ModelConvertSchema>;
 
 /** Flat query parameters for `POST /model/metadata` (empty; rejects junk params). */

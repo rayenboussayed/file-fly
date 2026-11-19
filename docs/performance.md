@@ -17,10 +17,10 @@ before/after delta under an identical workload is the signal.
 | `npm run build` | builds both workspaces | green | green | green |
 | `npm run lint` | `--max-warnings=0` | 0 warnings | 0 warnings | 0 warnings |
 | `npm run typecheck` (after build) | `tsc --noEmit` | green | green | green |
-| unit tests | `npm run test -w file-fly-backend` | 36 files, 104 tests | 41 files, 158 tests | 83 files, 625 tests |
+| unit tests | `npm run test -w file-fly-backend` | 36 files, 104 tests | 41 files, 158 tests | 80 files, 641 tests |
 | dashboard unit tests | `npm run test -w file-fly-dashboard` | — | 6 files, 30 tests |
 | e2e tests | `npm run test:e2e` | 4 files, 50 tests | 6 files, 62 tests | 13 files, 129 tests |
-| coverage | `npm run test:cov` | 66.7% stmts / 54.8% branch (gate 100%, fails) | 76.5% stmts / 67.4% branch (still fails) | 97.91% stmts / 94.98% branch / 95.69% funcs / 98.35% lines (gate 95/94/95/95, green) |
+| coverage | `npm run test:cov` | 66.7% stmts / 54.8% branch (gate 100%, still failing at that stage) | 76.5% stmts / 67.4% branch (gate 100%, still failing at that stage) | 97.73% stmts / 94.19% branch / 95.54% funcs / 98.27% lines (gate 95/94/95/95, green) |
 | buffer.bench (2 MiB) | `vitest bench` | 0.7535 ms | 0.7508 ms (-0.4%) | — |
 | drain.bench (4 MiB) | `vitest bench` | 0.3827 ms | 0.3629 ms (-5.2%) | — |
 | cache-key.bench (upload / download) | `vitest bench` | 0.0159 / 0.0120 ms | 0.0150 / 0.0114 ms | — |
@@ -77,9 +77,10 @@ from the documents + /model pass on this machine (Node 26.13.1):
 - `docx build` (elements + `Packer.toBuffer`) — 120-paragraph document, ~96 ops/s, ~10.4 ms avg (`test/perf/docx-build.bench.ts`)
 - `pptx build` — 24-slide deck, ~151 ops/s, ~6.6 ms avg (`test/perf/pptx-build.bench.ts`)
 
-Worker-thread builds (docx/xlsx/pptx/pdf/model/audio/video) pay a one-off worker
-spawn (~30–80 ms) plus the worker's own RTT, neither of which these benches
-include; they measure the in-process builders only.
+Worker-thread builds (docx/pptx/model optimize/audio/video/image) pay a one-off
+worker spawn (~30–80 ms) plus the worker's own RTT, neither of which these
+benches include; pdf and xlsx builders run in-process; the benches measure the
+in-process builders only.
 
 Stream/buffer targets:
 

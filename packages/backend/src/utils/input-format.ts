@@ -98,8 +98,8 @@ const DEMUXER_FORMATS = new Set<string>(demuxerFormats);
 
 /**
  * Resolve a detected file signature to an FFmpeg demuxer format name.
- * @param signature Description.
- * @returns Result.
+ * @param signature - Detected file-type signature of the upload.
+ * @returns The FFmpeg demuxer format name, or undefined when unknown.
  */
 export function toDemuxerFormat(
   signature: FileTypeResult | undefined,

@@ -6,6 +6,7 @@ import { trimmed } from '@/utils/zod.js';
 
 const trim = z.coerce.number().finite().min(0).max(24 * 60 * 60);
 
+/** Query parameters for `/audio/processor`, `/audio/metadata`, `/audio/dna` and `/audio/stats` uploads. */
 export const AudioProcessorSchema = SourceSchema.partial().extend({
   bitrate: trimmed(z.enum(['96k', '128k', '192k', '256k', '320k'])).optional(),
   channels: trimmed(z.enum(['1', '2'])).optional(),
@@ -25,4 +26,5 @@ export const AudioProcessorSchema = SourceSchema.partial().extend({
   trimStart: trim.optional(),
 });
 
+/** Validated options for the audio processor routes. */
 export type AudioProcessorType = z.infer<typeof AudioProcessorSchema>;

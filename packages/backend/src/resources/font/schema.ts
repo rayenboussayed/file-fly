@@ -35,7 +35,7 @@ export const FontExtractSchema = z
   .object({
     /** Collection member to select by PostScript name; defaults to the first. */
     font: trimmed(z.string().min(1).max(100)).optional(),
-    /** Maximum glyph records to return (default: all). */
+    /** Maximum glyph records to return (default: 10 000, capped at the `limit` max). */
     limit: z.coerce.number().int().min(1).max(10_000).optional(),
   })
   .strict();
@@ -56,7 +56,8 @@ export const FontShapeSchema = z.object({
   script: trimmed(z.string().min(2).max(8)).optional(),
   /** The text to shape (max 500 chars). */
   text: trimmed(z.string().min(1).max(500)),
-});
+}).strict();
+/** Query parameters for `POST /font/shape`. */
 export type FontShapeType = z.infer<typeof FontShapeSchema>;
 
 /** Flat query parameters for `POST /font/subset`. */
@@ -65,5 +66,6 @@ export const FontSubsetSchema = z.object({
   font: trimmed(z.string().min(1).max(100)).optional(),
   /** The text to include in the subset (max 10 000 chars). */
   text: trimmed(z.string().min(1).max(10_000)),
-});
+}).strict();
+/** Query parameters for `POST /font/subset`. */
 export type FontSubsetType = z.infer<typeof FontSubsetSchema>;

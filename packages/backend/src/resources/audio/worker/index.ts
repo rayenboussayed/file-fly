@@ -24,9 +24,8 @@ export function finishWorker(code: number) {
 }
 
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
- * @param inputData Description.
+ * Dispatches the requested audio operation (processor/metadata/dna/stats).
+ * @param inputData - Worker dispatch data (defaults to the spawned worker's workerData).
  */
 export async function runAudioWorker(inputData: AudioWorkerData = data) {
   switch (inputData.operation) {

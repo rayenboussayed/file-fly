@@ -16,7 +16,7 @@ Fallback for unknown paths.
 
 **Kind**: global function  
 **Returns**: <code>import(&quot;react&quot;).JSX.Element</code> - The not-found element.  
-src: packages/dashboard/src/routes/__root.tsx:27  
+src: packages/dashboard/src/routes/__root.tsx:24  
 <a name="RootComponent"></a>
 
 ## RootComponent() ⇒ <code>import(&quot;react&quot;).JSX.Element</code>
@@ -24,4 +24,4 @@ Root layout: the app shell with the top navigation and routed content.
 
 **Kind**: global function  
 **Returns**: <code>import(&quot;react&quot;).JSX.Element</code> - The shell element.  
-src: packages/dashboard/src/routes/__root.tsx:43  
+src: packages/dashboard/src/routes/__root.tsx:37  

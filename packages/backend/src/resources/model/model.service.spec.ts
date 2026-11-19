@@ -10,7 +10,15 @@ const fixture = () => fs.readFileSync(path.join('assets', 'models', 'tiny.glb'))
 
 const makeService = (body: Buffer, contentType = 'model/gltf-binary') => {
   const stream = Readable.from([body]);
+  const cacheKeys: string[] = [];
   const cls = {
+    cacheKey: () => ({
+      get: () => cacheKeys[cacheKeys.length - 1],
+      set: (value: string) => {
+        cacheKeys.push(value);
+        return value;
+      },
+    }),
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
     sourceDirection: () => ({ set: () => undefined }),
     sourceStream: () => ({ get: () => stream, set: () => undefined }),
@@ -18,7 +26,7 @@ const makeService = (body: Buffer, contentType = 'model/gltf-binary') => {
   const workerService = {
     createWorker: vi.fn(async () => Readable.from([body])),
   };
-  return { service: new ModelService(cls as never, workerService as never), workerService };
+  return { cacheKeys, service: new ModelService(cls as never, workerService as never), workerService };
 };
 
 describe('ModelService.metadata', () => {
@@ -83,7 +91,7 @@ describe('ModelService.extract', () => {
 describe('ModelService.optimize', () => {
   it('streams worker output bytes with the GLB magic', async () => {
     const source = fixture();
-    const { service, workerService } = makeService(source);
+    const { cacheKeys, service, workerService } = makeService(source);
     const optimized = await writeGlb(
       await (async () => {
         const document = await readModel(source);
@@ -96,6 +104,9 @@ describe('ModelService.optimize', () => {
     const bytes = await service.optimize({ compress: 'meshopt', simplify: 1, weld: true });
     expect(bytes.subarray(0, 4).toString('latin1')).toBe('glTF');
     expect(workerService.createWorker).toHaveBeenCalledOnce();
+    // optimize() sets a content-addressed cache key (sha256 of the GLB + options digest).
+    expect(cacheKeys).toHaveLength(1);
+    expect(cacheKeys[0]).toMatch(/^[0-9a-f]{64}:/);
   });
 
   it('rejects when the worker returns zero bytes', async () => {

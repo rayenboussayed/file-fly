@@ -28,6 +28,7 @@ import { FileTypeService } from './services/file-type.service.js';
 import { NormalizedClsService } from './services/normalized-cls.service.js';
 import { WorkerService } from './services/worker.service.js';
 
+/** Root module: imports every feature module, global metrics/logging and the static dashboard. */
 @Module({
   controllers: [AppController],
   imports: [

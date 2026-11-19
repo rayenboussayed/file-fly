@@ -149,6 +149,9 @@ describe('XlsxService.build', () => {
     await expect(
       roundTrip({ sheets: [{ rows: [[{ f: 'cmd|"/c calc"!A1', t: 'n', v: 0 }]] }] }),
     ).rejects.toMatchObject({ response: { code: 'XLSX_FORMULA_REJECTED' } });
+    await expect(
+      roundTrip({ sheets: [{ rows: [[{ f: "MSEXCEL|'\\\\path\\to\\app'!A1", t: 'n', v: 0 }]] }] }),
+    ).rejects.toMatchObject({ response: { code: 'XLSX_FORMULA_REJECTED' } });
     const workbook = await roundTrip({
       sheets: [{ rows: [[{ f: 'SUM(A1:A2)', t: 'n', v: 3 }]] }],
     });

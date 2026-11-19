@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Commands
-- Verify whole project: `npm run check`
+- Verify whole project: `npm run check` (build → typecheck → lint → `test:full` in all workspaces — backend unit + e2e, dashboard specs — then knip)
 - Unit tests only: `npm run test` (both workspaces)
 - E2E tests only: `npm run test:e2e`
 - Coverage: `npm run test:cov`
@@ -18,7 +18,7 @@
 - Metrics: `packages/backend/src/metrics/` (store, interceptor, controller, module) — per-IP counters persisted in `node:sqlite` (hourly per-route + daily per-IP counters, hourly latency histogram). `DashboardStaticService` serves the prebuilt SPA at `/` when `DASHBOARD_DIR` contains an `index.html` (`/` and `/ip/:ip` aliased to it); API routes are never shadowed; Nest's 404 handler is untouched.
 - Media streams enter through three interceptors, bound in this order: `ClsInterceptor` (global) → `MetricsInterceptor` (global; in-flight gauge, bytes in/out, files in/out, cache outcome, scan verdicts; excludes `/metrics` and `/health`) → `FileScannerInterceptor` (ClamAV scan before routing; infected → 422) then `FileParserInterceptor` (signature probe → cache key). Sources enter via `WorkerService` for the media pipeline, `bufferStream` for OCR. Feature modules each provide their own `AntiVirusService` — see `docs/antivirus.md`.
 - PDQ/Chromaprint fingerprints are computed via `pdq-wasm` loaded through `createRequire` CJS (ESM entry broken under Node) and node-av's `chromaprint` muxer (`algorithm: 1`); see `docs/dna.md`.
-- Heavy media work runs in workers (`packages/backend/src/resources/*/worker/index.ts`, helpers in sibling files) — same for document/model builds (`docx`, `pptx`, `pdf`, `model/optimize`); OCR runs in-process via sharp + a tesseract.js worker pool — see `docs/ocr.md`.
+- Heavy media work runs in workers (`packages/backend/src/resources/*/worker/index.ts`, helpers in sibling files) — same for document/model builds (`docx`, `pptx`, `model/optimize`); pdf and xlsx builders run in-process; OCR runs in-process via sharp + a tesseract.js worker pool — see `docs/ocr.md`.
 - Media output cache: filesystem-backed `StreamCache` from jutilities (atomic tmp→rename writes, 0o600, TTL via `CACHE_TTL_MS`, keys are sha256 of the NUL-joined `baseKey`/`filename`/`workerData`); size-0 entries count as a miss and failed workers' entries are unlinked. The `CacheJanitorService` enforces TTL and the `CACHE_MAX_BYTES` LRU cap over `CACHE_DIR`. See `packages/backend/src/services/worker.service.ts`.
 - `node_modules/node-av` is the media backend.
 - Generated format enums live in `packages/backend/src/constants/av-formats.ts`; regenerate with `npm run script:union-to-enum`. Do not edit manually.
@@ -31,12 +31,13 @@
 ## Code style / TypeScript
 - Strict TypeScript is enabled; the alias `@/*` points to `src`.
 - Avoid `any` and `as` unless unavoidable; justify with a comment.
-- Keep cache and worker behavior end-to-end streaming; no full buffering.
+- Keep cache and worker behavior end-to-end streaming; no full buffering (media routes; document-family binary routes buffer the capped upload).
 
 ## Environment
 - Cache and worker behavior are controlled by `CACHE_DIR`, `CACHE_TTL_MS`, `CACHE_MAX_BYTES`, `CACHE_SWEEP_INTERVAL_MS`, and `CACHE_TMP_MAX_AGE_MS`.
 - Metrics behavior is controlled by `METRICS_DIR`, `METRICS_TOKEN`, `METRICS_RETENTION_DAYS`, and `METRICS_FLUSH_INTERVAL_MS`; the SPA static root is `DASHBOARD_DIR`; `TRUST_PROXY=true` honors `X-Forwarded-For` for `request.ip` (set only behind a proxy you control).
 - OCR/tesseract behavior is controlled by `TESSERACT_DIR` (defaults to `<CACHE_DIR>/tesseract`), `TESSERACT_POOL_SIZE`, `TESSERACT_PRELOAD`, `TESSERACT_RECYCLE_JOBS`, and `TESSERACT_TIMEOUT_MS`.
+- `EGRESS_ALLOWLIST` (unset) gates the `source=` download path to bare hostnames (comma-separated, dotted suffixes); loopback/private/link-local/CGNAT literals refused when unset; when set, the allowlist is authoritative.
 - `NODE_ENV` must be `development` or `production`; production enables restrictive security headers / CSRF.
 - `CORS_ORIGIN` in production is a comma-separated list of allowed origins (URLs); a single bare URL is accepted as a one-element list.
 - `LOG_LEVEL` sets the pino log level (`fatal`/`error`/`warn`/`info`/`debug`/`trace`); unset means `info` in production, `debug` otherwise; invalid values reject boot.

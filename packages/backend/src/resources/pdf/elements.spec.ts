@@ -115,7 +115,7 @@ describe('buildPdfDocument elements', () => {
 
   it('skips WinAnsi preflight for embedded fonts', async () => {
     const fs = await import('node:fs');
-    const fontPath = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    const fontPath = 'assets/fonts/DejaVuSans.ttf';
     if (!fs.existsSync(fontPath)) {
       throw new Error(`fixture font missing at ${fontPath}`);
     }
@@ -162,7 +162,7 @@ describe('buildPdfDocument elements', () => {
 
   it('draws text with blank lines without crashing and keeps the other lines', async () => {
     // \n is not WinAnsi-representable, so blank lines only reach the wrapper via an embedded font.
-    const fontPath = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    const fontPath = 'assets/fonts/DejaVuSans.ttf';
     if (!fs.existsSync(fontPath)) {
       throw new Error(`fixture font missing at ${fontPath}`);
     }
@@ -185,7 +185,7 @@ describe('buildPdfDocument elements', () => {
 
   it('skips blank lines in center/right aligned wrapped text', async () => {
     // \n is not WinAnsi-representable, so blank lines only reach the wrapper via an embedded font.
-    const fontPath = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    const fontPath = 'assets/fonts/DejaVuSans.ttf';
     if (!fs.existsSync(fontPath)) {
       throw new Error(`fixture font missing at ${fontPath}`);
     }
@@ -211,7 +211,7 @@ describe('buildPdfDocument elements', () => {
   });
 
   it('renders a pageNumber with an embedded font and non-WinAnsi format text', async () => {
-    const fontPath = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    const fontPath = 'assets/fonts/DejaVuSans.ttf';
     if (!fs.existsSync(fontPath)) {
       throw new Error(`fixture font missing at ${fontPath}`);
     }
@@ -261,7 +261,7 @@ describe('buildPdfDocument elements', () => {
   });
 
   it('falls back to an embedded font named Helvetica-Bold for the header row', async () => {
-    const fontPath = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    const fontPath = 'assets/fonts/DejaVuSans.ttf';
     if (!fs.existsSync(fontPath)) {
       throw new Error(`fixture font missing at ${fontPath}`);
     }

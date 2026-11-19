@@ -28,8 +28,14 @@
 <dt><a href="#CLAMAV_TIMEOUT_MS">CLAMAV_TIMEOUT_MS</a></dt>
 <dd><p>Clamd socket connect timeout passed to clamdscan.</p>
 </dd>
+<dt><a href="#CORS_ORIGIN">CORS_ORIGIN</a></dt>
+<dd><p>Allowed origins in production; comma-separated URLs (a bare string is accepted as a single origin).</p>
+</dd>
 <dt><a href="#DASHBOARD_DIR">DASHBOARD_DIR</a></dt>
 <dd><p>Static root for the dashboard build (<code>packages/dashboard/dist</code>); missing dir = dashboard not served.</p>
+</dd>
+<dt><a href="#EGRESS_ALLOWLIST">EGRESS_ALLOWLIST</a></dt>
+<dd><p>Comma-separated bare hostnames the <code>source=</code> media download may fetch (dotted suffixes allowed for subdomains); unset = only the built-in scheme and private-literal rules apply.</p>
 </dd>
 <dt><a href="#LOG_LEVEL">LOG_LEVEL</a></dt>
 <dd><p>pino log level; unset (or blank) = <code>info</code> in production, <code>debug</code> otherwise. Invalid values are rejected at boot.</p>
@@ -38,10 +44,10 @@
 <dd><p>Directory holding <code>metrics.db</code>; created at startup. Kept out of <code>CACHE_DIR</code> on purpose.</p>
 </dd>
 <dt><a href="#METRICS_FLUSH_INTERVAL_MS">METRICS_FLUSH_INTERVAL_MS</a></dt>
-<dd><p>Flush interval for the in-memory metric deltas. <code>0</code> disables the timer.</p>
+<dd><p>Flush interval for the in-memory metric deltas; invalid values fall back to 1s (0 is not accepted here).</p>
 </dd>
 <dt><a href="#METRICS_RETENTION_DAYS">METRICS_RETENTION_DAYS</a></dt>
-<dd><p>Retention for the metrics tables. <code>0</code> disables the sweep; defaults to 35 days.</p>
+<dd><p>Retention for the metrics tables; invalid values fall back to 35 days.</p>
 </dd>
 <dt><a href="#METRICS_TOKEN">METRICS_TOKEN</a></dt>
 <dd><p>Bearer token for <code>GET /metrics</code>; production refuses requests without it. Unset in development = open.</p>
@@ -65,6 +71,12 @@
 </dd>
 <dt><a href="#DEFAULT_DASHBOARD_DIR">DEFAULT_DASHBOARD_DIR</a></dt>
 <dd><p>Default static root for the dashboard build output, used when <code>DASHBOARD_DIR</code> is unset or blank.</p>
+</dd>
+<dt><a href="#environment">environment</a></dt>
+<dd><p>Validated process environment; parsed once at import time (fail-fast on invalid values).</p>
+</dd>
+<dt><a href="#isProduction">isProduction</a></dt>
+<dd><p>True when <code>NODE_ENV=production</code>.</p>
 </dd>
 </dl>
 
@@ -153,70 +165,86 @@ Clamd socket connect timeout passed to clamdscan.
 **Kind**: global variable  
 src: packages/backend/src/environment.ts:49  
 dist: packages/backend/dist/environment.js:19
+<a name="CORS_ORIGIN"></a>
+
+## CORS\_ORIGIN
+Allowed origins in production; comma-separated URLs (a bare string is accepted as a single origin).
+
+**Kind**: global variable  
+src: packages/backend/src/environment.ts:52  
+dist: packages/backend/dist/environment.js:20
 <a name="DASHBOARD_DIR"></a>
 
 ## DASHBOARD\_DIR
 Static root for the dashboard build (`packages/dashboard/dist`); missing dir = dashboard not served.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:53  
-dist: packages/backend/dist/environment.js:21
+src: packages/backend/src/environment.ts:62  
+dist: packages/backend/dist/environment.js:26
+<a name="EGRESS_ALLOWLIST"></a>
+
+## EGRESS\_ALLOWLIST
+Comma-separated bare hostnames the `source=` media download may fetch (dotted suffixes allowed for subdomains); unset = only the built-in scheme and private-literal rules apply.
+
+**Kind**: global variable  
+src: packages/backend/src/environment.ts:64  
+dist: packages/backend/dist/environment.js:27
 <a name="LOG_LEVEL"></a>
 
 ## LOG\_LEVEL
 pino log level; unset (or blank) = `info` in production, `debug` otherwise. Invalid values are rejected at boot.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:57  
-dist: packages/backend/dist/environment.js:23
+src: packages/backend/src/environment.ts:75  
+dist: packages/backend/dist/environment.js:34
 <a name="METRICS_DIR"></a>
 
 ## METRICS\_DIR
 Directory holding `metrics.db`; created at startup. Kept out of `CACHE_DIR` on purpose.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:63  
-dist: packages/backend/dist/environment.js:24
+src: packages/backend/src/environment.ts:81  
+dist: packages/backend/dist/environment.js:35
 <a name="METRICS_FLUSH_INTERVAL_MS"></a>
 
 ## METRICS\_FLUSH\_INTERVAL\_MS
-Flush interval for the in-memory metric deltas. `0` disables the timer.
+Flush interval for the in-memory metric deltas; invalid values fall back to 1s (0 is not accepted here).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:65  
-dist: packages/backend/dist/environment.js:25
+src: packages/backend/src/environment.ts:83  
+dist: packages/backend/dist/environment.js:36
 <a name="METRICS_RETENTION_DAYS"></a>
 
 ## METRICS\_RETENTION\_DAYS
-Retention for the metrics tables. `0` disables the sweep; defaults to 35 days.
+Retention for the metrics tables; invalid values fall back to 35 days.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:67  
-dist: packages/backend/dist/environment.js:26
+src: packages/backend/src/environment.ts:85  
+dist: packages/backend/dist/environment.js:37
 <a name="METRICS_TOKEN"></a>
 
 ## METRICS\_TOKEN
 Bearer token for `GET /metrics`; production refuses requests without it. Unset in development = open.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:69  
-dist: packages/backend/dist/environment.js:27
+src: packages/backend/src/environment.ts:87  
+dist: packages/backend/dist/environment.js:38
 <a name="TESSERACT_DIR"></a>
 
 ## TESSERACT\_DIR
 Language data for tesseract.js; defaults to `<CACHE_DIR>/tesseract`.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:74  
-dist: packages/backend/dist/environment.js:29
+src: packages/backend/src/environment.ts:92  
+dist: packages/backend/dist/environment.js:40
 <a name="TRUST_PROXY"></a>
 
 ## TRUST\_PROXY
 Honor `X-Forwarded-For` for `request.ip` (set only behind a trusted proxy).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:80  
-dist: packages/backend/dist/environment.js:34
+src: packages/backend/src/environment.ts:98  
+dist: packages/backend/dist/environment.js:45
 <a name="DEFAULT_CACHE_DIR"></a>
 
 ## DEFAULT\_CACHE\_DIR
@@ -241,6 +269,22 @@ Default static root for the dashboard build output, used when `DASHBOARD_DIR` is
 **Kind**: global constant  
 src: packages/backend/src/environment.ts:9  
 dist: packages/backend/dist/environment.js:5
+<a name="environment"></a>
+
+## environment
+Validated process environment; parsed once at import time (fail-fast on invalid values).
+
+**Kind**: global constant  
+src: packages/backend/src/environment.ts:107  
+dist: packages/backend/dist/environment.js:51
+<a name="isProduction"></a>
+
+## isProduction
+True when `NODE_ENV=production`.
+
+**Kind**: global constant  
+src: packages/backend/src/environment.ts:110  
+dist: packages/backend/dist/environment.js:52
 <a name="numericFromEnv"></a>
 
 ## numericFromEnv(fallback) ⇒ <code>z.ZodPreprocess&lt;z.ZodCatch&lt;z.ZodCoercedNumber&lt;unknown&gt;&gt;, unknown&gt;</code>

@@ -51,6 +51,7 @@ export class CsvController {
     @Body({ pipes: [new StandardSchemaValidationPipe()], schema: CsvBuildSchema }) body: CsvBuildType,
   ) {
     response.raw.setHeader('content-type', 'text/csv; charset=utf-8');
+    response.raw.setHeader('content-disposition', 'attachment; filename="export.csv"');
     return pipeToReply(this.csvService.buildCsv(body), response, createOutMeter(this.cls));
   }
 

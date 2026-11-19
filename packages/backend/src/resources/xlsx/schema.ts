@@ -76,6 +76,7 @@ const sheetSchema = z
     sheetVisibility: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
   })
   .strict();
+/** A sheet definition in the build payload. */
 export type XlsxSheetType = z.infer<typeof sheetSchema>;
 
 /** Body of `POST /xlsx/build`. */
@@ -126,6 +127,7 @@ export const XlsxBuildSchema = z
       .optional(),
   })
   .strict();
+/** Validated body for `POST /xlsx/build`. */
 export type XlsxBuildType = z.infer<typeof XlsxBuildSchema>;
 
 /**
@@ -143,12 +145,14 @@ export const XlsxExtractSchema = z.object({
   /** Sheet name or 0-based index. */
   sheet: trimmed(z.string().min(1)).optional(),
   skipHidden: z.stringbool().optional(),
-});
+}).strict();
+/** Flat query parameters for `POST /xlsx/extract`. */
 export type XlsxExtractType = z.infer<typeof XlsxExtractSchema>;
 
 /** Flat query parameters for `POST /xlsx/metadata`. */
 export const XlsxMetadataSchema = z.object({
   /** Reject archives whose cells exceed this count (checked before SheetJS parses). */
   maxCells: z.coerce.number().int().min(1).max(20_000_000).default(2_000_000),
-});
+}).strict();
+/** Flat query parameters for `POST /xlsx/metadata`. */
 export type XlsxMetadataType = z.infer<typeof XlsxMetadataSchema>;

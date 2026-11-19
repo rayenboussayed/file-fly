@@ -15,7 +15,6 @@ describe('FileParserInterceptor', () => {
     expect(await (interceptor.intercept(undefined as never, { handle: () => handled } as never) as any)).toBe(handled);
   });
 
-// eslint-disable-next-line sonarjs/assertions-in-tests
   it('covers upload parsing', async () => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const store = new Map<symbol, any>();
@@ -45,39 +44,28 @@ describe('FileParserInterceptor', () => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sourceStream: () => ({ get: () => store.get(CLS_SOURCE_STREAM), set: (v: any) => store.set(CLS_SOURCE_STREAM, v) }),
     };
-    const fileTypeService = { signature: vi.fn(async () => undefined) };
+    // Mirror the real FileTypeService: record the signature in CLS as the probe runs.
+    const detected = { ext: 'png', mime: 'image/png' };
+    const fileTypeService = {
+      signature: vi.fn(async () => {
+        store.set(CLS_FILE_SIGNATURE, detected);
+        return detected;
+      }),
+    };
     const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
     const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
+
+    // The interceptor itself probes the upload and builds the cache key.
     const { of } = await import('rxjs');
-    const next = { handle: () => of('value') };
-    await new Promise((resolve) => {
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let obs: any;
-      try {
-        obs = interceptor.intercept(undefined as never, next as never);
-      } catch (e) {
-        console.error('intercept threw', e);
-        resolve(undefined);
-        return;
-      }
-      if (!obs || typeof obs.subscribe !== 'function') {
-        console.error('no observable', obs);
-        resolve(undefined);
-        return;
-      }
-      const sub = obs.subscribe({
-        complete: () => resolve(undefined),
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-        error: (e: any) => {
-          console.error('observable error', e);
-          resolve(undefined);
-        },
-        next: () => undefined,
-      });
-      if (typeof sub.unsubscribe === 'function') setTimeout(() => sub.unsubscribe(), 1000);
-    });
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    store; // use
+    const handleResult = of('value');
+    const next = { handle: () => handleResult };
+    const result = await interceptor.intercept(undefined as never, next as never);
+    expect(fileTypeService.signature).toHaveBeenCalledTimes(1);
+    // The probe recorded the detected signature in CLS.
+    expect(store.get(CLS_FILE_SIGNATURE)).toEqual(detected);
+    expect(result).toBe(handleResult);
+    // A cache key was built from the detected signature.
+    expect(typeof store.get(CLS_CACHE_KEY)).toBe('string');
   });
 });
 describe('FileParserInterceptor cache keys', () => {

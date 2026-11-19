@@ -11,6 +11,7 @@ const data: VideoWorkerData = workerData;
  *
  */
 export async function metadata() {
+  // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
   const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
   try {
     process.stdout.write(
@@ -39,6 +40,7 @@ export async function metadata() {
  *
  */
 export async function stats() {
+  // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
   const input = await Demuxer.open(process.stdin as never, { format: data.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
   try {
     process.stdout.write(

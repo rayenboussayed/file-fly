@@ -106,7 +106,8 @@ const toBadRequest = (error: unknown): BadRequestException => {
  */
 
 const UNSAFE_FORMULA = [
-  /^\s*(cmd|powershell|mshta|rundll32|wscript|cscript|regsvr32)\s*\|/i,
+  // Generic program-pipe execution vectors, e.g. MSEXCEL|'...' / CMD|"..." / any `APP|'...'` prefix.
+  /^\s*[a-z_][\w.-]*\s*\|\s*['"]/i,
   /(^|!)\s*DDEAUTO/i,
   /^\s*webservice\s*\(/i,
   /^\s*dde\s*\(/i,
@@ -163,11 +164,22 @@ const assertSafeCell = (cell: unknown): void => {
  * @param name - Exact sheet name to find.
  * @returns The worksheet, or undefined when absent.
  */
+/**
+ * Builds an exact-name worksheet lookup without prototype-index access.
+ * One pass over the sheets map; the returned lookup is O(1).
+ * @param sheets - The workbook's worksheet map.
+ * @returns A name-keyed worksheet lookup.
+ */
+/** Maximum number of row records `/xlsx/extract` returns (defense-in-depth with the maxCells census). */
+const MAX_RECORDS = 1_000_000;
+
 const findSheet = (
   sheets: Record<string, XLSX.WorkSheet>,
-  name: string,
-): undefined | XLSX.WorkSheet =>
-  Object.entries(sheets).find(([key]) => key === name)?.[1];
+): ((name: string) => undefined | XLSX.WorkSheet) => {
+  const map = new Map<string, XLSX.WorkSheet>();
+  for (const [key, value] of Object.entries(sheets)) map.set(key, value);
+  return (name) => map.get(name);
+};
 
 /**
  * Finds the sheet index by name or number; throws 400 when absent.
@@ -196,6 +208,7 @@ const sheetIndex = (names: string[], sheet: string | undefined): number => {
   return asNumber;
 };
 
+/** XLSX feature service: builds workbooks and parses/metadata-inspects uploads. */
 @Injectable()
 export class XlsxService {
   constructor(private readonly cls: NormalizedClsService) {}
@@ -269,7 +282,8 @@ export class XlsxService {
     if (sheetName === undefined) {
       throw new BadRequestException({ code: 'XLSX_SHEET_NOT_FOUND', message: 'sheet index out of range' });
     }
-    const worksheet = findSheet(workbook.Sheets, sheetName);
+    const lookupWorksheet = findSheet(workbook.Sheets);
+    const worksheet = lookupWorksheet(sheetName);
     if (!worksheet) {
       throw new BadRequestException({ code: 'XLSX_SHEET_NOT_FOUND', message: `sheet ${sheetName} missing` });
     }
@@ -295,6 +309,11 @@ export class XlsxService {
     }
     try {
       const records: unknown[] = XLSX.utils.sheet_to_json(worksheet, options);
+      // Truncate rather than serialize an unbounded result; the pre-parse census
+      // already bounded cell count, but row records can still be very wide JSONs.
+      if (records.length > MAX_RECORDS) {
+        return { records: records.slice(0, MAX_RECORDS), sheet: sheetName, truncated: true };
+      }
       return { records, sheet: sheetName };
     } catch (error) {
       throw toBadRequest(error);
@@ -324,8 +343,9 @@ export class XlsxService {
     }));
 
     let totalCells = 0;
+    const lookupWorksheet = findSheet(workbook.Sheets);
     const sheets = parts.map(({ hidden, name }) => {
-      const worksheet = findSheet(workbook.Sheets, name);
+      const worksheet = lookupWorksheet(name);
       const range = worksheet?.['!ref'];
       if (!worksheet || !range) {
         return {

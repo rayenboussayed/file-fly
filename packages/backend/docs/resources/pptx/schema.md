@@ -68,32 +68,32 @@ Single quote is safe inside double-quoted attributes.</p>
 Spacing in points (spcPts).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:74  
-dist: packages/backend/dist/resources/pptx/schema.js:50
+src: packages/backend/src/resources/pptx/schema.ts:77  
+dist: packages/backend/dist/resources/pptx/schema.js:52
 <a name="data"></a>
 
 ## data
 Base64-encoded image bytes (no data URI prefix).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:308  
-dist: packages/backend/dist/resources/pptx/schema.js:275
+src: packages/backend/src/resources/pptx/schema.ts:311  
+dist: packages/backend/dist/resources/pptx/schema.js:277
 <a name="notes"></a>
 
 ## notes
 Speaker notes; plain text with newlines.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:363  
-dist: packages/backend/dist/resources/pptx/schema.js:322
+src: packages/backend/src/resources/pptx/schema.ts:367  
+dist: packages/backend/dist/resources/pptx/schema.js:324
 <a name="layout"></a>
 
 ## layout
 Built-in or `wide`/`square`; a custom layout via `defineLayout` is a future extension.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:381  
-dist: packages/backend/dist/resources/pptx/schema.js:336
+src: packages/backend/src/resources/pptx/schema.ts:385  
+dist: packages/backend/dist/resources/pptx/schema.js:338
 <a name="PPTX_MIME"></a>
 
 ## PPTX\_MIME
@@ -124,64 +124,64 @@ dist: packages/backend/dist/resources/pptx/schema.js:17
 A text box with one or more runs.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:66  
-dist: packages/backend/dist/resources/pptx/schema.js:43
+src: packages/backend/src/resources/pptx/schema.ts:69  
+dist: packages/backend/dist/resources/pptx/schema.js:45
 <a name="shapeSchema"></a>
 
 ## shapeSchema
 A shape, optionally with caption text.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:266  
-dist: packages/backend/dist/resources/pptx/schema.js:239
+src: packages/backend/src/resources/pptx/schema.ts:269  
+dist: packages/backend/dist/resources/pptx/schema.js:241
 <a name="tableSchema"></a>
 
 ## tableSchema
 A table with rows of cells.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:298  
-dist: packages/backend/dist/resources/pptx/schema.js:268
+src: packages/backend/src/resources/pptx/schema.ts:301  
+dist: packages/backend/dist/resources/pptx/schema.js:270
 <a name="imageSchema"></a>
 
 ## imageSchema
 A base64-embedded image.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:305  
-dist: packages/backend/dist/resources/pptx/schema.js:273
+src: packages/backend/src/resources/pptx/schema.ts:308  
+dist: packages/backend/dist/resources/pptx/schema.js:275
 <a name="chartSchema"></a>
 
 ## chartSchema
 A chart with one or more series.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:331  
-dist: packages/backend/dist/resources/pptx/schema.js:295
+src: packages/backend/src/resources/pptx/schema.ts:334  
+dist: packages/backend/dist/resources/pptx/schema.js:297
 <a name="PptxBuildSchema"></a>
 
 ## PptxBuildSchema
 Body of `POST /pptx/build`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:378  
-dist: packages/backend/dist/resources/pptx/schema.js:334
+src: packages/backend/src/resources/pptx/schema.ts:382  
+dist: packages/backend/dist/resources/pptx/schema.js:336
 <a name="PptxExtractSchema"></a>
 
 ## PptxExtractSchema
 Flat query parameters for `POST /pptx/extract` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:396  
-dist: packages/backend/dist/resources/pptx/schema.js:348
+src: packages/backend/src/resources/pptx/schema.ts:401  
+dist: packages/backend/dist/resources/pptx/schema.js:350
 <a name="PptxMetadataSchema"></a>
 
 ## PptxMetadataSchema
 Flat query parameters for `POST /pptx/metadata` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:399  
-dist: packages/backend/dist/resources/pptx/schema.js:349
+src: packages/backend/src/resources/pptx/schema.ts:404  
+dist: packages/backend/dist/resources/pptx/schema.js:351
 <a name="xmlSafe"></a>
 
 ## xmlSafe(max) ⇒ <code>z.ZodString</code>

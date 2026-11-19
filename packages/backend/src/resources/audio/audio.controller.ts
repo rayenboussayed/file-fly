@@ -22,6 +22,7 @@ import { AudioSignatureInterceptor } from './audio-signature.interceptor.js';
 import { AudioService } from './audio.service.js';
 import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 
+/** Audio routes: processor, metadata, DNA and stats (binary stream endpoints). */
 @Controller('audio')
 @UseInterceptors(FileScannerInterceptor, FileParserInterceptor, AudioSignatureInterceptor)
 export class AudioController {

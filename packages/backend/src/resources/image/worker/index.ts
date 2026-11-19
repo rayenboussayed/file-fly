@@ -23,9 +23,8 @@ export function finishWorker(code: number) {
 }
 
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
- * @param inputData Description.
+ * Dispatches the requested image operation (processor/metadata/stats).
+ * @param inputData - Worker dispatch data (defaults to the spawned worker's workerData).
  */
 export async function runImageWorker(inputData: ImageWorkerData = data) {
   switch (inputData.operation) {
@@ -43,7 +42,7 @@ export async function runImageWorker(inputData: ImageWorkerData = data) {
 
 /**
  * Runs the worker job and, only inside a spawned worker thread, finishes the process.
- * @returns Result.
+ * @returns The job (with exit-code handling attached when running as a worker thread).
  */
 export function startImageWorker() {
   const job = runImageWorker(data);

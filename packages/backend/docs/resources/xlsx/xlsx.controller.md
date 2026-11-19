@@ -11,7 +11,7 @@ dist: packages/backend/dist/resources/xlsx/xlsx.controller.js:22
 
 * [XlsxController](#XlsxController)
     * [.build(response, body)](#XlsxController+build) ⇒ <code>Promise&lt;void&gt;</code>
-    * [.extract(query)](#XlsxController+extract) ⇒ <code>Promise&lt;{ records: unknown[]; sheet: string; }&gt;</code>
+    * [.extract(query)](#XlsxController+extract) ⇒ <code>Promise&lt;{ records: unknown[]; sheet: string; truncated: boolean; } \| { records: unknown[]; sheet: string; truncated?: undefined; }&gt;</code>
     * [.metadata(query)](#XlsxController+metadata) ⇒ <code>Promise&lt;{ custprops: object; definedNames: { name: string; ref: string; sheet: number; }[]; props: import(&quot;xlsx&quot;).FullProperties; sheets: { autofilter: boolean; cells: number; cols: number; formulas: number; hidden: boolean; merges: number; name: string; ref: string; rows: number; types: { [k: string]: number; }; }[]; totalCells: number; }&gt;</code>
 
 <a name="XlsxController+build"></a>
@@ -31,11 +31,11 @@ src: packages/backend/src/resources/xlsx/xlsx.controller.ts:52
 dist: packages/backend/dist/resources/xlsx/xlsx.controller.js:29
 <a name="XlsxController+extract"></a>
 
-### xlsxController.extract(query) ⇒ <code>Promise&lt;{ records: unknown[]; sheet: string; }&gt;</code>
+### xlsxController.extract(query) ⇒ <code>Promise&lt;{ records: unknown[]; sheet: string; truncated: boolean; } \| { records: unknown[]; sheet: string; truncated?: undefined; }&gt;</code>
 Extracts one sheet as typed JSON.
 
 **Kind**: instance method of [<code>XlsxController</code>](#XlsxController)  
-**Returns**: <code>Promise&lt;{ records: unknown[]; sheet: string; }&gt;</code> - The records and sheet name (201).  
+**Returns**: <code>Promise&lt;{ records: unknown[]; sheet: string; truncated: boolean; } \| { records: unknown[]; sheet: string; truncated?: undefined; }&gt;</code> - The records and sheet name (201).  
 
 | Param | Type | Description |
 | --- | --- | --- |

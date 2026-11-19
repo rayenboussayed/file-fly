@@ -26,11 +26,14 @@ export default defineConfig({
       reportOnFailure: true,
       thresholds: {
         // T12 decision: 100% was unreachable without gaming; the floor is honest.
-        // Remaining uncovered arms are documented as: Nest decorator downlevel emit
-        // (~20 arms), unreachable-by-construction guards (SheetJS always emits these,
-        // split() always yields a first element, resolveFont throws rather than returns
-        // falsy), and worker standalone-exit glue exercised by spawned-worker paths.
-        // Baseline was 76.48% stmts / 67.44% branch.
+        // Remaining uncovered arms (as measured, ~95 branches): Nest decorator downlevel
+        // emit (~20 arms), unreachable-by-construction guards (SheetJS always emits
+        // Workbook/Names/Custprops/Props and {b,d,e,n,s,z} cell types; split() always
+        // yields a first element; resolveFont throws rather than returns falsy), worker
+        // standalone-exit glue (exercised via spawned workers, not by v8 coverage),
+        // pptx/schema.ts's unused calibration fn and elements switch arm,
+        // pptx pptx.service.ts:36-37/230, and worker.service.ts:65/116/123-124/167/198
+        // (cache-hit tail branches). Baseline was 76.48% stmts / 67.44% branch.
         branches: 94,
         functions: 95,
         lines: 95,

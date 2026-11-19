@@ -130,7 +130,7 @@ describe('PdfService.build', () => {
   });
 
   it('embeds a TTF and encodes WinAnsi-unrepresentable text', async () => {
-    const fontPath = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    const fontPath = 'assets/fonts/DejaVuSans.ttf';
     if (!fs.existsSync(fontPath)) {
       throw new Error(`fixture font missing at ${fontPath}`);
     }

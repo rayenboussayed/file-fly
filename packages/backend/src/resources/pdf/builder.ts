@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
+import assert from 'node:assert';
+import { PDFDocument } from 'pdf-lib';
 
 import type { ElementType, PdfBuildType } from './schema.js';
 
@@ -54,9 +55,13 @@ const embedFonts = async (
   const standard = new Map<string, import('pdf-lib').PDFFont>();
   for (const name of collectStandardFontNames(segments)) {
     const standardFont = standardValueOf(name);
-    if (standardFont) standard.set(name, await pdfDoc.embedFont(standardFont));
+    // collectStandardFontNames only yields names with a standard value.
+    assert(standardFont, `no standard value for seeded font "${name}"`);
+    standard.set(name, await pdfDoc.embedFont(standardFont));
   }
-  const defaultFont = standard.get('Helvetica') ?? (await pdfDoc.embedFont(StandardFonts.Helvetica));
+  const defaultFont = standard.get('Helvetica');
+  // 'Helvetica' is always seeded by collectStandardFontNames.
+  assert(defaultFont, 'Helvetica is seeded by collectStandardFontNames');
   return { defaultFont, fonts, standard };
 };
 

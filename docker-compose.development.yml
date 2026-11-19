@@ -10,9 +10,10 @@
 # a dev dependency installed in the root workspace); it proxies /metrics and
 # the API routes to the app service, so no CORS is involved in the browser.
 # The ClamAV service is the official clamav/clamav image with the bundled
-# signature DBs; it serves INSTREAM on 3310. POST assets/eicar.com to
-# http://localhost:3000/virus-scan (content-type application/octet-stream) and
-# expect 422 + Eicar-Test-Signature; a clean upload returns 201.
+# signature DBs; it serves INSTREAM on 3310. POST any body starting with the
+# EICAR test marker to http://localhost:3000/virus-scan (content-type
+# application/octet-stream) and expect 422 + Eicar-Test-Signature; a clean
+# upload returns 201. The e2e suite plays its own fake clamd on 127.0.0.1:33331.
 # clamd's 3310 is deliberately not published: a host clamd may already use it
 # (as it does here). The app reaches clamav over the compose network.
 #

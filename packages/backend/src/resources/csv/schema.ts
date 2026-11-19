@@ -43,6 +43,7 @@ export const CsvBuildSchema = z
     ),
   })
   .strict();
+/** Validated body for `POST /csv/build`. */
 export type CsvBuildType = z.infer<typeof CsvBuildSchema>;
 
 /** csv-parse options shared by `/csv/extract` and `/csv/metadata` (function-valued options excluded). */
@@ -53,7 +54,7 @@ const csvParseOptions = z.object({
   columns: z
     .union([
       z.stringbool(),
-      z.string().min(1).transform((value) => [value]),
+      z.string().min(1).transform((value) => value.split(',').map((part) => part.trim()).filter((part) => part.length > 0)),
       z.array(trimmed(z.string().min(1)).nullable()).max(1000),
     ])
     .optional(),
@@ -85,13 +86,14 @@ const csvParseOptions = z.object({
   to: z.coerce.number().int().min(1).optional(),
   to_line: z.coerce.number().int().min(1).optional(),
   trim: z.stringbool().optional(),
-});
+}).strict();
 
 /**
  * Flat query parameters for `POST /csv/extract`.
  * The raw CSV travels in the request body; everything here is csv-parse options.
  */
 export const CsvExtractSchema = csvParseOptions;
+/** Flat query parameters for `POST /csv/extract`. */
 export type CsvExtractType = z.infer<typeof CsvExtractSchema>;
 
 const metadataParseOptions = csvParseOptions.pick({
@@ -121,4 +123,5 @@ const metadataParseOptions = csvParseOptions.pick({
 export const CsvMetadataSchema = metadataParseOptions.extend({
   maxRows: z.coerce.number().int().min(1).max(100_000).default(10_000),
 });
+/** Flat query parameters for `POST /csv/metadata`. */
 export type CsvMetadataType = z.infer<typeof CsvMetadataSchema>;

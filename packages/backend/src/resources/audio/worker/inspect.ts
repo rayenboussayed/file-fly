@@ -13,6 +13,7 @@ const data: AudioWorkerData = workerData;
  * @param inputData Description.
  */
 export async function metadata(inputData: AudioWorkerData = data) {
+  // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
   const input = await Demuxer.open(process.stdin as never, { format: inputData.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
   try {
     process.stdout.write(
@@ -41,6 +42,7 @@ export async function metadata(inputData: AudioWorkerData = data) {
  * @param inputData Description.
  */
 export async function stats(inputData: AudioWorkerData = data) {
+  // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
   const input = await Demuxer.open(process.stdin as never, { format: inputData.inputFormat, options: { analyzeduration: 5_000_000, probesize: 5_000_000 } });
   try {
     process.stdout.write(

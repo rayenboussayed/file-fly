@@ -2,7 +2,7 @@
 
 <dl>
 <dt><a href="#FontService">FontService</a></dt>
-<dd><p>Font feature service.</p>
+<dd><p>Font feature service: parses sfnt containers (metadata, extraction, shaping, subsetting).</p>
 </dd>
 </dl>
 
@@ -32,11 +32,11 @@ Unknown 4-character tags pass through to the shaper (it ignores them); malformed
 <a name="FontService"></a>
 
 ## FontService
-Font feature service.
+Font feature service: parses sfnt containers (metadata, extraction, shaping, subsetting).
 
 **Kind**: global variable  
 src: packages/backend/src/resources/font/font.service.ts:166  
-dist: packages/backend/dist/resources/font/font.service.js:132
+dist: packages/backend/dist/resources/font/font.service.js:183 (approx.)
 
 * [FontService](#FontService)
     * [.extract(query)](#FontService+extract) ⇒ <code>Promise&lt;{ availableFeatures: string[]; collection: string[]; familyName: string; format: string; glyphs: Record&lt;string, unknown&gt;[]; numGlyphs: number; postscriptName: string; returnedGlyphs: number; }&gt;</code>
@@ -59,7 +59,7 @@ Extracts every glyph's coverage and identity plus the supported OpenType feature
 | query.limit |  | Optional cap on the number of returned glyph records. |
 
 src: packages/backend/src/resources/font/font.service.ts:176  
-dist: packages/backend/dist/resources/font/font.service.js:137
+dist: packages/backend/dist/resources/font/font.service.js:208 (approx.)
 <a name="FontService+metadata"></a>
 
 ### fontService.metadata(query) ⇒ <code>Promise&lt;{ ascent: number; availableFeatures: string[]; bbox: fontkit.BBOX; capHeight: number; characterSetSize: number; collection: string[]; copyright: string; descent: number; embedding: { bitmapOnly: boolean; editable: boolean; noEmbedding: boolean; noSubsetting: boolean; viewOnly: boolean; }; familyName: string; format: string; fullName: string; italicAngle: number; license: string; licenseURL: string; lineGap: number; namedVariations: Record&lt;string, unknown&gt;; numGlyphs: number; postscriptName: string; subfamilyName: string; underlinePosition: number; underlineThickness: number; unitsPerEm: number; variationAxes: Partial&lt;Record&lt;string, { name: string; min: number; default: number; max: number; }&gt;&gt;; version: number; weightClass: number; xHeight: number; }&gt;</code>
@@ -73,8 +73,8 @@ Reads the uploaded font (ClamAV-scanned, signature-gated) and normalizes its met
 | query | <code>{ font?: string; }</code> | The validated query object. |
 | query.font |  | Optional collection member to select by PostScript name. |
 
-src: packages/backend/src/resources/font/font.service.ts:225  
-dist: packages/backend/dist/resources/font/font.service.js:181
+src: packages/backend/src/resources/font/font.service.ts:226  
+dist: packages/backend/dist/resources/font/font.service.js:260 (approx.)
 <a name="FontService+shape"></a>
 
 ### fontService.shape(query) ⇒ <code>Promise&lt;{ advanceHeight: number; advanceWidth: number; bbox: fontkit.BBOX; direction: string; features: Record&lt;string, boolean&gt;; format: string; glyphs: { xAdvance: number; yAdvance: number; xOffset: number; yOffset: number; advanceWidth: number; codePoints: number[]; id: number; isLigature: boolean; isMark: boolean; name: string; }[]; language: string; script: string; }&gt;</code>
@@ -93,8 +93,8 @@ Shapes text with the font's OpenType engine.
 | query.script |  | Optional script override; defaults to detection. |
 | query.text |  | The text to shape. |
 
-src: packages/backend/src/resources/font/font.service.ts:247  
-dist: packages/backend/dist/resources/font/font.service.js:192
+src: packages/backend/src/resources/font/font.service.ts:248  
+dist: packages/backend/dist/resources/font/font.service.js:282 (approx.)
 <a name="FontService+subset"></a>
 
 ### fontService.subset(query) ⇒ <code>Promise&lt;Buffer&lt;ArrayBuffer&gt;&gt;</code>
@@ -111,8 +111,8 @@ a standalone web font.
 | query.font |  | Optional collection member to select by PostScript name. |
 | query.text |  | The text whose glyphs are kept. |
 
-src: packages/backend/src/resources/font/font.service.ts:305  
-dist: packages/backend/dist/resources/font/font.service.js:226
+src: packages/backend/src/resources/font/font.service.ts:306  
+dist: packages/backend/dist/resources/font/font.service.js:327 (approx.)
 <a name="signatureFormat"></a>
 
 ## signatureFormat ⇒ <code>string</code>
@@ -167,5 +167,5 @@ Unknown 4-character tags pass through to the shaper (it ignores them); malformed
 | --- | --- | --- |
 | raw | <code>string</code> | The raw feature string from the query. |
 
-src: packages/backend/src/resources/font/font.service.ts:344  
-dist: packages/backend/dist/resources/font/font.service.js:262
+src: packages/backend/src/resources/font/font.service.ts:345  
+dist: packages/backend/dist/resources/font/font.service.js:369 (approx.)

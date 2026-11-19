@@ -58,7 +58,7 @@ Both live on the root controller and accept `GET` and `POST`:
 The EICAR antivirus test file is the industry-standard payload for this.
 The official signature ships in ClamAV's default databases, and the fake
 clamd in `packages/backend/test/fake-clamd.ts` (started by `packages/backend/test/global-setup.ts` for e2e)
-also detects it. How the EICAR fixture should be provided to the e2e suite
+also detects it (fake clamd listens on `127.0.0.1:33331`; see `packages/backend/test/global-setup.ts`). How the EICAR fixture should be provided to the e2e suite
 (repo check-in vs. generated at setup) is being discussed separately; the
 dedicated `/virus-scan` e2e cases are parked until that settles.
 

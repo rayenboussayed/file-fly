@@ -195,7 +195,9 @@ const elementSchema = z.discriminatedUnion('type', [
   pageNumberSchema,
   z.object({ type: z.literal('pageBreak') }).strict(),
 ]);
+/** A single page element in the build payload. */
 export type ElementType = z.infer<typeof elementSchema>;
+/** A table cell in the build payload. */
 export type TableCellType = z.infer<typeof tableCellSchema>;
 
 const pageSchema = z
@@ -240,7 +242,6 @@ const embeddedFontSchema = z
   .strict();
 
 /** Body of `POST /pdf/build`. */
-/** Body of `POST /pdf/build`. Note: total payload is bounded by the 16 MiB JSON body limit. */
 export const PdfBuildSchema = z
   .object({
     /** Embedded TTF/OTF fonts, referenced by elements via `font`. WinAnsi preflight is skipped for these. */
@@ -262,7 +263,9 @@ export const PdfBuildSchema = z
       }
     }
   });
+/** Validated body for `POST /pdf/build`. */
 export type PdfBuildType = z.infer<typeof PdfBuildSchema>;
+/** A page in the build payload. */
 export type PdfPageType = z.infer<typeof pageSchema>;
 
 /** Flat query parameters for `POST /pdf/extract` (empty; rejects junk params). */

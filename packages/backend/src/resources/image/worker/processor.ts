@@ -5,7 +5,7 @@ import type { ImageProcessorType } from '../schema.js';
 
 class Processor {
   buildTransformer(payload: ImageProcessorType) {
-    let transformer = sharp();
+    let transformer = sharp({ limitInputPixels: 100_000_000 });
     transformer = transformer.resize({
       background: payload.background,
       fit: payload.fit,

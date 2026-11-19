@@ -4,6 +4,9 @@
 <dt><a href="#positionKeys">positionKeys</a></dt>
 <dd><p>resize position accepts sharp&#39;s corner/edge names plus everything in sharp.gravity.</p>
 </dd>
+<dt><a href="#ImageProcessorSchema">ImageProcessorSchema</a></dt>
+<dd><p>Query parameters for <code>/image/processor</code>, <code>/image/metadata</code>, <code>/image/dna</code> and <code>/image/stats</code> uploads.</p>
+</dd>
 <dt><a href="#LANG_REGEX">LANG_REGEX</a></dt>
 <dd><p>Case-insensitive language code pattern: a three-letter ISO 639-2 code
 optionally followed by a script suffix (<code>_latn</code>, <code>_cyrl</code>, ...). Codes are
@@ -21,8 +24,16 @@ URL-encoded (<code>%2B</code>), because query-string decoders treat a raw <code>
 resize position accepts sharp's corner/edge names plus everything in sharp.gravity.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/schema.ts:13  
-dist: packages/backend/dist/resources/image/schema.js:8
+src: packages/backend/src/resources/image/schema.ts:14  
+dist: packages/backend/dist/resources/image/schema.js:9
+<a name="ImageProcessorSchema"></a>
+
+## ImageProcessorSchema
+Query parameters for `/image/processor`, `/image/metadata`, `/image/dna` and `/image/stats` uploads.
+
+**Kind**: global constant  
+src: packages/backend/src/resources/image/schema.ts:23  
+dist: packages/backend/dist/resources/image/schema.js:15
 <a name="LANG_REGEX"></a>
 
 ## LANG\_REGEX
@@ -32,13 +43,13 @@ combined with `+` or `,` (up to four). `+` only reaches this endpoint
 URL-encoded (`%2B`), because query-string decoders treat a raw `+` as a space.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/schema.ts:55  
-dist: packages/backend/dist/resources/image/schema.js:38
+src: packages/backend/src/resources/image/schema.ts:58  
+dist: packages/backend/dist/resources/image/schema.js:48 (approx.)
 <a name="OcrSchema"></a>
 
 ## OcrSchema
 Query schema for the `/image/ocr` endpoint.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/schema.ts:60  
-dist: packages/backend/dist/resources/image/schema.js:39
+src: packages/backend/src/resources/image/schema.ts:63  
+dist: packages/backend/dist/resources/image/schema.js:40

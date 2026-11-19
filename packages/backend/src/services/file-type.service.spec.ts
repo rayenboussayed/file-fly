@@ -75,9 +75,6 @@ describe('FileTypeService signature download paths', () => {
     ];
     let pulled = 0;
     /**
-     *
-     */
-    /**
      * Replays the fixture chunks while counting them.
      * @yields The fixture chunks one at a time.
      */
@@ -103,9 +100,6 @@ describe('FileTypeService signature download paths', () => {
     const cls = { fileSignature: () => ({ set: vi.fn() }) };
     const service = new FileTypeService(cls as never);
 
-    /**
-     *
-     */
     /**
      * Replays the fixture header, then fails mid-read.
      * @yields The fixture header, then throws.

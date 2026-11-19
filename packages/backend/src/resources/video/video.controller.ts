@@ -29,6 +29,7 @@ import {
 import { VideoSignatureInterceptor } from './video-signature.interceptor.js';
 import { VideoService } from './video.service.js';
 
+/** Video routes: processor, metadata, DNA, stats and screenshot (binary stream endpoints). */
 @Controller('video')
 @UseInterceptors(FileScannerInterceptor, FileParserInterceptor, VideoSignatureInterceptor)
 export class VideoController {

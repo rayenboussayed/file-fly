@@ -1,11 +1,11 @@
 <a name="ImageService"></a>
 
 ## ImageService
-Image feature service.
+Image feature service: streams uploads through sharp workers for processing, metadata, DNA, stats and OCR.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/image/image.service.ts:21  
-dist: packages/backend/dist/resources/image/image.service.js:26
+src: packages/backend/src/resources/image/image.service.ts:20  
+dist: packages/backend/dist/resources/image/image.service.js:42 (approx.)
 
 * [ImageService](#ImageService)
     * [.parseLangs(raw)](#ImageService+parseLangs) ⇒ <code>string[]</code>
@@ -24,8 +24,8 @@ trims, dedupes, sorts; defaults to `['eng']`, caps at 4 codes.
 | --- | --- | --- |
 | raw | <code>string</code> | Raw `lang` query parameter (already regex-validated). |
 
-src: packages/backend/src/resources/image/image.service.ts:109  
-dist: packages/backend/dist/resources/image/image.service.js:92
+src: packages/backend/src/resources/image/image.service.ts:110  
+dist: packages/backend/dist/resources/image/image.service.js:138 (approx.)
 <a name="ImageService+preprocess"></a>
 
 ### imageService.preprocess(input) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -41,5 +41,5 @@ input surfaces as [UnsupportedMediaTypeException](UnsupportedMediaTypeException)
 | --- | --- | --- |
 | input | <code>Buffer&lt;ArrayBufferLike&gt;</code> | Raw (signature-verified) image bytes. |
 
-src: packages/backend/src/resources/image/image.service.ts:130  
-dist: packages/backend/dist/resources/image/image.service.js:103
+src: packages/backend/src/resources/image/image.service.ts:131  
+dist: packages/backend/dist/resources/image/image.service.js:157 (approx.)

@@ -1,5 +1,6 @@
 import type { VideoProcessorType as SchemaVideoProcessorType } from './schema.js';
 
+/** Worker-thread payload for the video worker; discriminated on `operation`. */
 export type VideoWorkerData =
   | {
       inputFormat: string;

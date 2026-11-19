@@ -96,7 +96,7 @@ const isoOrString = (value: Date | null | string | undefined): string | undefine
   return value instanceof Date ? value.toISOString() : String(value);
 };
 
-/** PDF feature service. */
+/** PDF feature service: builds documents, extracts text and reads metadata. */
 @Injectable()
 export class PdfService {
   constructor(private readonly cls: NormalizedClsService) {}

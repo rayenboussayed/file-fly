@@ -1,7 +1,7 @@
 // eslint-disable-next-line n/no-missing-import
 import type { Worker } from 'tesseract.js';
 
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { withTimeoutAsync } from 'jutilities/hof/timeout';
 import fs from 'node:fs';
 // eslint-disable-next-line n/no-missing-import
@@ -33,20 +33,25 @@ interface Slot {
  * retired instead of being returned to the pool (a zombie recognition could
  * otherwise interleave with the next caller on the same worker).
  */
+/** Bounded pool of tesseract.js workers for `/image/ocr`; terminated on shutdown. */
 @Injectable()
 export class TesseractService implements OnModuleDestroy, OnModuleInit {
   private creating = 0;
+  private destroying = false;
   private readonly logger = new Logger(TesseractService.name);
   private readonly slots: Slot[] = [];
   private readonly waiters: Array<() => void> = [];
 
   /**
-   * Terminates every worker on shutdown.
+   * Terminates every worker on shutdown and wakes pending acquire() callers
+   * so they fail fast with 503 instead of waiting for a slot forever.
    */
   async onModuleDestroy(): Promise<void> {
+    this.destroying = true;
     await Promise.allSettled(this.slots.map((slot) => slot.worker.terminate()));
     this.slots.length = 0;
-    this.waiters.length = 0;
+    const waiters = this.waiters.splice(0);
+    for (const waiter of waiters) waiter();
   }
 
   /**
@@ -118,6 +123,9 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
   private async acquire(langs: string[]): Promise<Slot> {
     const key = langs.join('+');
     while (true) {
+      if (this.destroying) {
+        throw new ServiceUnavailableException('Tesseract worker pool is shutting down');
+      }
       const slot = await this.tryAcquire(langs, key);
       if (slot) return slot;
       await new Promise<void>((resolve) => {

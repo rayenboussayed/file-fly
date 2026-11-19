@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
+
+/** Resolves node-av's formats.d.ts from wherever the package manager hoisted it. */
+const defaultFormatsPath = () => {
+  const require = createRequire(import.meta.url);
+  const entry = require.resolve('node-av');
+  return path.resolve(path.dirname(entry), 'constants/formats.d.ts');
+};
 
 const usage = `Usage:
   node scripts/union-to-enum.js --file <file.d.ts> --types <UnionA> <UnionB> [--output <file.ts>]
@@ -24,7 +32,7 @@ function parseArgs(argv) {
       process.exit(0);
     }
 
-    const match = arg.match(/^(--|-)(file|types|output|o|t|f)$/);
+    const match = arg.match(/^(--|-)(file|types|unions|output|o|t|f)$/);
     if (!match) {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -39,10 +47,14 @@ function parseArgs(argv) {
     }
 
     i += 1;
-    if (key === 'types') {
-      args.types = [value];
-      while (argv[i + 1] && !argv[i + 1].startsWith('--') && !argv[i + 1].startsWith('-')) {
-        args.types.push(argv[i + 1]);
+    if (key === 'types' || key === 'unions') {
+      args[key] = [value];
+      while (
+        argv[i + 1] &&
+        !argv[i + 1].startsWith('--') &&
+        !argv[i + 1].startsWith('-')
+      ) {
+        args[key].push(argv[i + 1]);
         i += 1;
       }
       continue;
@@ -51,8 +63,10 @@ function parseArgs(argv) {
     args[key] = value;
   }
 
-  if (!args.file) throw new Error('Missing required --file argument');
-  if (!args.types?.length) throw new Error('Missing required --types argument(s)');
+  args.file ??= defaultFormatsPath();
+  if (!args.types?.length)
+    throw new Error('Missing required --types argument(s)');
+  args.unions ??= [];
   return args;
 }
 
@@ -92,7 +106,9 @@ function extractUnion(text, name) {
   const header = new RegExp(`export\\s+type\\s+${name}\\s*=\\s*`);
   const match = header.exec(text);
   if (!match) {
-    throw new Error(`Could not find export type ${name} in ${match?.index ?? 'file'}`);
+    throw new Error(
+      `Could not find export type ${name} in ${match?.index ?? 'file'}`,
+    );
   }
 
   const start = match.index + match[0].length;
@@ -120,13 +136,17 @@ function extractUnion(text, name) {
       .replace(/\\n/g, '\n')
       .replace(/\\r/g, '\r')
       .replace(/\\t/g, '\t')
-      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)));
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+        String.fromCharCode(Number.parseInt(hex, 16)),
+      );
     return unescaped;
   });
 
   const unique = new Set(values);
   if (unique.size !== values.length) {
-    const duplicate = values.find((value, index) => values.indexOf(value) !== index);
+    const duplicate = values.find(
+      (value, index) => values.indexOf(value) !== index,
+    );
     throw new Error(`Union ${name} contains duplicate value: ${duplicate}`);
   }
 
@@ -140,36 +160,44 @@ function variableName(typeName) {
 function formatArray(name, values) {
   const lines = [];
   for (let i = 0; i < values.length; i += 16) {
-    lines.push(`  ${values.slice(i, i + 16).map((value) => JSON.stringify(value)).join(', ')},`);
+    lines.push(
+      `  ${values
+        .slice(i, i + 16)
+        .map((value) => JSON.stringify(value))
+        .join(', ')},`,
+    );
   }
-  return `export const ${name} = [\n${lines.join('\n')}] as const;`;
+  return `export const ${name} = [\n${lines.join('\n')}\n] as const;`;
 }
 
-function generate(types) {
+function generate(types, unionNames) {
+  const unions = new Set(unionNames);
   const blocks = Object.entries(types).map(([type, values]) => ({
     type,
     variable: variableName(type),
     values,
   }));
 
-  const chunks = [
-    '/* AUTO-GENERATED — DO NOT EDIT MANUALLY. */',
-    "import { z } from 'zod';",
-    '',
-  ];
-
-  for (const { variable, values } of blocks) {
-    chunks.push(formatArray(variable, values), '');
-  }
-
-  for (const { type, variable } of blocks) {
-    chunks.push(`export const ${type}Schema = z.enum(${variable});`);
-  }
-
+  const chunks = ['/* AUTO-GENERATED — DO NOT EDIT MANUALLY. */'];
   chunks.push('');
 
-  for (const { type } of blocks) {
-    chunks.push(`export type ${type} = z.infer<typeof ${type}Schema>;`);
+  for (const { type, variable, values } of blocks) {
+    const kind = type === 'DemuxerFormat' ? 'demuxer' : 'muxer';
+    if (unions.has(type)) {
+      // Union-only type: emit the literal union inline (nothing else imports the array).
+      chunks.push(
+        `/** The ${type} union: the ffmpeg ${kind} format names (${values.length} values, copied from node-av). */`,
+      );
+      chunks.push(
+        `export type ${type} =\n${values.map((value) => `  | ${JSON.stringify(value)}`).join('\n')};`,
+        '',
+      );
+      continue;
+    }
+    chunks.push(
+      `/** FFmpeg ${kind} format names, copied from node-av at generation time. */`,
+    );
+    chunks.push(formatArray(variable, values), '');
   }
 
   return `${chunks.join('\n').replace(/\n+$/, '')}\n`;
@@ -181,8 +209,10 @@ try {
   const types = Object.fromEntries(
     args.types.map((type) => [type, extractUnion(source, type)]),
   );
-  const output = generate(types);
-  const destination = path.resolve(args.output ?? 'src/constants/av-formats.ts');
+  const output = generate(types, args.unions);
+  const destination = path.resolve(
+    args.output ?? 'src/constants/av-formats.ts',
+  );
 
   mkdirSync(path.dirname(destination), { recursive: true });
   writeFileSync(destination, output);

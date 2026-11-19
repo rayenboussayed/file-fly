@@ -9,23 +9,33 @@ const hoisted = vi.hoisted(() => ({ workerData: {} as Record<string, unknown> })
 vi.mock('node:worker_threads', () => ({ workerData: hoisted.workerData }));
 
 describe('audio worker', () => {
-// eslint-disable-next-line sonarjs/assertions-in-tests
+
   it('runs metadata and stats', async () => {
     for (const operation of ['metadata', 'stats'] as const) {
+      const writes: Buffer[] = [];
       Object.defineProperty(process, 'stdin', { value: fs.createReadStream('assets/audios/audio-0.mp3'), writable: true });
 // eslint-disable-next-line @typescript-eslint/no-require-imports
       const stdout = new (require('node:stream').Writable)({
-        write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+        write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+          writes.push(Buffer.from(chunk as Buffer));
           callback();
         },
       });
       Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
 
   
-    void runAudioWorker({ inputFormat: 'mp3', operation, payload: {} } as never).catch(() => undefined);
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await runAudioWorker({ inputFormat: 'mp3', operation, payload: {} } as never);
+      const lines = Buffer.concat(writes).toString('utf8').trim().split('\n').filter(Boolean);
+      expect(lines.length).toBeGreaterThan(0);
+      const parsed = JSON.parse(lines[0] as string) as {
+        duration: number;
+        format: string;
+        streams: Array<{ codec: number; sampleRate: number }>;
+      };
+      expect(parsed.duration).toBeTypeOf('number');
+      expect(parsed.streams.length).toBeGreaterThan(0);
     }
-  });
+  }, 10000);
 
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('runs processor passthrough', async () => {

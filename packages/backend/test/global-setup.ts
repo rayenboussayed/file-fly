@@ -9,7 +9,9 @@ import { startFakeClamd, stopFakeClamd } from './fake-clamd.js';
 // createRequire sidesteps the interop ambiguity the same way the repo does for CJS-only deps.
 const XLSX = createRequire(import.meta.url)('xlsx') as typeof import('xlsx');
 
+/** Where committed fixture copies and generated media land for e2e runs. */
 export const FIXTURES_DIR = path.join('test', 'results', 'fixtures');
+/** Scratch cache dir e2e runs use instead of the repo cache. */
 export const CACHE_DIR = path.join('test', 'results', 'cache');
 const FAKE_CLAMD_PORT = 33331;
 
@@ -58,7 +60,7 @@ export default async function setup() {
   );
 
   // Font fixtures for the /pdf and /font e2es; fail loudly if any is missing.
-  fs.copyFileSync('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', path.join(FIXTURES_DIR, 'DejaVuSans.ttf'));
+  fs.copyFileSync(path.join('assets', 'fonts', 'DejaVuSans.ttf'), path.join(FIXTURES_DIR, 'DejaVuSans.ttf'));
   for (const name of ['tiny.ttf', 'tiny.ttc', 'tiny.woff', 'tiny.woff2', 'tiny-empty.ttc', 'tiny-no-os2.ttf', 'tiny-dup.ttf']) {
     fs.copyFileSync(path.join('assets', 'fonts', name), path.join(FIXTURES_DIR, name));
   }

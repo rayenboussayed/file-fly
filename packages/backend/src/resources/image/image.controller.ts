@@ -39,6 +39,7 @@ const SHARP_TO_MIME: Partial<Record<keyof FormatEnum, string>> = {
   webp: 'image/webp',
 };
 
+/** Image routes: processor, metadata, DNA, stats and OCR (binary stream endpoints). */
 @Controller('image')
 @UseInterceptors(FileScannerInterceptor, FileParserInterceptor, ImageSignatureInterceptor)
 export class ImageController {

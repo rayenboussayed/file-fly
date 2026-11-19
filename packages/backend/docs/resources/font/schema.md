@@ -8,7 +8,7 @@
 <dd><p>Collection member to select by PostScript name; defaults to the first.</p>
 </dd>
 <dt><a href="#limit">limit</a></dt>
-<dd><p>Maximum glyph records to return (default: all).</p>
+<dd><p>Maximum glyph records to return (default: 10 000, capped at the <code>limit</code> max).</p>
 </dd>
 <dt><a href="#direction">direction</a></dt>
 <dd><p>Direction override; defaults to the script default.</p>
@@ -78,7 +78,7 @@ dist: packages/backend/dist/resources/font/schema.js:19
 <a name="limit"></a>
 
 ## limit
-Maximum glyph records to return (default: all).
+Maximum glyph records to return (default: 10 000, capped at the `limit` max).
 
 **Kind**: global variable  
 src: packages/backend/src/resources/font/schema.ts:39  
@@ -137,7 +137,7 @@ dist: packages/backend/dist/resources/font/schema.js:29
 Collection member to select by PostScript name; defaults to the first.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:65  
+src: packages/backend/src/resources/font/schema.ts:66  
 dist: packages/backend/dist/resources/font/schema.js:32
 <a name="text"></a>
 
@@ -145,7 +145,7 @@ dist: packages/backend/dist/resources/font/schema.js:32
 The text to include in the subset (max 10 000 chars).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:67  
+src: packages/backend/src/resources/font/schema.ts:68  
 dist: packages/backend/dist/resources/font/schema.js:33
 <a name="FONT_MIMES"></a>
 
@@ -199,5 +199,5 @@ dist: packages/backend/dist/resources/font/schema.js:23
 Flat query parameters for `POST /font/subset`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/font/schema.ts:63  
+src: packages/backend/src/resources/font/schema.ts:64  
 dist: packages/backend/dist/resources/font/schema.js:31

@@ -6,7 +6,8 @@
 the event loop drains naturally, with a short backstop if native handles linger.</p>
 </dd>
 <dt><a href="#run">run()</a> ⇒ <code>Promise&lt;void&gt;</code></dt>
-<dd></dd>
+<dd><p>Dispatches the requested video operation (processor/metadata/dna/stats/screenshot).</p>
+</dd>
 <dt><a href="#startVideoWorker">startVideoWorker()</a> ⇒ <code>Promise&lt;any&gt;</code></dt>
 <dd><p>Runs the worker job and, only inside a spawned worker thread, finishes the process.</p>
 </dd>
@@ -29,8 +30,10 @@ dist: packages/backend/dist/resources/video/worker/index.js:9
 <a name="run"></a>
 
 ## run() ⇒ <code>Promise&lt;void&gt;</code>
+Dispatches the requested video operation (processor/metadata/dna/stats/screenshot).
+
 **Kind**: global function  
-src: packages/backend/src/resources/video/worker/index.ts:30  
+src: packages/backend/src/resources/video/worker/index.ts:28  
 dist: packages/backend/dist/resources/video/worker/index.js:14
 <a name="startVideoWorker"></a>
 
@@ -38,6 +41,6 @@ dist: packages/backend/dist/resources/video/worker/index.js:14
 Runs the worker job and, only inside a spawned worker thread, finishes the process.
 
 **Kind**: global function  
-**Returns**: <code>Promise&lt;any&gt;</code> - Result.  
-src: packages/backend/src/resources/video/worker/index.ts:54  
+**Returns**: <code>Promise&lt;any&gt;</code> - The job (with exit-code handling attached when running as a worker thread).  
+src: packages/backend/src/resources/video/worker/index.ts:52  
 dist: packages/backend/dist/resources/video/worker/index.js:33

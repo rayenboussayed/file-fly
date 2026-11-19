@@ -153,10 +153,14 @@ node-av 6.2.0:
   data and don't expose publicly beyond need.
 - **Errors are generic 500s by design** (no internals leak); server logs
   carry absolute paths (debuggability trade-off, documented).
-- **`source=` fetches are server-side GETs:** the service forwards the
-  client's headers to the remote host (pre-existing behavior affecting
-  ALL GET media routes) — worth an env-level egress allowlist. Do not
-  call with `authorization` set unless the source is trusted.
+- **`source=` fetches are server-side GETs:** the service forwards only a
+  minimal header allowlist (`accept`, `accept-language`, `user-agent`) to
+  the remote host — client credentials (`authorization`, `cookie`, `x-*`)
+  are never forwarded. The scheme is limited to http/https. Without `EGRESS_ALLOWLIST`,
+  loopback, private, link-local and CGNAT literals are refused; with it
+  (comma-separated bare hostnames, dotted suffixes allowed for subdomains)
+  the allowlist is authoritative, including for internal hosts. Client
+  credentials are never forwarded. See `packages/backend/src/utils/open-source.ts`.
 - **Cache poisoning notes (pre-existing, M2 — documented, not fixed):**
   download-direction DNA entries key off
   `{ fileSignature, query, contentLength: 0, '' }` (stale-URL refresh

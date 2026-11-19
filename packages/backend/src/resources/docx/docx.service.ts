@@ -347,7 +347,7 @@ const checkNoteRef = (
   }
 };
 
-/** DOCX feature service. */
+/** DOCX feature service: builds documents and parses/metadata-inspects uploads. */
 @Injectable()
 export class DocxService {
   constructor(

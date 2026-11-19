@@ -24,9 +24,7 @@ function finishWorker(code: number) {
   setTimeout(() => process.exit(code), 250).unref();
 }
 
-/**
- *
- */
+/** Dispatches the requested video operation (processor/metadata/dna/stats/screenshot). */
 async function run() {
   switch (data.operation) {
   case 'dna':
@@ -49,7 +47,7 @@ async function run() {
 
 /**
  * Runs the worker job and, only inside a spawned worker thread, finishes the process.
- * @returns Result.
+ * @returns The job (with exit-code handling attached when running as a worker thread).
  */
 function startVideoWorker() {
   const job = run();

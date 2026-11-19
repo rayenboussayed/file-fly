@@ -1,8 +1,8 @@
 <a name="DashboardStaticModule"></a>
 
 ## DashboardStaticModule
-Dashboard static serving module; the only provider is the static service.
+Serves the built dashboard (DASHBOARD_DIR, packages/dashboard/dist) as static assets.
 
 **Kind**: global variable  
 src: packages/backend/src/dashboard-static.module.ts:9  
-dist: packages/backend/dist/dashboard-static.module.js:9
+dist: packages/backend/dist/dashboard-static.module.js:38 (approx.)

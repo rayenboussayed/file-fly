@@ -7,18 +7,9 @@ import {
 import type { VideoProcessorType } from '../schema.js';
 
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
- * @param payload Description.
- * @param codec Description.
- */
-
-// eslint-disable-next-line jsdoc/require-returns
-/**
- *
-// eslint-disable-next-line jsdoc/require-param-description
-// eslint-disable-next-line jsdoc/require-param-description
- * @param value Description.
+ * Parses a video bitrate literal (`1200k`, `5M`) into bits per second.
+ * @param value - The bitrate literal from the query (e.g. '2500k').
+ * @returns The bitrate in bits per second, defaulting to 2 000 000 when unparsable.
  */
 export function parseBitrate(value: string): number {
   const match = value.match(/^(\d+)([kM])$/i);
@@ -28,11 +19,10 @@ export function parseBitrate(value: string): number {
   return Number(amount) * (unit.toLowerCase() === 'k' ? 1_000 : 1_000_000);
 }
 
-// eslint-disable-next-line jsdoc/require-returns
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
- * @param codec Description.
+ * Maps the public codec name to the node-av FFmpeg encoder constant.
+ * @param codec - The codec from the query (`vp9` | `av1` | `x264`-family).
+ * @returns The FFmpeg encoder constant for passing to the output stream.
  */
 export function videoEncoderConstant(codec: VideoProcessorType["codec"]) {
   if (codec === "vp9") return FF_ENCODER_LIBVPX_VP9;

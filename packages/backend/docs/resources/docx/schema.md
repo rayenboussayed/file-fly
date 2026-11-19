@@ -195,32 +195,32 @@ dist: packages/backend/dist/resources/docx/schema.js:156
 Comments; each is appended at the end of the document with an id reference.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:341  
-dist: packages/backend/dist/resources/docx/schema.js:282
+src: packages/backend/src/resources/docx/schema.ts:340  
+dist: packages/backend/dist/resources/docx/schema.js:303 (approx.)
 <a name="endnotes"></a>
 
 ## endnotes
 Endnote definitions keyed by the ids referenced from runs.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:343  
-dist: packages/backend/dist/resources/docx/schema.js:283
+src: packages/backend/src/resources/docx/schema.ts:342  
+dist: packages/backend/dist/resources/docx/schema.js:305 (approx.)
 <a name="footnotes"></a>
 
 ## footnotes
 Footnote definitions keyed by the ids referenced from runs.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:345  
-dist: packages/backend/dist/resources/docx/schema.js:284
+src: packages/backend/src/resources/docx/schema.ts:344  
+dist: packages/backend/dist/resources/docx/schema.js:307 (approx.)
 <a name="numbering"></a>
 
 ## numbering
 Numbering definitions referenced from paragraph elements.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:348  
-dist: packages/backend/dist/resources/docx/schema.js:286
+src: packages/backend/src/resources/docx/schema.ts:347  
+dist: packages/backend/dist/resources/docx/schema.js:310 (approx.)
 <a name="DOCX_MIME"></a>
 
 ## DOCX\_MIME
@@ -259,5 +259,5 @@ dist: packages/backend/dist/resources/docx/schema.js:8
 Body of `POST /docx/build`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/docx/schema.ts:338  
-dist: packages/backend/dist/resources/docx/schema.js:280
+src: packages/backend/src/resources/docx/schema.ts:337  
+dist: packages/backend/dist/resources/docx/schema.js:300 (approx.)

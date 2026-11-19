@@ -28,9 +28,6 @@
         "src/**/*.ts",
         "test/**/*.ts"
       ],
-      "ignore": [
-        "src/constants/av-formats.ts"
-      ],
       "nest": {
         "config": [
           "nest-cli.json",
@@ -43,14 +40,11 @@
   },
   "ignoreDependencies": [
     "fastify",
-    "@commitlint/cli",
     "@nestjs/mau",
     "@types/eslint-plugin-security",
     "source-map-support"
   ],
-  "ignoreBinaries": [
-    "husky"
-  ],
+  "ignoreBinaries": [],
   "ignore": [
     "mdaics.config.js"
   ]

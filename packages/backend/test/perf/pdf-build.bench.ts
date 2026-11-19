@@ -33,8 +33,9 @@ const makePayload = (): PdfBuildType =>
   }) as unknown as PdfBuildType;
 
 describe('buildPdfDocument', () => {
+  const payload = makePayload();
   bench('builds a 120-paragraph document', async () => {
-    const bytes = await buildPdfDocument(makePayload());
+    const bytes = await buildPdfDocument(payload);
     if (bytes.length < 1024) {
       throw new Error('pdf unexpectedly small');
     }

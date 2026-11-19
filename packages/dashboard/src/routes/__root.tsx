@@ -18,9 +18,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 /**
- *
- */
-/**
  * Fallback for unknown paths.
  * @returns The not-found element.
  */
@@ -33,9 +30,6 @@ function NotFound() {
   );
 }
 
-/**
- *
- */
 /**
  * Root layout: the app shell with the top navigation and routed content.
  * @returns The shell element.

@@ -7,7 +7,7 @@ import { WorkerService } from '@/services/worker.service.js';
 import { ModelController } from './model.controller.js';
 import { ModelService } from './model.service.js';
 
-/** GLB feature module: metadata, extract, optimize and convert routes. */
+/** Model feature module: metadata, extract, optimize and convert routes. */
 @Module({
   controllers: [ModelController],
   providers: [AntiVirusService, ModelService, NormalizedClsService, WorkerService],

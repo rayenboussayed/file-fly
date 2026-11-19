@@ -9,6 +9,7 @@ import { ImageController } from './image.controller.js';
 import { ImageService } from './image.service.js';
 import { TesseractService } from './tesseract.service.js';
 
+/** Image feature module: processor, metadata, DNA, stats and OCR routes. */
 @Module({
   controllers: [ImageController],
   providers: [

@@ -2,12 +2,10 @@ import { FilterAPI } from 'node-av/api';
 
 import type { VideoProcessorType } from '../schema.js';
 
-// eslint-disable-next-line jsdoc/require-returns
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
-// eslint-disable-next-line jsdoc/require-param-description
- * @param payload Description.
+ * Builds the audio filter chain for a transcode (channel mix, resample, loudnorm).
+ * @param payload - The validated video processor options.
+ * @returns The filters to apply on the audio stream, in order.
  */
 export function buildAudioFilters(payload: VideoProcessorType) {
   const filters: FilterAPI[] = [];
@@ -17,12 +15,10 @@ export function buildAudioFilters(payload: VideoProcessorType) {
   return filters;
 }
 
-// eslint-disable-next-line jsdoc/require-returns
 /**
- *
-// eslint-disable-next-line jsdoc/require-param-description
-// eslint-disable-next-line jsdoc/require-param-description
- * @param payload Description.
+ * Builds the video filter chain (trim, deinterlace, scale, fps, denoise, ...).
+ * @param payload - The validated video processor options.
+ * @returns The filters to apply on the video stream, in order.
  */
 export function buildVideoFilters(payload: VideoProcessorType) {
   const filters: FilterAPI[] = [];

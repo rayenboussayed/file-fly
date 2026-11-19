@@ -57,6 +57,7 @@
     "eslint-plugin-sonarjs": "^4.2.2",
     "eslint-plugin-unicorn": "^79.0.0",
     "globals": "^17.13.0",
+    "husky": "^9.1.7",
     "knip": "^6.44.1",
     "mdaics": "^1.0.0",
     "prettier": "^3.4.2",
@@ -66,6 +67,8 @@
     "node-av@6.2.0": true
   },
   "overrides": {
-    "image-size": "^2.1.0"
+    "pptxgenjs": {
+      "image-size": "^2.1.0"
+    }
   }
 }

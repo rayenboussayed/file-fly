@@ -12,8 +12,8 @@ General rules across these routes:
 - Binary routes (`extract`, `metadata`, `shape`, `subset`, `optimize`,
   `convert`) are `POST`-only — they never proxy `?source=<url>`; uploads are
   scanned with ClamAV (`FileScannerInterceptor`) before any parsing, fail-closed
-  (`infected → 422`, `daemon down → 503`, oversize → 413) —
-  see [antivirus.md](antivirus.md).
+  (`infected → 422`, `daemon down → 503`, oversize → 413), and are buffered
+  whole (≤ 25 MiB) rather than streamed end to end — see [antivirus.md](antivirus.md).
 - Binary routes enforce a signature gate: the detected `file-type` must match
   the family (`xlsx`, `docx`/`pptx` (OOXML), `pdf`, `ttf/otf/woff/woff2/ttc`,
   `model/gltf-binary`) or the request is rejected with `415`.
@@ -21,9 +21,10 @@ General rules across these routes:
 - Every route is authenticated exactly like the media routes: none of them
   carry API-key/cookie requirements today, and all of them are rate-limited by
   the reverse proxy (none exists in the repo itself).
-- Worker threads run the heavy builders (docx/pptx/pdf/model optimize); the
-  worker is fed via `workerData`, and its stdout is the binary channel — worker
-  logs go to stderr.
+- Worker threads run the heavy builders (docx/pptx builds and `/model/optimize`),
+  not the pdf or xlsx builders (both in-process); the worker is fed via
+  `workerData`, and its stdout is the binary channel — worker logs go to stderr.
+  Worker threads are capped at `max(2, cpus - 1)` concurrent; excess calls queue.
 - Responses for binary payloads set `content-type`, a
   `content-disposition: attachment; filename="…"`, and are streamed with
   backpressure.
@@ -33,8 +34,10 @@ Error-code conventions (all modules):
 - `400` — schema validation failure (unknown key, bad enum, malformed tag)
   plus module-specific `CODE` strings for semantic rejections (e.g.
   `PDF_TEXT_NOT_REPRESENTABLE`, `MODEL_UNREADABLE`, `PPTX_SLIDE_MISSING`).
-- `413` — the body exceeded a cap (16 MiB body cap, or the OOXML total /
-  per-entry / element caps).
+- `413` — the body exceeded a cap (16 MiB body cap, CSV record cap of 1 000 000,
+  or the OOXML total / per-entry / element caps for docx/pptx — xlsx maps the
+  same cap failures to `400 XLSX_INVALID_ZIP`; only xlsx cell overflow maps to
+  `413`).
 - `415` — the detected signature does not match the route family.
 - `422` — ClamAV flagged the payload as infected.
 - `503` — ClamAV not configured (binary routes) or daemon unreachable
@@ -55,9 +58,9 @@ directly.
 
 | Route | Body / query | Returns |
 | --- | --- | --- |
-| `POST /csv/build` | JSON `{ records: [...], options?: {…} }` — rows as objects (keys→cells) or positional arrays (order from `options.columns` when given) | `text/csv` attachment (`output.csv`), BOM optional, `escape_formulas` defaults to `true` (untrusted sheets) |
-| `POST /csv/extract` | Binary CSV; query: `columns` (`true` = first row as header, `,`-separated list, or single string), `delimiter` (`auto` when unset), `cast`, `cast_date`, `bom`, `trim`, `comment`, `maxRows` | `{ records: [...], sheet?: never }` with the delimiter actually used |
-| `POST /csv/metadata` | Binary CSV; query: `maxRows` (row census cap, default 10k) | `{ rows, columns, delimiter, bom, perColumn: [{ index, types: { boolean, date, empty, number, string } }], truncatedTypes }` — a lightweight type census, not a formula engine |
+| `POST /csv/build` | JSON `{ records: [...], options?: {…} }` — rows as objects (keys→cells) or positional arrays (order from `options.columns` when given) | `text/csv` attachment (`export.csv`), BOM optional, `escape_formulas` defaults to `true` (untrusted sheets) |
+| `POST /csv/extract` | Binary CSV; query: `columns` (`true` = first row as header, or a `,`-separated list of header names), `delimiter` (`auto` when unset), `cast`, `cast_date`, `bom`, `trim`, `comment`, and the rest of the csv-parse flat options | `{ records: [...] }` (≤ 1 000 000 records, else `413`); formula-leading values pass through unfiltered |
+| `POST /csv/metadata` | Binary CSV; query: `maxRows` (type-census cap, default 10 000, max 100 000) plus the flat parse options | `{ rows, columns, delimiter (the supplied value, or `auto`), bom, maxRows, recordDelimiter, perColumn: [{ index, types: { boolean, date, empty, number, string } }], truncatedTypes }` — a lightweight type census, not a formula engine |
 
 Formula injection note: `escape_formulas` (default true) prepends a `'` to
 cells beginning with `= + - @ \t \r` on build. Extracts return raw values; it
@@ -69,15 +72,24 @@ program unguarded.
 | Route | Body / query | Returns |
 | --- | --- | --- |
 | `POST /xlsx/build` | JSON `{ sheets: [{ name, rows, cols?, merges?, autofilter?, sheetVisibility?, ... }], workbook?: { Props?, WBProps?, Names? }, … }` — cells are `{ t?: 'b'/'d'/'n'/'s', v, z? }` objects or primitives; formula cells pass through with `f` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` attachment |
-| `POST /xlsx/extract` | Binary .xlsx; query: `sheet` (name, or 0-based index as string), `raw` (default true: unformatted values), `header` (`1` = array of rows, `A` = column letters, `name,with,keys`) | `{ records: [...], sheet: name }` (header row consumed) — DDE / remote-exec payloads in formulas are refused (`XLSX_DDE_FORMULA`), local function calls pass through |
+| `POST /xlsx/extract` | Binary .xlsx; query: `sheet` (name, or 0-based index as string), `raw` (default true: unformatted values), `header` (`1` = array of rows, `A` = column letters, `name,with,keys`) | `{ records: [...], sheet: name }` (header row consumed); over 1 000 000 records the output is sliced and `truncated: true` is added |
 | `POST /xlsx/metadata` | Binary .xlsx; query: `maxCells` (`1..20_000_000`, default 2 000 000 — checked before SheetJS parses) | Workbook + per-sheet metadata: dims, typed-cell census, formulas, merges, autofilter, defined names, hidden rows, dates, app/core props |
+
+Formula refusal happens at build time: `POST /xlsx/build` rejects formula
+cells whose formula is unsafe (`XLSX_FORMULA_REJECTED` — DDE / remote-exec
+patterns such as `CMD|'…'` or `DDEAUTO` in a cell or a defined name) or starts
+with `=` (`XLSX_FORMULA_LEADING_EQUALS`). Extract never refuses formulas; it
+reports them verbatim.
 
 Known limits: style-per-cell round trip is intentionally shallow (SheetJS
 Community Edition has no style engine); conditional formatting, charts and
 images are not preserved on build or extract. `date1904` workbooks are refused
 for writing (`XLSX_DATE1904_UNSUPPORTED`) because SheetJS would silently
 re-serialize dates with the 1900 epoch. Excel's 1 048 576-row limit is not
-enforced — `maxCells` is the only gate.
+enforced — `maxCells` is the only gate. v0.18.5 ships two known advisories
+([GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6),
+[GHSA-5pgg-2g8v-p4x9](https://github.com/advisories/GHSA-5pgg-2g8v-p4x9)) — see
+[advisories.md](advisories.md).
 
 ## /docx
 
@@ -91,7 +103,7 @@ enforced — `maxCells` is the only gate.
 
 | Route | Body / query | Returns |
 | --- | --- | --- |
-| `POST /pptx/build` | JSON `{ layout?, theme?, metadata?, slides: [{ background?, notes?, elements: […] }] }` — elements: text, shape, image, chart, table; chart types bar/line/pie/scatter (≥2 series required) | `application/vnd.openxmlformats-officedocument.presentationml.presentation` attachment |
+| `POST /pptx/build` | JSON `{ layout?, theme?, metadata?, slides: [{ background?, notes?, elements: […] }] }` — elements: text, shape, image, chart, table; chart types bar/bar3d/line/pie/doughnut/area/scatter/radar, 1–50 series per chart | `application/vnd.openxmlformats-officedocument.presentationml.presentation` attachment |
 | `POST /pptx/extract` | Binary .pptx | Slide tree (text runs with formatting, images, shapes, tables, charts, speaker notes); `{ format: 'pptx', metadata, structure: { slides: […] } }` |
 | `POST /pptx/metadata` | Binary .pptx | docProps/core.xml + app.xml merged (title, author, company, company, slide count, …) |
 
@@ -103,15 +115,16 @@ the parent reports success — a builder failure answers 500, never a torn file.
 
 | Route | Body / query | Returns |
 | --- | --- | --- |
-| `POST /pdf/build` | JSON `{ metadata?, pages: [{ size?: 'a4', 'letter', 'legal', 'tabloid', margin?, orientation?, elements: […] }] }` — elements: text, line, rect, ellipse, image, table (cells with colSpan/rowSpan), field (AcroForm text/checkbox), pageNumber, pageBreak; optional TTF/OTF embedded fonts | `application/pdf` attachment (`document.pdf`), `x-file-hash` set, outbound bytes metered |
-| `POST /pdf/extract` | Binary .pdf; query: `mergePages` (default true) | Extracted text (`unpdf`/`pdfjs`), info dict (`Title`, `Author`, `Subject`, `Creator`, `Keywords`, `Producer`, `CreationDate`, `ModDate`, `PDFFormatVersion`), page count, per-page object counts |
-| `POST /pdf/metadata` | Binary .pdf | The same info dict plus derived facts (encrypted?, tagged?, has AcroForm?, linearized?) |
+| `POST /pdf/build` | JSON `{ metadata?, pages: [{ size?: 'a4', 'letter', 'legal', 'tabloid', margin?, orientation?, elements: […] }] }` — elements: text, line, rect, ellipse, image, table (cells with colSpan/rowSpan), field (AcroForm text/checkbox), pageNumber, pageBreak; body-level `embeddedFonts: [{ name, data (base64) }]` referenced from elements via `font` | `application/pdf` attachment (`export.pdf`) |
+| `POST /pdf/extract` | Binary .pdf (no options; page text always comes per page) | `{ format: 'pdf', metadata: { author, creationDate, creator, keywords, modificationDate, producer, subject, title }, pageCount, structure: { pages: [{ page, text }] }, text }` — documents over 500 pages answer `400 PDF_TOO_MANY_PAGES` |
+| `POST /pdf/metadata` | Binary .pdf | `{ author, creationDate, creator, encrypted, keywords, modificationDate, orientation, pageCount, pageSize: { width, height }, producer, subject, title }` |
 
 Font rules: by default text is encoded in Windows-1252 (WinAnsi) — characters
-outside that range are rejected with `PDF_TEXT_NOT_REPRESENTABLE`. Pass an
-embedded font (`font: {…}` per element, or `globalFont` on the page) to encode
-arbitrary Unicode; the font is subset and embedded, and `.notdef` glyphs are
-kept so the subset stays valid for PDF embedding.
+outside that range are rejected with `PDF_TEXT_NOT_REPRESENTABLE`. Pass a
+body-level `embeddedFonts` entry (`{ name, data }`, base64 TTF/OTF) and
+reference it from an element's `font` to encode arbitrary Unicode; the font is
+subset and embedded, and `.notdef` glyphs are kept so the subset stays valid
+for PDF embedding.
 
 ## /font
 
@@ -149,16 +162,10 @@ through byte-identically (no pure-JS KTX2 encoder ships in this repo).
 
 ## Fixture fonts and models
 
-Unit and e2e fixtures live in `packages/backend/assets/`:
-
-- `assets/fonts/tiny.{ttf,ttc,woff,woff2}` — 14-glyph subsets (TinySans/TinySerif
-  members for the collection case). `tiny-dup.ttf` maps NBSP to the `A` glyph
-  (back-map test). `tiny-empty.ttc` and `tiny-no-os2.ttf` cover the
-  reject-without-OOXML and missing-OS/2 error paths.
-- `assets/models/tiny.glb` — 1 KB reference triangle mesh.
-
-Regenerate tolerances: none of these files should ever grow. If a fixture must
-change, commit the new binary deliberately and update `test/assets/` hashes.
+Unit and e2e fixtures live in `packages/backend/assets/` and are documented in
+`assets/README.md` (provenance, generation commands and redistribution notes).
+The tiny fixtures are all under ~20 KB; `DejaVuSans.ttf` (WinAnsi-complete,
+for PDF embedding and Unicode tests) is committed under the DejaVu license.
 
 ## Tested surface
 

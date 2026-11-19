@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{ts,html}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{ts,html}\"",
+    "test:full": "vitest run"
   },
   "devDependencies": {
     "@astryxdesign/core": "^0.7.16",

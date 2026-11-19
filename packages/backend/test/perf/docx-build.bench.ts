@@ -42,8 +42,9 @@ const build = (payload: DocxBuildType): DocxDocument =>
   });
 
 describe('docx build (elements + pack)', () => {
+  const payload = makePayload();
   bench('builds and packs a 120-paragraph document', async () => {
-    const document = build(makePayload());
+    const document = build(payload);
     const bytes = await Packer.toBuffer(document);
     if (bytes.length < 1024) {
       throw new Error('docx unexpectedly small');

@@ -334,7 +334,6 @@ const commentSchema = z
   .strict();
 
 /** Body of `POST /docx/build`. */
-/** Body of `POST /docx/build`. */
 export const DocxBuildSchema = z
   .object({
     /** Comments; each is appended at the end of the document with an id reference. */

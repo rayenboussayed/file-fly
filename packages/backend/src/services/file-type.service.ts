@@ -5,6 +5,7 @@ import { Readable } from 'node:stream';
 
 import { NormalizedClsService } from './normalized-cls.service.js';
 
+/** File-type sniffing helpers shared by the signature gates. */
 @Injectable()
 export class FileTypeService {
   constructor(private readonly normalizedCls: NormalizedClsService) {}

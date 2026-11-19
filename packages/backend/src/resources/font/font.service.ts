@@ -161,7 +161,7 @@ const metadataOf = (font: fontkit.Font, format: string, collection: string[]) =>
   xHeight: font.xHeight,
 });
 
-/** Font feature service. */
+/** Font feature service: parses sfnt containers (metadata, extraction, shaping, subsetting). */
 @Injectable()
 export class FontService {
   constructor(private readonly cls: NormalizedClsService) {}
@@ -187,7 +187,8 @@ export class FontService {
         else codePointsOf.set(glyph.id, [cp]);
       }
       const count = font.numGlyphs;
-      const ceiling = query.limit ?? count;
+      // Default to 10 000 glyphs so an unread query cannot serialize 65k records; explicit `limit` wins.
+      const ceiling = query.limit ?? Math.min(count, 10_000);
       const out: Array<Record<string, unknown>> = [];
       for (let id = 0; id < Math.min(count, ceiling); id += 1) {
         const glyph = font.getGlyph(id);

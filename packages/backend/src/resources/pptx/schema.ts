@@ -53,14 +53,17 @@ const runSchema = z
     underline: z.boolean().optional(),
   })
   .strict();
+/** A text run in the build payload. */
 export type RunType = z.infer<typeof runSchema>;
 
-const baseElementSchema = z.object({
-  h: positiveInches,
-  w: positiveInches,
-  x: inches,
-  y: inches,
-});
+const baseElementSchema = z
+  .object({
+    h: positiveInches,
+    w: positiveInches,
+    x: inches,
+    y: inches,
+  })
+  .strict();
 
 /** A text box with one or more runs. */
 const textSchema = baseElementSchema.extend({
@@ -347,6 +350,7 @@ const elementSchema = z.discriminatedUnion('type', [
   imageSchema,
   chartSchema,
 ]);
+/** A single slide element in the build payload. */
 export type ElementType = z.infer<typeof elementSchema>;
 
 const backgroundSchema = z
@@ -390,6 +394,7 @@ export const PptxBuildSchema = z
       .optional(),
   })
   .strict();
+/** Validated body for `POST /pptx/build`. */
 export type PptxBuildType = z.infer<typeof PptxBuildSchema>;
 
 /** Flat query parameters for `POST /pptx/extract` (empty; rejects junk params). */

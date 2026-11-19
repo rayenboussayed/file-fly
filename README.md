@@ -2,9 +2,9 @@
 
 Stream-first file and media processing, on the fly.
 
-`file-fly` is a [NestJS](https://nestjs.com) + [Fastify](https://fastify.dev) service (strict TypeScript, ESM) that accepts media from a raw upload (`POST`) or a remote URL (`GET ?source=…`) and streams the processed result back — never buffering whole files in memory and never writing temporary media files.
+`file-fly` is a [NestJS](https://nestjs.com) + [Fastify](https://fastify.dev) service (strict TypeScript, ESM) that accepts media from a raw upload (`POST`) or a remote URL (`GET ?source=…`) and streams the processed result back — the media routes never buffer whole files and never write temporary media files (the document-family binary routes buffer the capped upload by design).
 
-Under the hood: images are processed with [sharp](https://sharp.pixelplumbing.com/) (libvips), audio and video with [node-av](https://github.com/Brooooooklyn/node-av) (FFmpeg), perceptual fingerprints are computed in WebAssembly (PDQ) or through FFmpeg (Chromaprint), and every payload is scanned with ClamAV before it reaches the pipeline.
+Under the hood: images are processed with [sharp](https://sharp.pixelplumbing.com/) (libvips), audio and video with [node-av](https://github.com/Brooooooklyn/node-av) (FFmpeg), perceptual fingerprints are computed in WebAssembly (PDQ) or through FFmpeg (Chromaprint), and every payload the pipeline parses is scanned with ClamAV first — media routes via `FileScannerInterceptor`, document-family binary routes likewise.
 
 ## Repository layout
 
@@ -25,7 +25,7 @@ npm workspaces monorepo:
 - **Fonts** — metadata, glyph inventory, OpenType shaping and minimal-for-embedding subsetting. `POST /font/{metadata,extract,shape,subset}`
 - **3D models** — GLB metadata, structural extraction, meshopt/draco optimization and container conversion. `POST /model/{metadata,extract,optimize,convert}`
 - **Metadata & statistics** — container/stream metadata and channel-level statistics for image, audio and video. `GET|POST /{image,audio,video}/metadata`, `GET|POST /{image,audio,video}/stats`
-- **Malware scanning** — every media route is scanned with ClamAV (fail-closed) before processing starts; `GET|POST /virus-scan` reports the verdict, `GET|POST /signature` reports the detected file signature.
+- **Malware scanning** — every media route and every document-family binary route is scanned with ClamAV (fail-closed) before processing starts; `GET|POST /virus-scan` reports the verdict, `GET|POST /signature` reports the detected file signature.
 - **Streaming output cache** — filesystem-backed, atomic `tmp → rename` writes, TTL + LRU size cap, background janitor.
 - **Usage metrics** — per-IP request counts, files and bytes in/out, in-flight gauge, latency percentiles (p50/p95/p99), cache hit rate and scan verdicts, stored in SQLite (`node:sqlite`) with hourly rollups and a retention sweep.
 - **Metrics dashboard** — a React SPA served at `/` by the backend (Vite + Astryx + TanStack Router/Query/Charts), polling `GET /metrics` every 5 seconds. See [docs/metrics.md](docs/metrics.md).
@@ -44,8 +44,8 @@ request (raw body upload or ?source=<url> download)
   → chunked response with backpressure
 ```
 
-- No full in-memory buffering: input streams through the interceptors into worker threads; output streams back chunked with backpressure.
-- No temporary media files; a crashed writer can only leave `*.tmp` files behind, which the janitor removes after `CACHE_TMP_MAX_AGE_MS`.
+- No full in-memory buffering (media routes): input streams through the interceptors into worker threads; output streams back chunked with backpressure. The document-family binary routes buffer the upload in memory (≤ 25 MiB) to parse it.
+- No temporary media files; the one exception is the screenshot probe, which pipes stdin to a self-deleting `CACHE_DIR/<uuid>.tmp` (0o600) in a `finally`. A crashed writer can only leave orphaned `*.tmp` files behind, which the janitor removes after `CACHE_TMP_MAX_AGE_MS`.
 - Cache keys are a SHA-256 of the NUL-joined base key / filename / worker payload; entries are evicted by TTL (`CACHE_TTL_MS`) and by total size (`CACHE_MAX_BYTES`, LRU).
 - Fingerprint (`/dna`) responses are served through the same cache.
 
@@ -202,7 +202,8 @@ All configuration is via environment variables. Values are validated with zod at
 | `CLAMAV_HOST` | unset | clamd host. **Unset ⇒ virus scanning is skipped** (one warning); production deployments must set it |
 | `CLAMAV_PORT` | unset | clamd port; must be set together with `CLAMAV_HOST` |
 | `CLAMAV_TIMEOUT_MS` | `60000` | clamd socket connect timeout |
-| `CLAMAV_MAX_BYTES` | `26214400` (25 MiB) | Larger bodies are rejected `413` before scanning |
+| `CLAMAV_MAX_BYTES` | `26214400` (25 MiB) | Larger bodies are rejected `413` before scanning; also the hard cap for unsized media streams and remote downloads |
+| `EGRESS_ALLOWLIST` | unset | Comma-separated bare hostnames the `source=` download path may fetch (dotted suffixes allowed for subdomains); when EGRESS_ALLOWLIST is unset, loopback/private/link-local/CGNAT literals are refused; when set, the allowlist is authoritative. Scheme is restricted to http/https; client credentials (authorization, cookie, x-*) are never forwarded to the remote origin |
 | `TESSERACT_DIR` | `<CACHE_DIR>/tesseract` | tesseract.js language data directory |
 | `TESSERACT_POOL_SIZE` | `2` | OCR worker pool size (1–8) |
 | `TESSERACT_PRELOAD` | `eng` | Languages preloaded at startup |
@@ -247,8 +248,8 @@ Supported output formats: `webm`, `matroska`, `mpegts`, `mp3`, `ogg`, `adts`, `f
 
 Hard limits:
 
-- No full input or output buffering.
-- No temporary media files.
+- No full input or output buffering (media routes).
+- No temporary media files (except the self-cleaning screenshot probe noted above).
 - Plain `mp4` / `mov` input with a trailing `moov` atom is rejected with a 4xx error.
 - Codec/container pairings are validated before streaming.
 - Worker input probing is bounded to 5MB.

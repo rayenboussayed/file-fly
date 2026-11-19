@@ -13,6 +13,9 @@ import { CACHE_DIR } from '@/constants/fs.js';
  * @param keyParts - Key parts to join with NUL and hash, as the service's `keyFor` would.
  * @returns The absolute cache file path for those key parts.
  */
+/** Tag the service mixes into the key when workerData carries no operation/inputFormat. */
+const NULL_TAG = JSON.stringify({ inputFormat: null, operation: null });
+
 const binPath = (keyParts: readonly string[]): string =>
   join(CACHE_DIR, `${createHash('sha256').update(keyParts.join('\0')).digest('hex')}.bin`);
 
@@ -88,9 +91,9 @@ describe('WorkerService', () => {
   beforeEach(async () => {
     // The unit config does not override CACHE_DIR; drop this spec's entries from the real one.
     await Promise.all([
-      fs.rm(binPath(['cache-key', './m.js', 'null']), { force: true }),
-      fs.rm(binPath(['cache-key', './other.js', 'null']), { force: true }),
-      fs.rm(binPath(['fail-key', './fail.js', 'null']), { force: true }),
+      fs.rm(binPath(['cache-key', './m.js', NULL_TAG]), { force: true }),
+      fs.rm(binPath(['cache-key', './other.js', NULL_TAG]), { force: true }),
+      fs.rm(binPath(['fail-key', './fail.js', NULL_TAG]), { force: true }),
     ]).then(() => undefined);
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
@@ -150,12 +153,12 @@ describe('WorkerService', () => {
     expect(['end', 'error']).toContain(outcome);
     // No entry may be left behind for a failed worker.
      
-    await expect(fs.stat(binPath(['fail-key', './fail.js', 'null']))).rejects.toThrow();
+    await expect(fs.stat(binPath(['fail-key', './fail.js', NULL_TAG]))).rejects.toThrow();
   });
 });
 describe('WorkerService coverage branches', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['base-key', './m.js', 'null']), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => undefined);
      
     await fs.mkdir(CACHE_DIR, { recursive: true });
   });
@@ -171,9 +174,9 @@ describe('WorkerService coverage branches', () => {
     const service = new WorkerService(cls);
     const result = await service.createWorker('./m.js', { workerData: { a: 1 } });
     expect(result).toBeTruthy();
-    await fs.rm(binPath(['base-key', './m.js', 'null']), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => undefined);
     // trigger a cache hit using a real entry with deterministic path
-    const cachePath = binPath(['base-key', './m.js', 'null']);
+    const cachePath = binPath(['base-key', './m.js', NULL_TAG]);
  
     await fs.writeFile(cachePath, 'cached');
     const cls2 = {
@@ -191,7 +194,7 @@ describe('WorkerService coverage branches', () => {
 
 describe('WorkerService cache hits and worker errors', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['hit-key', './hit.js', 'null']), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['hit-key', './hit.js', NULL_TAG]), { force: true }).catch(() => undefined);
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
   });
@@ -212,7 +215,7 @@ describe('WorkerService cache hits and worker errors', () => {
   }) as never;
 
   it('records a hit and refreshes the entry mtime on cache reads', async () => {
-    const pathInCache = binPath(['hit-key', './hit.js', 'null']);
+    const pathInCache = binPath(['hit-key', './hit.js', NULL_TAG]);
     await fs.mkdir(CACHE_DIR, { recursive: true });
     await fs.writeFile(pathInCache, 'cached-bytes');
     const old = new Date(Date.now() - 60 * 60 * 1000);
@@ -248,8 +251,8 @@ describe('WorkerService cache hits and worker errors', () => {
 
 describe('WorkerService onError and stderr cap branches', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['onerror-key', './onerror.js', 'null']), { force: true }).catch(() => undefined);
-    await fs.rm(binPath(['onerror-key', './onerror.js', 'null']), { force: true, recursive: true }).catch(() => undefined);
+    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true, recursive: true }).catch(() => undefined);
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
   });
@@ -257,7 +260,7 @@ describe('WorkerService onError and stderr cap branches', () => {
   it('logs and continues when the cache write target is unusable', async () => {
     // Pre-create the cache path as a directory: the cache write fails, the
     // worker still produces output (nothing is served from cache).
-    await fs.mkdir(binPath(['onerror-key', './onerror.js', 'null']), { recursive: true });
+    await fs.mkdir(binPath(['onerror-key', './onerror.js', NULL_TAG]), { recursive: true });
     const cls = {
       cacheKey: () => ({ get: () => 'onerror-key', set: (v: unknown) => v }),
       cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
@@ -313,13 +316,13 @@ describe('WorkerService debug-branch assertions', () => {
   beforeEach(async () => {
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
-    await fs.rm(binPath(['spy-key', './spy.js', 'null']), { force: true, recursive: true }).catch(() => undefined);
-    await fs.rm(binPath(['spy-key', './spy.js', 'null']), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true, recursive: true }).catch(() => undefined);
+    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true }).catch(() => undefined);
   });
 
   it('logs cache-write failures via the onError debug branch', async () => {
     // Pre-create the cache path as a directory so the StreamCache write fails.
-    await fs.mkdir(binPath(['spy-key', './spy.js', 'null']), { recursive: true });
+    await fs.mkdir(binPath(['spy-key', './spy.js', NULL_TAG]), { recursive: true });
 
     const cls = {
       cacheKey: () => ({ get: () => 'spy-key', set: (v: unknown) => v }),
@@ -351,7 +354,7 @@ describe('WorkerService debug-branch assertions', () => {
       expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('cache write failed'));
     });
     // The rollback removed the temp file: the pre-created directory is empty.
-    expect(await fs.readdir(binPath(['spy-key', './spy.js', 'null']))).toEqual([]);
+    expect(await fs.readdir(binPath(['spy-key', './spy.js', NULL_TAG]))).toEqual([]);
   });
 
   it('destroys the stdin branch when the upload source errors mid-stream', async () => {

@@ -26,6 +26,7 @@ import { openMediaSource } from '../utils/open-source.js';
 const generateCacheKey = (options: unknown): string =>
   djb2(superjson.stringify(options)).toString();
 
+/** Probes the upload’s file signature, stamps the CLS store (signature, hash, cache key) and publishes the probe. */
 @Injectable()
 export class FileParserInterceptor implements NestInterceptor {
   constructor(
@@ -95,9 +96,9 @@ export class FileParserInterceptor implements NestInterceptor {
  * stay intact for its sibling branch. Chunks beyond the prefix are discarded
  * in the same pass. Resolves as soon as the prefix is hashed (or EOF is
  * reached); the full remainder is dropped without resolving the caller.
- * @param stream Description.
- * @param size Description.
- * @returns Result.
+ * @param stream - The readable branch to hash (left intact).
+ * @param size - Maximum number of bytes to hash.
+ * @returns SHA-512 hex of the hashed prefix (or entire) bytes.
  */
 async function prefixHash(stream: Readable, size: number) {
   const hash = createHash('sha512');

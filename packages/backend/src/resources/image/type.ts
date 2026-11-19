@@ -27,6 +27,7 @@ export interface ImageOcrResult {
   text: string;
 }
 
+/** Worker-thread payload for the image worker; discriminated on `operation`. */
 export type ImageWorkerData =
   | {
       operation: 'metadata' | 'stats';

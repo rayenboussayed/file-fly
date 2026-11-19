@@ -7,6 +7,7 @@ import { StreamCache } from 'jutilities/node/stream/cache';
 import { tee } from 'jutilities/node/stream/tee';
 import { toBuffer } from 'jutilities/to';
 import fs from 'node:fs';
+import os from 'node:os';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { Worker } from 'node:worker_threads';
@@ -17,11 +18,52 @@ import { NormalizedClsService } from './normalized-cls.service.js';
 
 const MAX_STDERR_BYTES = 64 * 1024;
 
+/**
+ * Environment for spawned worker threads: only what first-party workers need
+ * (paths, locales, log level, node/tmp dirs). Secrets such as METRICS_TOKEN,
+ * AUTH_* or ClamAV credentials never cross into a worker.
+ */
+const WORKER_ENV_KEYS = [
+  'CACHE_DIR',
+  'HOME',
+  'LANG',
+  'LC_ALL',
+  'LOG_LEVEL',
+  'NODE_ENV',
+  'PATH',
+  'TESSERACT_DIR',
+  'TESSERACT_POOL_SIZE',
+  'TESSERACT_PRELOAD',
+  'TESSERACT_RECYCLE_JOBS',
+  'TESSERACT_TIMEOUT_MS',
+  'TEMP',
+  'TMP',
+  'TMPDIR',
+] as const;
+
+/**
+ * Builds the worker environment from WORKER_ENV_KEYS.
+ * @returns A fresh env record; FILE_FLY_WORKER is always set to '1'.
+ */
+const workerEnv = (): Record<string, string> => {
+  const env: Record<string, string> = {};
+  const allowlist = new Set<string>(WORKER_ENV_KEYS);
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value === undefined || !allowlist.has(key)) continue;
+    // eslint-disable-next-line security/detect-object-injection -- keys are matched against a hardcoded allowlist; user input never reaches this access
+    env[key] = value;
+  }
+  env.FILE_FLY_WORKER = '1';
+  return env;
+};
+
+/** Options for spawning a worker thread. */
 export interface CreateWorkerOptions {
   /** Passed to the worker AND mixed into the cache key (operation, payload...). */
   workerData?: unknown;
 }
 
+/** Spawns sibling worker threads for CPU-heavy media/document work and serves their output (with a shared stream cache). */
 @Injectable()
 export class WorkerService {
   private readonly cache = new StreamCache({
@@ -34,6 +76,11 @@ export class WorkerService {
   private readonly inflight = new Map<string, Promise<void>>();
 
   private readonly logger = new Logger(WorkerService.name);
+
+  /** Upper bound on concurrent worker threads; excess createWorker calls queue instead of forking unboundedly. */
+  private readonly maxWorkers = Math.max(2, (os.cpus()?.length ?? 4) - 1);
+  private runningWorkers = 0;
+  private readonly workerWaiters: Array<() => void> = [];
 
   constructor(private readonly cls: NormalizedClsService) {}
 
@@ -71,7 +118,18 @@ export class WorkerService {
     }
 
     if (key) this.cls.cacheOutcome().set('miss');
-    return this.spawn(filename, options, source, key);
+    return await this.spawn(filename, options, source, key);
+  }
+
+  /**
+   * Waits until a worker slot is free, then takes it.
+   */
+  private async acquireWorkerSlot(): Promise<void> {
+    while (this.runningWorkers >= this.maxWorkers) {
+       
+      await new Promise<void>((resolve) => this.workerWaiters.push(resolve));
+    }
+    this.runningWorkers += 1;
   }
 
   /**
@@ -82,7 +140,15 @@ export class WorkerService {
    * @returns The composite cache key.
    */
   private keyFor(baseKey: string, filename: string, workerData: unknown): string {
-    return [baseKey, filename, JSON.stringify(workerData ?? null)].join('\0');
+    // baseKey already encodes the request payload (file hash, query, body digest);
+    // re-serializing the whole workerData here would duplicate it in memory for
+    // no extra discrimination. The operation/inputFormat tag is all a consumer needs.
+    const data = (workerData ?? {}) as Record<string, unknown>;
+    const tag = JSON.stringify({
+      inputFormat: typeof data.inputFormat === 'string' ? data.inputFormat : null,
+      operation: typeof data.operation === 'string' ? data.operation : null,
+    });
+    return [baseKey, filename, tag].join('\0');
   }
 
   /**
@@ -95,6 +161,7 @@ export class WorkerService {
    * @param succeeded Worker exit status.
    */
   private persist(key: string, branch: Readable, succeeded: Promise<boolean>): void {
+    // Assigned synchronously by the Promise executor below, before any await.
     let release!: () => void;
     this.inflight.set(
       key,
@@ -129,19 +196,35 @@ export class WorkerService {
       });
   }
 
-  private spawn(
+  /**
+   * Releases a worker slot, waking one queued caller if any.
+   */
+  private releaseWorkerSlot(): void {
+    this.runningWorkers -= 1;
+    const waiter = this.workerWaiters.shift();
+    if (waiter) waiter();
+  }
+
+  private async spawn(
     filename: string,
     options: CreateWorkerOptions,
     source: Readable | undefined,
     key: string | undefined,
-  ): Readable {
-    const worker = new Worker(filename, {
-      env: { ...process.env, FILE_FLY_WORKER: '1' },
-      stderr: true,
-      stdin: true,
-      stdout: true,
-      workerData: options.workerData,
-    });
+  ): Promise<Readable> {
+    await this.acquireWorkerSlot();
+    let worker: Worker;
+    try {
+      worker = new Worker(filename, {
+        env: workerEnv(),
+        stderr: true,
+        stdin: true,
+        stdout: true,
+        workerData: options.workerData,
+      });
+    } catch (error) {
+      this.releaseWorkerSlot();
+      throw error;
+    }
 
     // Never `throw` from an event handler: it becomes an uncaught exception.
     // Destroying stdout propagates the error to whoever consumes the stream.
@@ -173,6 +256,7 @@ export class WorkerService {
         settle(false);
       });
       worker.once('exit', (code) => {
+        this.releaseWorkerSlot();
         // let late stderr chunks land before we look at them
         setImmediate(() => {
           if (code !== 0) {
@@ -191,14 +275,16 @@ export class WorkerService {
       // NOTE: the request signal fires as soon as the client finishes sending
       // (IncomingMessage closes), which would kill the pipeline mid-upload —
       // it is intentionally not used here.
-      void pipeline(source, worker.stdin!).catch((error: unknown) => {
+      // stdin is available because the Worker is spawned with stdin: true.
+      void pipeline(source, worker.stdin as NonNullable<typeof worker.stdin>).catch((error: unknown) => {
         // The worker may stop reading once it has what it needs (e.g. just the
         // container header): drop the branch instead of failing the worker output.
         this.logger.debug(`worker stdin closed: ${String(error)}`);
         if (!source.destroyed) source.destroy();
       });
     } else {
-      worker.stdin!.end();
+      // stdin is available because the Worker is spawned with stdin: true.
+      (worker.stdin as NonNullable<typeof worker.stdin>).end();
     }
 
     if (!key) return worker.stdout;

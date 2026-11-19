@@ -88,15 +88,6 @@ export const collectByLocalName = (node: unknown, localName: string): unknown[] 
   return found;
 };
 
-/**
-export const collectByKey = (node: unknown, key: string): unknown[] => {
-  const found: unknown[] = [];
-  walkXml(node, (entryKey, value) => {
-    if (entryKey !== key) return;
-    for (const item of Array.isArray(value) ? value : [value]) found.push(item);
-  });
-  return found;
-};
  
 /**
  * A <w:t>/<a:t> node may be a plain string or { '#text': string } when attributes are kept.

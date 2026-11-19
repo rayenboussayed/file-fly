@@ -1,3 +1,11 @@
+## Members
+
+<dl>
+<dt><a href="#FileParserInterceptor">FileParserInterceptor</a></dt>
+<dd><p>Probes the upload’s file signature, stamps the CLS store (signature, hash, cache key) and publishes the probe.</p>
+</dd>
+</dl>
+
 ## Functions
 
 <dl>
@@ -14,6 +22,14 @@ reached); the full remainder is dropped without resolving the caller.</p>
 </dd>
 </dl>
 
+<a name="FileParserInterceptor"></a>
+
+## FileParserInterceptor
+Probes the upload’s file signature, stamps the CLS store (signature, hash, cache key) and publishes the probe.
+
+**Kind**: global variable  
+src: packages/backend/src/interceptors/file-parser.interceptor.ts:31  
+dist: packages/backend/dist/interceptors/file-parser.interceptor.js:51 (approx.)
 <a name="generateCacheKey"></a>
 
 ## generateCacheKey(options) ⇒ <code>string</code>
@@ -40,12 +56,12 @@ in the same pass. Resolves as soon as the prefix is hashed (or EOF is
 reached); the full remainder is dropped without resolving the caller.
 
 **Kind**: global function  
-**Returns**: <code>Promise&lt;string&gt;</code> - Result.  
+**Returns**: <code>Promise&lt;string&gt;</code> - SHA-512 hex of the hashed prefix (or entire) bytes.  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| stream | <code>Readable</code> | Description. |
-| size | <code>number</code> | Description. |
+| stream | <code>Readable</code> | The readable branch to hash (left intact). |
+| size | <code>number</code> | Maximum number of bytes to hash. |
 
-src: packages/backend/src/interceptors/file-parser.interceptor.ts:102  
-dist: packages/backend/dist/interceptors/file-parser.interceptor.js:71
+src: packages/backend/src/interceptors/file-parser.interceptor.ts:103  
+dist: packages/backend/dist/interceptors/file-parser.interceptor.js:126 (approx.)

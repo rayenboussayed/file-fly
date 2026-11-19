@@ -35,16 +35,7 @@ full names (<code>@_r:id</code>, <code>@_id</code>).</p>
 
 <dl>
 <dt><a href="#textValue">textValue(value)</a> ⇒ <code>string</code></dt>
-<dd><p>export const collectByKey = (node: unknown, key: string): unknown[] =&gt; {
-  const found: unknown[] = [];
-  walkXml(node, (entryKey, value) =&gt; {
-    if (entryKey !== key) return;
-    for (const item of Array.isArray(value) ? value : [value]) found.push(item);
-  });
-  return found;
-};</p>
-<p>/**
-A &lt;w:t&gt;/&lt;a:t&gt; node may be a plain string or { &#39;#text&#39;: string } when attributes are kept.</p>
+<dd><p>A &lt;w:t&gt;/&lt;a:t&gt; node may be a plain string or { &#39;#text&#39;: string } when attributes are kept.</p>
 </dd>
 </dl>
 
@@ -139,7 +130,7 @@ Concatenated text of every <w:t>/<a:t> under a node (attributes ignored).
 | --- | --- | --- |
 | node | <code>unknown</code> | The parsed XML node (or subtree). |
 
-src: packages/backend/src/services/ooxml-xml.ts:120  
+src: packages/backend/src/services/ooxml-xml.ts:111  
 dist: packages/backend/dist/services/ooxml-xml.js:69
 <a name="collectRelationships"></a>
 
@@ -153,21 +144,11 @@ Maps r:id to its target for a .rels part.
 | --- | --- | --- |
 | relsXml | <code>string</code> | The raw rels XML, or undefined. |
 
-src: packages/backend/src/services/ooxml-xml.ts:143  
+src: packages/backend/src/services/ooxml-xml.ts:134  
 dist: packages/backend/dist/services/ooxml-xml.js:80
 <a name="textValue"></a>
 
 ## textValue(value) ⇒ <code>string</code>
-export const collectByKey = (node: unknown, key: string): unknown[] => {
-  const found: unknown[] = [];
-  walkXml(node, (entryKey, value) => {
-    if (entryKey !== key) return;
-    for (const item of Array.isArray(value) ? value : [value]) found.push(item);
-  });
-  return found;
-};
- 
-/**
 A <w:t>/<a:t> node may be a plain string or { '#text': string } when attributes are kept.
 
 **Kind**: global function  
@@ -177,5 +158,5 @@ A <w:t>/<a:t> node may be a plain string or { '#text': string } when attributes 
 | --- | --- | --- |
 | value | <code>unknown</code> | The text node value. |
 
-src: packages/backend/src/services/ooxml-xml.ts:106  
+src: packages/backend/src/services/ooxml-xml.ts:97  
 dist: packages/backend/dist/services/ooxml-xml.js:59

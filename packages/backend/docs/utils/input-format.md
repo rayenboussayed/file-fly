@@ -35,11 +35,11 @@ dist: packages/backend/dist/utils/input-format.js:2
 Resolve a detected file signature to an FFmpeg demuxer format name.
 
 **Kind**: global function  
-**Returns**: <code>string</code> - Result.  
+**Returns**: <code>string</code> - The FFmpeg demuxer format name, or undefined when unknown.  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| signature | <code>FileTypeResult</code> | Description. |
+| signature | <code>FileTypeResult</code> | Detected file-type signature of the upload. |
 
 src: packages/backend/src/utils/input-format.ts:104  
 dist: packages/backend/dist/utils/input-format.js:86

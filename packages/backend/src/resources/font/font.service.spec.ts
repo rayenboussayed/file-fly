@@ -7,7 +7,7 @@ import { FontService } from './font.service.js';
 import { FONT_MIMES, type FontMetaType, isFontMime } from './schema.js';
 
 const fontBuffer = () =>
-  fs.readFileSync('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf');
+  fs.readFileSync('assets/fonts/DejaVuSans.ttf');
 
 const makeService = (body: Buffer, contentType = 'font/ttf') => {
   const stream = Readable.from([body]);

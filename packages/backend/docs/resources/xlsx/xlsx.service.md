@@ -1,3 +1,11 @@
+## Members
+
+<dl>
+<dt><a href="#XlsxService">XlsxService</a></dt>
+<dd><p>XLSX feature service: builds workbooks and parses/metadata-inspects uploads.</p>
+</dd>
+</dl>
+
 ## Constants
 
 <dl>
@@ -10,6 +18,9 @@
 <dt><a href="#UNSAFE_FORMULA">UNSAFE_FORMULA</a></dt>
 <dd><p>Formulas with DDE or remote-execution payloads are refused; ordinary functions pass through.
 Anchored at ^ with optional leading whitespace; <code>!cmd|...</code> style payloads are also refused.</p>
+</dd>
+<dt><a href="#MAX_RECORDS">MAX_RECORDS</a></dt>
+<dd><p>Maximum number of row records <code>/xlsx/extract</code> returns (defense-in-depth with the maxCells census).</p>
 </dd>
 </dl>
 
@@ -40,9 +51,6 @@ Applies the OOXML zip-bomb caps and a worksheet cell ceiling before SheetJS sees
 <dt><a href="#assertSafeCell">assertSafeCell(cell)</a></dt>
 <dd><p>Rejects cell objects whose formula opens a code-execution vector on file open.</p>
 </dd>
-<dt><a href="#findSheet">findSheet(sheets, name)</a> ⇒ <code>XLSX.WorkSheet</code></dt>
-<dd><p>Looks up a worksheet by exact name without prototype-index access.</p>
-</dd>
 <dt><a href="#sheetIndex">sheetIndex(names, sheet)</a> ⇒ <code>number</code></dt>
 <dd><p>Finds the sheet index by name or number; throws 400 when absent.
 Exact names win over numeric indices, so a sheet called &quot;2024&quot; is addressable by name.</p>
@@ -58,6 +66,67 @@ Exact names win over numeric indices, so a sheet called &quot;2024&quot; is addr
 </dd>
 </dl>
 
+<a name="XlsxService"></a>
+
+## XlsxService
+XLSX feature service: builds workbooks and parses/metadata-inspects uploads.
+
+**Kind**: global variable  
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:213  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:132
+
+* [XlsxService](#XlsxService)
+    * [.build(body)](#XlsxService+build) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
+    * [.extract(query)](#XlsxService+extract) ⇒ <code>Promise&lt;{ records: unknown[]; sheet: string; truncated: boolean; } \| { records: unknown[]; sheet: string; truncated?: undefined; }&gt;</code>
+    * [.metadata(query)](#XlsxService+metadata) ⇒ <code>Promise&lt;{ custprops: object; definedNames: { name: string; ref: string; sheet: number; }[]; props: XLSX.FullProperties; sheets: { autofilter: boolean; cells: number; cols: number; formulas: number; hidden: boolean; merges: number; name: string; ref: string; rows: number; types: { [k: string]: number; }; }[]; totalCells: number; }&gt;</code>
+
+<a name="XlsxService+build"></a>
+
+### xlsxService.build(body) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
+Builds a workbook from the payload and returns the .xlsx bytes.
+Cell objects pass through to SheetJS (formulas, number formats, links, comments).
+Styles, images, charts and panes are SheetJS Pro-only and not supported.
+
+**Kind**: instance method of [<code>XlsxService</code>](#XlsxService)  
+**Returns**: <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code> - The workbook bytes.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| body | <code>{ sheets: { [x: string]: any; rows: (Record&lt;string, string \| number \| boolean \| { [x: string]: unknown; c?: { [x: string]: unknown; a: string; t: string; }[]; f?: string; l?: { [x: string]: unknown; Target?: string; Tooltip?: string; }; t?: &quot;b&quot; \| &quot;n&quot; \| &quot;s&quot; \| &quot;d&quot; \| &quot;e&quot; \| &quot;z&quot;; v?: unknown; z?: string; }&gt; \| (string \| number \| boolean \| { [x: string]: unknown; c?: { [x: string]: unknown; a: string; t: string; }[]; f?: string; l?: { [x: string]: unknown; Target?: string; Tooltip?: string; }; t?: &quot;b&quot; \| &quot;n&quot; \| &quot;s&quot; \| &quot;d&quot; \| &quot;e&quot; \| &quot;z&quot;; v?: unknown; z?: string; })[])[]; cellDates?: boolean; cols?: { [x: string]: unknown; hidden?: boolean; level?: number; wch?: number; width?: number; wpx?: number; }[]; columns?: string[]; merges?: any[]; sheetVisibility?: 0 \| 1 \| 2; }[]; workbook?: { [x: string]: unknown; Names?: { [x: string]: unknown; Name: string; Ref: string; Sheet?: number; }[]; Props?: { [x: string]: unknown; Author?: string; Category?: string; Comments?: string; Company?: string; CreatedDate?: Date; Keywords?: string; Manager?: string; ModifiedBy?: string; ModifiedDate?: Date; Subject?: string; Title?: string; }; WBProps?: { [x: string]: unknown; CodeName?: string; date1904?: boolean; filterPrivacy?: boolean; }; }; }</code> | Validated build payload. |
+
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:223  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:137
+<a name="XlsxService+extract"></a>
+
+### xlsxService.extract(query) ⇒ <code>Promise&lt;{ records: unknown[]; sheet: string; truncated: boolean; } \| { records: unknown[]; sheet: string; truncated?: undefined; }&gt;</code>
+Extracts one sheet as typed JSON. Object rows need a header: pass
+`header=1` (AOA) for raw rows, `header=A` for column letters, or a
+comma-separated header list; omit `header` to use the first row as keys.
+
+**Kind**: instance method of [<code>XlsxService</code>](#XlsxService)  
+**Returns**: <code>Promise&lt;{ records: unknown[]; sheet: string; truncated: boolean; } \| { records: unknown[]; sheet: string; truncated?: undefined; }&gt;</code> - The sheet name plus the records.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| query | <code>{ [x: string]: any; maxCells: number; raw: boolean; blankrows?: boolean; skipHidden?: boolean; }</code> | Validated flat reader options. |
+
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:271  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:177
+<a name="XlsxService+metadata"></a>
+
+### xlsxService.metadata(query) ⇒ <code>Promise&lt;{ custprops: object; definedNames: { name: string; ref: string; sheet: number; }[]; props: XLSX.FullProperties; sheets: { autofilter: boolean; cells: number; cols: number; formulas: number; hidden: boolean; merges: number; name: string; ref: string; rows: number; types: { [k: string]: number; }; }[]; totalCells: number; }&gt;</code>
+Structural metadata for an uploaded workbook: dims, counts, props, names,
+formula inventory and a per-type cell census, capped at `maxCells`.
+
+**Kind**: instance method of [<code>XlsxService</code>](#XlsxService)  
+**Returns**: <code>Promise&lt;{ custprops: object; definedNames: { name: string; ref: string; sheet: number; }[]; props: XLSX.FullProperties; sheets: { autofilter: boolean; cells: number; cols: number; formulas: number; hidden: boolean; merges: number; name: string; ref: string; rows: number; types: { [k: string]: number; }; }[]; totalCells: number; }&gt;</code> - The metadata document.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| query | <code>{ maxCells: number; }</code> | Validated flat metadata options. |
+
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:329  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:229
 <a name="SPREADSHEET_MIME"></a>
 
 ## SPREADSHEET\_MIME
@@ -83,6 +152,14 @@ Anchored at ^ with optional leading whitespace; `!cmd|...` style payloads are al
 **Kind**: global constant  
 src: packages/backend/src/resources/xlsx/xlsx.service.ts:108  
 dist: packages/backend/dist/resources/xlsx/xlsx.service.js:66
+<a name="MAX_RECORDS"></a>
+
+## MAX\_RECORDS
+Maximum number of row records `/xlsx/extract` returns (defense-in-depth with the maxCells census).
+
+**Kind**: global constant  
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:174  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:104
 <a name="assertXlsxSignature"></a>
 
 ## assertXlsxSignature(buffer) ⇒ <code>Promise&lt;void&gt;</code>
@@ -159,7 +236,7 @@ Walks every cell once and rejects unsafe formulas.
 | --- | --- | --- |
 | sheets | <code>{ [x: string]: any; rows: (Record&lt;string, string \| number \| boolean \| { [x: string]: unknown; c?: { [x: string]: unknown; a: string; t: string; }[]; f?: string; l?: { [x: string]: unknown; Target?: string; Tooltip?: string; }; t?: &quot;b&quot; \| &quot;n&quot; \| &quot;s&quot; \| &quot;d&quot; \| &quot;e&quot; \| &quot;z&quot;; v?: unknown; z?: string; }&gt; \| (string \| number \| boolean \| { [x: string]: unknown; c?: { [x: string]: unknown; a: string; t: string; }[]; f?: string; l?: { [x: string]: unknown; Target?: string; Tooltip?: string; }; t?: &quot;b&quot; \| &quot;n&quot; \| &quot;s&quot; \| &quot;d&quot; \| &quot;e&quot; \| &quot;z&quot;; v?: unknown; z?: string; })[])[]; cellDates?: boolean; cols?: { [x: string]: unknown; hidden?: boolean; level?: number; wch?: number; width?: number; wpx?: number; }[]; columns?: string[]; merges?: any[]; sheetVisibility?: 0 \| 1 \| 2; }[]</code> | The validated sheet descriptors. |
 
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:119  
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:120  
 dist: packages/backend/dist/resources/xlsx/xlsx.service.js:72
 <a name="assertSafeFormula"></a>
 
@@ -172,7 +249,7 @@ Rejects a formula string with a code-execution vector.
 | --- | --- | --- |
 | f | <code>string</code> | The formula, without a leading equals sign. |
 
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:133  
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:134  
 dist: packages/backend/dist/resources/xlsx/xlsx.service.js:81
 <a name="assertSafeCell"></a>
 
@@ -185,23 +262,8 @@ Rejects cell objects whose formula opens a code-execution vector on file open.
 | --- | --- | --- |
 | cell | <code>unknown</code> | One candidate cell (passed through by the build payload). |
 
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:154  
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:155  
 dist: packages/backend/dist/resources/xlsx/xlsx.service.js:97
-<a name="findSheet"></a>
-
-## findSheet(sheets, name) ⇒ <code>XLSX.WorkSheet</code>
-Looks up a worksheet by exact name without prototype-index access.
-
-**Kind**: global function  
-**Returns**: <code>XLSX.WorkSheet</code> - The worksheet, or undefined when absent.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| sheets | <code>Record&lt;string, XLSX.WorkSheet&gt;</code> | The workbook's worksheet map. |
-| name | <code>string</code> | Exact sheet name to find. |
-
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:166  
-dist: packages/backend/dist/resources/xlsx/xlsx.service.js:104
 <a name="sheetIndex"></a>
 
 ## sheetIndex(names, sheet) ⇒ <code>number</code>
@@ -216,8 +278,8 @@ Exact names win over numeric indices, so a sheet called "2024" is addressable by
 | names | <code>string[]</code> | The workbook's ordered sheet names. |
 | sheet | <code>string</code> | Name or 0-based index; undefined means the first sheet. |
 
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:179  
-dist: packages/backend/dist/resources/xlsx/xlsx.service.js:105
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:191  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:111
 <a name="buildSheet"></a>
 
 ## buildSheet(sheet) ⇒ <code>XLSX.WorkSheet</code>
@@ -230,8 +292,8 @@ Builds one worksheet from the payload's sheet options.
 | --- | --- | --- |
 | sheet | <code>{ [x: string]: any; rows: (Record&lt;string, string \| number \| boolean \| { [x: string]: unknown; c?: { [x: string]: unknown; a: string; t: string; }[]; f?: string; l?: { [x: string]: unknown; Target?: string; Tooltip?: string; }; t?: &quot;b&quot; \| &quot;n&quot; \| &quot;s&quot; \| &quot;d&quot; \| &quot;e&quot; \| &quot;z&quot;; v?: unknown; z?: string; }&gt; \| (string \| number \| boolean \| { [x: string]: unknown; c?: { [x: string]: unknown; a: string; t: string; }[]; f?: string; l?: { [x: string]: unknown; Target?: string; Tooltip?: string; }; t?: &quot;b&quot; \| &quot;n&quot; \| &quot;s&quot; \| &quot;d&quot; \| &quot;e&quot; \| &quot;z&quot;; v?: unknown; z?: string; })[])[]; cellDates?: boolean; cols?: { [x: string]: unknown; hidden?: boolean; level?: number; wch?: number; width?: number; wpx?: number; }[]; columns?: string[]; merges?: any[]; sheetVisibility?: 0 \| 1 \| 2; }</code> | The validated sheet descriptor. |
 
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:390  
-dist: packages/backend/dist/resources/xlsx/xlsx.service.js:297
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:410  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:308
 <a name="values2cells"></a>
 
 ## values2cells(row, columns) ⇒ <code>Record&lt;string, unknown&gt;</code>
@@ -245,8 +307,8 @@ Strips prototype-polluting keys from object rows (json_to_sheet does not).
 | row | <code>Record&lt;string, unknown&gt;</code> | The raw object row. |
 | columns | <code>string[]</code> | Optional column-order lock; keys not listed are dropped. |
 
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:422  
-dist: packages/backend/dist/resources/xlsx/xlsx.service.js:326
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:442  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:337
 <a name="emptyTypes"></a>
 
 ## emptyTypes() ⇒ <code>Map&lt;string, number&gt;</code>
@@ -254,5 +316,5 @@ Zeroed per-type census for a sheet.
 
 **Kind**: global function  
 **Returns**: <code>Map&lt;string, number&gt;</code> - A zeroed map from SheetJS cell type tag to count.  
-src: packages/backend/src/resources/xlsx/xlsx.service.ts:442  
-dist: packages/backend/dist/resources/xlsx/xlsx.service.js:338
+src: packages/backend/src/resources/xlsx/xlsx.service.ts:462  
+dist: packages/backend/dist/resources/xlsx/xlsx.service.js:349

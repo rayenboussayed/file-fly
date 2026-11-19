@@ -130,7 +130,7 @@ dist: packages/backend/dist/resources/xlsx/schema.js:48
 Workbook-global defined names (`x` in expressions, scoped via `Sheet`).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/xlsx/schema.ts:88  
+src: packages/backend/src/resources/xlsx/schema.ts:89  
 dist: packages/backend/dist/resources/xlsx/schema.js:56
 <a name="header"></a>
 
@@ -138,7 +138,7 @@ dist: packages/backend/dist/resources/xlsx/schema.js:56
 1 = AOA rows, `A` = column-letter keys, or comma-separated custom headers.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/xlsx/schema.ts:139  
+src: packages/backend/src/resources/xlsx/schema.ts:141  
 dist: packages/backend/dist/resources/xlsx/schema.js:98
 <a name="maxCells"></a>
 
@@ -146,7 +146,7 @@ dist: packages/backend/dist/resources/xlsx/schema.js:98
 Reject packages whose worksheets carry more cells than this; bounds parse cost.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/xlsx/schema.ts:141  
+src: packages/backend/src/resources/xlsx/schema.ts:143  
 dist: packages/backend/dist/resources/xlsx/schema.js:99
 <a name="sheet"></a>
 
@@ -154,7 +154,7 @@ dist: packages/backend/dist/resources/xlsx/schema.js:99
 Sheet name or 0-based index.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/xlsx/schema.ts:144  
+src: packages/backend/src/resources/xlsx/schema.ts:146  
 dist: packages/backend/dist/resources/xlsx/schema.js:101
 <a name="maxCells"></a>
 
@@ -162,7 +162,7 @@ dist: packages/backend/dist/resources/xlsx/schema.js:101
 Reject archives whose cells exceed this count (checked before SheetJS parses).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/xlsx/schema.ts:152  
+src: packages/backend/src/resources/xlsx/schema.ts:155  
 dist: packages/backend/dist/resources/xlsx/schema.js:105
 <a name="cellSchema"></a>
 
@@ -178,7 +178,7 @@ dist: packages/backend/dist/resources/xlsx/schema.js:3
 Body of `POST /xlsx/build`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/xlsx/schema.ts:82  
+src: packages/backend/src/resources/xlsx/schema.ts:83  
 dist: packages/backend/dist/resources/xlsx/schema.js:51
 <a name="XlsxExtractSchema"></a>
 
@@ -187,7 +187,7 @@ Flat query parameters for `POST /xlsx/extract`.
 The raw .xlsx travels in the body; everything here is a reader option.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/xlsx/schema.ts:135  
+src: packages/backend/src/resources/xlsx/schema.ts:137  
 dist: packages/backend/dist/resources/xlsx/schema.js:95
 <a name="XlsxMetadataSchema"></a>
 
@@ -195,5 +195,5 @@ dist: packages/backend/dist/resources/xlsx/schema.js:95
 Flat query parameters for `POST /xlsx/metadata`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/xlsx/schema.ts:150  
+src: packages/backend/src/resources/xlsx/schema.ts:153  
 dist: packages/backend/dist/resources/xlsx/schema.js:104

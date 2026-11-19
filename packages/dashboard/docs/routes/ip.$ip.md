@@ -28,4 +28,4 @@ Reads the route param and renders the IP detail page.
 
 **Kind**: global function  
 **Returns**: <code>import(&quot;react&quot;).JSX.Element</code> - The IP detail page element.  
-src: packages/dashboard/src/routes/ip.$ip.tsx:17  
+src: packages/dashboard/src/routes/ip.$ip.tsx:14  

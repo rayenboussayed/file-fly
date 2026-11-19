@@ -78,7 +78,7 @@ vi.mock('fontkit', async () => {
 
 import { FontService } from './font.service.js';
 
-const fixture = () => fs.readFileSync('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf');
+const fixture = () => fs.readFileSync('assets/fonts/DejaVuSans.ttf');
 
 const makeService = (body: Buffer) => {
   const stream = Readable.from([body]);

@@ -68,7 +68,7 @@ dist: packages/backend/dist/resources/model/schema.js:12
 `glb`: binary container. `gltf`: self-contained JSON container with data URIs.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/model/schema.ts:30  
+src: packages/backend/src/resources/model/schema.ts:31  
 dist: packages/backend/dist/resources/model/schema.js:17
 <a name="MODEL_MIME"></a>
 
@@ -100,7 +100,7 @@ dist: packages/backend/dist/resources/model/schema.js:4
 Flat query parameters for `POST /model/convert`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:27  
+src: packages/backend/src/resources/model/schema.ts:28  
 dist: packages/backend/dist/resources/model/schema.js:15
 <a name="ModelMetadataSchema"></a>
 
@@ -108,7 +108,7 @@ dist: packages/backend/dist/resources/model/schema.js:15
 Flat query parameters for `POST /model/metadata` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:36  
+src: packages/backend/src/resources/model/schema.ts:38  
 dist: packages/backend/dist/resources/model/schema.js:20
 <a name="ModelExtractSchema"></a>
 
@@ -116,5 +116,5 @@ dist: packages/backend/dist/resources/model/schema.js:20
 Flat query parameters for `POST /model/extract` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:38  
+src: packages/backend/src/resources/model/schema.ts:40  
 dist: packages/backend/dist/resources/model/schema.js:21

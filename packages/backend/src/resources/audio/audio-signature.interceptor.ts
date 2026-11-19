@@ -9,6 +9,7 @@ import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { FileTypeService } from '../../services/file-type.service.js';
 
+/** Rejects /audio requests whose probed signature is not an audio mime (runs after the signature scan). */
 @Injectable()
 export class AudioSignatureInterceptor implements NestInterceptor {
   constructor(

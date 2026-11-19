@@ -1,103 +1,101 @@
-import fs from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
+import { Readable } from 'node:stream';
+import sharp from 'sharp';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+
+// The worker module runs startImageWorker() at import time; with no operation
+// in workerData the dispatch is a deterministic no-op. Tests below call
+// runImageWorker explicitly with their own operation payload.
+vi.mock('node:worker_threads', () => ({ workerData: {} }));
 
 import { runImageWorker } from './worker/index.js';
 
-const hoisted = vi.hoisted(() => ({ workerData: { operation: 'metadata' } as Record<string, unknown> }));
-vi.mock('node:worker_threads', () => ({ workerData: hoisted.workerData }));
+/**
+ * A tiny synthetic JPEG (64x48, blue with a white 16x16 square): large enough
+ * for every sharp operation in the worker, small enough to keep the suite fast
+ * and deterministic.
+ */
+let tinyJpeg: Buffer;
+
+beforeAll(async () => {
+  const square = await sharp({
+    create: { background: { b: 255, g: 255, r: 255 }, channels: 3, height: 16, width: 16 },
+  }).jpeg().toBuffer();
+  tinyJpeg = await sharp({
+    create: { background: { b: 200, g: 120, r: 20 }, channels: 3, height: 48, width: 64 },
+  })
+    .composite([{ input: square, left: 8, top: 8 }])
+    .jpeg()
+    .toBuffer();
+});
+
+/**
+ * A capturing stdout Writable: `writes` accumulates chunks, `finished` resolves on `end`.
+ * @returns The writes, the sink and the completion promise.
+ */
+const capturingStdout = () => {
+  const writes: Buffer[] = [];
+  let resolveFinished!: () => void;
+  const finished = new Promise<void>((resolve) => {
+    resolveFinished = resolve;
+  });
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const stdout = new (require('node:stream').Writable)({
+    write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+      writes.push(Buffer.from(chunk as Buffer));
+      callback();
+    },
+  });
+  stdout.on('finish', () => resolveFinished());
+  stdout.on('error', () => resolveFinished());
+  return { finished, stdout, writes };
+};
+
+/**
+ * Points stdin/stdout at the tiny fixture and a capturing sink, then runs the worker with explicit data.
+ * @param data - Worker-thread data (`operation` and optional payload) passed to the worker.
+ * @returns The captured stdout chunks.
+ */
+const run = async (data: Record<string, unknown>) => {
+  Object.defineProperty(process, 'stdin', { value: Readable.from(tinyJpeg), writable: true });
+  const cap = capturingStdout();
+  Object.defineProperty(process, 'stdout', { value: cap.stdout, writable: true });
+  await runImageWorker(data as never);
+  await Promise.race([cap.finished, new Promise<void>((resolve) => { setTimeout(resolve, 30000); })]);
+  return cap.writes;
+};
 
 describe('image worker', () => {
-  const run = async (operation: string, timeout = 2000) => {
-    hoisted.workerData = { operation };
-    vi.resetModules();
-    const input = fs.createReadStream('assets/images/image-0.jpg');
-    input.on('error', () => undefined);
-    Object.defineProperty(process, 'stdin', { value: input, writable: true });
-    const writes: Buffer[] = [];
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
-      write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
-        writes.push(Buffer.from(chunk as BufferEncoding));
-        callback();
-      },
-      writev(_chunks: { chunk: unknown; encoding: BufferEncoding }[], callback: (error?: Error | null) => void) {
-        callback();
-      },
-    });
-    stdout.on('error', () => undefined);
-    Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
-    try {
-      await import('./worker/index.js');
-// eslint-disable-next-line deslint/no-empty-catch
-    } catch {
-      // worker may complete asynchronously; ignore.
-    }
-    await new Promise((resolve) => {
-      setTimeout(resolve, timeout);
-    });
-    return writes;
-  };
-
   it('covers metadata operation', async () => {
-    await run('metadata');
-// eslint-disable-next-line sonarjs/no-trivial-assertions
-    expect(true).toBe(true);
+    const writes = await run({ operation: 'metadata' });
+    const parsed = JSON.parse(Buffer.concat(writes).toString('utf8')) as {
+      format: string;
+      height: number;
+      width: number;
+    };
+    expect(parsed.width).toBe(64);
+    expect(parsed.height).toBe(48);
+    expect(parsed.format).toBe('jpeg');
   }, 30000);
 
   it('covers stats operation', async () => {
-    await run('stats');
-// eslint-disable-next-line sonarjs/no-trivial-assertions
-    expect(true).toBe(true);
+    const writes = await run({ operation: 'stats' });
+    const parsed = JSON.parse(Buffer.concat(writes).toString('utf8')) as {
+      channels: Array<{ mean: number; stdev: number }>;
+      entropy: number;
+    };
+    expect(parsed.channels.length).toBeGreaterThan(0);
+    expect(typeof parsed.channels[0]?.mean).toBe('number');
+    expect(typeof parsed.entropy).toBe('number');
   }, 30000);
 
-// eslint-disable-next-line sonarjs/assertions-in-tests
-  it('covers processor operation', async () => {
-    hoisted.workerData = { operation: 'processor', payload: {} };
-    vi.resetModules();
-    const input = fs.createReadStream('assets/images/image-0.jpg');
-    input.on('error', () => undefined);
-    Object.defineProperty(process, 'stdin', { value: input, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
-      write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
-        callback();
-      },
-    });
-    stdout.on('error', () => undefined);
-    Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
-    await import('./worker/index.js');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  it('covers processor operation and emits a jpeg', async () => {
+    const writes = await run({ operation: 'processor', payload: { format: 'jpeg', height: 24, width: 32 } });
+    expect(writes.length).toBeGreaterThan(0);
+    expect(Buffer.concat(writes).subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]));
   }, 30000);
 
-  // The trim step alone scans the full 5760x8640 (~50MP) asset and takes ~30s.
-// eslint-disable-next-line sonarjs/assertions-in-tests
-  it('covers worker runner and processor options', async () => {
-    const input = fs.createReadStream('assets/images/image-0.jpg');
-    input.on('error', () => undefined);
-    Object.defineProperty(process, 'stdin', { value: input, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
-      write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
-        callback();
-      },
-    });
-    stdout.on('error', () => undefined);
-    Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
-    await runImageWorker({
-      operation: 'metadata',
-      payload: {},
-    } as never).catch(() => undefined).catch(() => undefined);
-    const processorInput = fs.createReadStream('assets/images/image-0.jpg');
-    processorInput.on('error', () => undefined);
-    Object.defineProperty(process, 'stdin', { value: processorInput, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const processorStdout = new (require('node:stream').Writable)({
-      write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
-        callback();
-      },
-    });
-    Object.defineProperty(process, 'stdout', { value: processorStdout, writable: true });
-    await runImageWorker({
+  it('covers the worker runner and every processor option', async () => {
+    const processorWrites = await run({
       operation: 'processor',
       payload: {
         background: '#fff',
@@ -123,19 +121,14 @@ describe('image worker', () => {
         withoutEnlargement: true,
         withoutReduction: true,
       },
-    } as never).catch(() => undefined);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    const statsInput = fs.createReadStream('assets/images/image-0.jpg');
-    statsInput.on('error', () => undefined);
-    Object.defineProperty(process, 'stdin', { value: statsInput, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const statsStdout = new (require('node:stream').Writable)({
-      write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
-        callback();
-      },
     });
-    Object.defineProperty(process, 'stdout', { value: statsStdout, writable: true });
-    await runImageWorker({ operation: 'stats', payload: {} } as never).catch(() => undefined);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-  }, 120000);
+    expect(processorWrites.length).toBeGreaterThan(0);
+    expect(Buffer.concat(processorWrites).subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]));
+
+    const statsWrites = await run({ operation: 'stats' });
+    const parsed = JSON.parse(Buffer.concat(statsWrites).toString('utf8')) as {
+      channels: unknown[];
+    };
+    expect(parsed.channels.length).toBeGreaterThan(0);
+  }, 60000);
 });

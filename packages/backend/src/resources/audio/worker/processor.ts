@@ -15,10 +15,9 @@ import { buildFilters } from './filters.js';
 const data: AudioWorkerData = workerData;
 
 /**
- *
- * @param payload Output settings.
-// eslint-disable-next-line jsdoc/require-param-description
- * @param inputData Description.
+ * Transcodes the upload stdin into the requested format/codec/bitrate and streams it out.
+ * @param payload - Output settings from the request query.
+ * @param inputData - Worker dispatch data (defaults to the spawned worker's workerData).
  */
 export async function processMedia(payload: AudioProcessorType, inputData: AudioWorkerData = data) {
   const format = payload.format ?? 'mp3';
@@ -42,12 +41,14 @@ export async function processMedia(payload: AudioProcessorType, inputData: Audio
     payload.trimStart,
   ].some(Boolean);
 
+  // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
   await using input = await Demuxer.open(process.stdin as never, {
     format: inputData.inputFormat,
     options: { analyzeduration: 5_000_000, probesize: 5_000_000 },
   });
 
   await using output = await Muxer.open(process.stdout, {
+    // isAllowedOutputFormat already narrowed format to a streamable muxer literal
     format: format as MuxerFormat,
     options: format === 'mp4' ? { movflags: MP4_FRAGMENTED_OPTIONS.movflags } : undefined,
   });

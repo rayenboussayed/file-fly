@@ -1,7 +1,6 @@
 import type { Readable } from 'node:stream';
 
 import { Injectable, Logger, UnsupportedMediaTypeException } from '@nestjs/common';
-import { stream2buffer } from 'jutilities/node/stream/buffer';
 import sharp from 'sharp';
 
 import { FileTypeService } from '@/services/file-type.service.js';
@@ -16,7 +15,7 @@ import type { ImageDnaResult, ImageOcrResult } from './type.js';
 
 import { TesseractService } from './tesseract.service.js';
 
-/** Image feature service. */
+/** Image feature service: streams uploads through sharp workers for processing, metadata, DNA, stats and OCR. */
 @Injectable()
 export class ImageService {
   private readonly logger = new Logger(ImageService.name);
@@ -64,7 +63,8 @@ export class ImageService {
     const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
       workerData: { operation: 'metadata' },
     });
-    const buffer = await stream2buffer({ stream: stdout });
+    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
+    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
     return JSON.parse(buffer.toString().trim());
   }
 
@@ -96,7 +96,8 @@ export class ImageService {
     const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
       workerData: { operation: 'stats' },
     });
-    const buffer = await stream2buffer({ stream: stdout });
+    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
+    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
     return JSON.parse(buffer.toString().trim());
   }
 

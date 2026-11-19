@@ -89,13 +89,13 @@ const assertBuildPayload = (body: PptxBuildType): void => {
 const validateTableSpans = (table: Record<string, unknown>): void => {
   const rows = Array.isArray(table['rows']) ? (table['rows'] as unknown[]) : [];
   // pptxgenjs derives <a:tblGrid> from row 0's effective width; wider later rows break the grid.
-  const firstRow = rows[0] as unknown;
-  const gridWidth = rowWidth(firstRow);
+  const gridWidth = rows.length > 0 ? rowWidth(rows[0]) : 0;
   rows.forEach((row, rowIndex) => {
-    if (rowWidth(row) > gridWidth) {
+    const width = rowWidth(row);
+    if (width > gridWidth) {
       throw new BadRequestException({
         code: 'PPTX_ROW_WIDER_THAN_GRID',
-        message: `row ${rowIndex + 1} (width ${rowWidth(row)}) exceeds the table grid width ${gridWidth}`,
+        message: `row ${rowIndex + 1} (width ${width}) exceeds the table grid width ${gridWidth}`,
       });
     }
     if (!Array.isArray(row)) return;
@@ -243,7 +243,7 @@ const collectNotes = (parts: Map<string, Buffer>): string[] => {
     .map((entry) => entry.text);
 };
 
-/** PPTX feature service. */
+/** PPTX feature service: builds decks and parses/metadata-inspects uploads. */
 @Injectable()
 export class PptxService {
   constructor(

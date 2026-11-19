@@ -63,7 +63,7 @@ const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
   return bufferStream(stream, environment.CLAMAV_MAX_BYTES);
 };
 
-/** CSV serialization, parsing and structural statistics. */
+/** CSV feature service: builds CSV from rows and parses/metadata-inspects uploads. */
 @Injectable()
 export class CsvService {
   constructor(private readonly cls: NormalizedClsService) {}
@@ -94,10 +94,10 @@ export class CsvService {
     try {
       const parser = buffer2stream({ buffer }).pipe(parse(options));
       for await (const record of parser) {
-        records.push(record);
-        if (records.length > MAX_RECORDS) {
+        if (records.length >= MAX_RECORDS) {
           throw new RecordCapError(`record cap of ${MAX_RECORDS} exceeded`);
         }
+        records.push(record);
       }
     } catch (error) {
       throw toBadRequest(error);

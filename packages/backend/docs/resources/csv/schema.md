@@ -60,7 +60,7 @@ dist: packages/backend/dist/resources/csv/schema.js:3
 csv-parse options shared by `/csv/extract` and `/csv/metadata` (function-valued options excluded).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/csv/schema.ts:49  
+src: packages/backend/src/resources/csv/schema.ts:50  
 dist: packages/backend/dist/resources/csv/schema.js:34
 <a name="CsvExtractSchema"></a>
 
@@ -69,7 +69,7 @@ Flat query parameters for `POST /csv/extract`.
 The raw CSV travels in the request body; everything here is csv-parse options.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/csv/schema.ts:94  
+src: packages/backend/src/resources/csv/schema.ts:95  
 dist: packages/backend/dist/resources/csv/schema.js:74
 <a name="CsvMetadataSchema"></a>
 
@@ -78,5 +78,5 @@ Flat query parameters for `POST /csv/metadata`.
 `maxRows` caps the per-cell type census; row and column counting always scans the whole file.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/csv/schema.ts:121  
+src: packages/backend/src/resources/csv/schema.ts:123  
 dist: packages/backend/dist/resources/csv/schema.js:94

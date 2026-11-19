@@ -1,14 +1,15 @@
 import type { Readable } from 'node:stream';
 
 import { Injectable, UnsupportedMediaTypeException } from '@nestjs/common';
-import { stream2buffer } from 'jutilities/node/stream/buffer';
 
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
+import { bufferStream } from '@/utils/buffer.js';
 import { toDemuxerFormat } from '@/utils/input-format.js';
 
 import type { AudioProcessorType } from './schema.js';
 
+/** Audio feature service: streams uploads through workers for processing, metadata, DNA fingerprinting and stats. */
 @Injectable()
 export class AudioService {
   constructor(
@@ -25,7 +26,8 @@ export class AudioService {
         operation: 'dna',
       },
     });
-    const buffer = await stream2buffer({ stream: stdout });
+    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
+    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
     return JSON.parse(buffer.toString().trim());
   }
 
@@ -38,7 +40,8 @@ export class AudioService {
         operation: 'metadata',
       },
     });
-    const buffer = await stream2buffer({ stream: stdout });
+    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
+    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
     return JSON.parse(buffer.toString().trim());
   }
 
@@ -65,7 +68,8 @@ export class AudioService {
         operation: 'stats',
       },
     });
-    const buffer = await stream2buffer({ stream: stdout });
+    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
+    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
     return JSON.parse(buffer.toString().trim());
   }
 }

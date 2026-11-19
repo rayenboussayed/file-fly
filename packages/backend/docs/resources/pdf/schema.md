@@ -58,7 +58,7 @@
 <dd><p>Only the plain PDF mime.</p>
 </dd>
 <dt><a href="#PdfBuildSchema">PdfBuildSchema</a></dt>
-<dd><p>Body of <code>POST /pdf/build</code>. Note: total payload is bounded by the 16 MiB JSON body limit.</p>
+<dd><p>Body of <code>POST /pdf/build</code>.</p>
 </dd>
 <dt><a href="#PdfExtractSchema">PdfExtractSchema</a></dt>
 <dd><p>Flat query parameters for <code>POST /pdf/extract</code> (empty; rejects junk params).</p>
@@ -154,7 +154,7 @@ dist: packages/backend/dist/resources/pdf/schema.js:138
 Page margins in points (72 = 1 inch).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pdf/schema.ts:205  
+src: packages/backend/src/resources/pdf/schema.ts:207  
 dist: packages/backend/dist/resources/pdf/schema.js:168
 <a name="creationDate"></a>
 
@@ -162,7 +162,7 @@ dist: packages/backend/dist/resources/pdf/schema.js:168
 ISO-8601 timestamp; pdf-lib keeps it (CreationDate only set when absent).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pdf/schema.ts:223  
+src: packages/backend/src/resources/pdf/schema.ts:225  
 dist: packages/backend/dist/resources/pdf/schema.js:184
 <a name="keywords"></a>
 
@@ -170,7 +170,7 @@ dist: packages/backend/dist/resources/pdf/schema.js:184
 Comma-separated keywords or an array; written as PDF keywords.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pdf/schema.ts:226  
+src: packages/backend/src/resources/pdf/schema.ts:228  
 dist: packages/backend/dist/resources/pdf/schema.js:186
 <a name="data"></a>
 
@@ -178,7 +178,7 @@ dist: packages/backend/dist/resources/pdf/schema.js:186
 Base64-encoded TTF/OTF bytes.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pdf/schema.ts:236  
+src: packages/backend/src/resources/pdf/schema.ts:238  
 dist: packages/backend/dist/resources/pdf/schema.js:194
 <a name="name"></a>
 
@@ -186,7 +186,7 @@ dist: packages/backend/dist/resources/pdf/schema.js:194
 Name referenced by `font` in elements.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pdf/schema.ts:238  
+src: packages/backend/src/resources/pdf/schema.ts:240  
 dist: packages/backend/dist/resources/pdf/schema.js:195
 <a name="embeddedFonts"></a>
 
@@ -194,8 +194,8 @@ dist: packages/backend/dist/resources/pdf/schema.js:195
 Embedded TTF/OTF fonts, referenced by elements via `font`. WinAnsi preflight is skipped for these.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pdf/schema.ts:247  
-dist: packages/backend/dist/resources/pdf/schema.js:200
+src: packages/backend/src/resources/pdf/schema.ts:248  
+dist: packages/backend/dist/resources/pdf/schema.js:218 (approx.)
 <a name="PDF_MIME"></a>
 
 ## PDF\_MIME
@@ -207,24 +207,24 @@ dist: packages/backend/dist/resources/pdf/schema.js:3
 <a name="PdfBuildSchema"></a>
 
 ## PdfBuildSchema
-Body of `POST /pdf/build`. Note: total payload is bounded by the 16 MiB JSON body limit.
+Body of `POST /pdf/build`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pdf/schema.ts:244  
-dist: packages/backend/dist/resources/pdf/schema.js:198
+src: packages/backend/src/resources/pdf/schema.ts:245  
+dist: packages/backend/dist/resources/pdf/schema.js:215 (approx.)
 <a name="PdfExtractSchema"></a>
 
 ## PdfExtractSchema
 Flat query parameters for `POST /pdf/extract` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pdf/schema.ts:269  
-dist: packages/backend/dist/resources/pdf/schema.js:219
+src: packages/backend/src/resources/pdf/schema.ts:272  
+dist: packages/backend/dist/resources/pdf/schema.js:238 (approx.)
 <a name="PdfMetadataSchema"></a>
 
 ## PdfMetadataSchema
 Flat query parameters for `POST /pdf/metadata` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pdf/schema.ts:271  
-dist: packages/backend/dist/resources/pdf/schema.js:220
+src: packages/backend/src/resources/pdf/schema.ts:274  
+dist: packages/backend/dist/resources/pdf/schema.js:240 (approx.)

@@ -25,7 +25,7 @@ export async function screenshot(frames: number[]) {
   const tmp = path.join(CACHE_DIR, `${randomUUID()}.tmp`);
   try {
     // eslint-disable-next-line security/detect-non-literal-fs-filename
-    await streamPipeline(process.stdin, fs.createWriteStream(tmp));
+    await streamPipeline(process.stdin, fs.createWriteStream(tmp, { mode: 0o600 }));
 
     const probe = await Demuxer.open(tmp, { format: data.inputFormat });
     const duration = probe.duration;

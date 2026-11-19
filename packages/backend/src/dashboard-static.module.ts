@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { DashboardStaticService } from './dashboard-static.service.js';
 
-/** Dashboard static serving module; the only provider is the static service. */
+/** Serves the built dashboard (DASHBOARD_DIR, packages/dashboard/dist) as static assets. */
 @Module({
   providers: [DashboardStaticService],
 })

@@ -22,8 +22,10 @@ const makePayload = (): PptxBuildType =>
   }) as unknown as PptxBuildType;
 
 describe('buildPresentation', () => {
+  const payload = makePayload();
   bench('builds a 24-slide deck', async () => {
-    const bytes = await buildPresentation(new PptxGenJs(), makePayload());
+    // PptxGenJs accumulates slides, so each iteration needs a fresh instance.
+    const bytes = await buildPresentation(new PptxGenJs(), payload);
     if (bytes.length < 1024) {
       throw new Error('pptx unexpectedly small');
     }

@@ -6,6 +6,8 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { fileTypeFromBuffer } from 'file-type';
+import { superjson } from 'jutilities/json';
+import { createHash } from 'node:crypto';
 
 import { environment } from '@/environment.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
@@ -187,7 +189,10 @@ const extractOf = (document: Document) => {
     name: scene.getName() || 'unnamed',
     nodes: scene.listChildren().map((node) => walk(node, 0)),
   }));
-  const meshes = root.listMeshes().map((mesh) => ({
+  // Sibling arrays are capped for the same reason as the 10k node fan-out cap: a
+  // pathological (but signature-valid) model could carry tens of thousands of primitives.
+  const ARRAY_CAP = 10_000;
+  const meshes = root.listMeshes().slice(0, ARRAY_CAP).map((mesh) => ({
     name: mesh.getName() || 'unnamed',
     primitives: mesh.listPrimitives().map((primitive) => ({
       attributes: primitive.listSemantics(),
@@ -197,7 +202,7 @@ const extractOf = (document: Document) => {
       ...primitiveStats(primitive),
     })),
   }));
-  const materials = root.listMaterials().map((material) => ({
+  const materials = root.listMaterials().slice(0, ARRAY_CAP).map((material) => ({
     alphaMode: material.getAlphaMode(),
     baseColorFactor: material.getBaseColorFactor(),
     doubleSided: material.getDoubleSided(),
@@ -206,7 +211,7 @@ const extractOf = (document: Document) => {
     name: material.getName() || 'unnamed',
     roughnessFactor: material.getRoughnessFactor(),
   }));
-  const textures = root.listTextures().map((texture) => {
+  const textures = root.listTextures().slice(0, ARRAY_CAP).map((texture) => {
     const image = texture.getImage();
     return {
       bytes: image?.byteLength ?? 0,
@@ -214,12 +219,12 @@ const extractOf = (document: Document) => {
       name: texture.getName() || 'unnamed',
     };
   });
-  const animations = root.listAnimations().map((animation) => ({
+  const animations = root.listAnimations().slice(0, ARRAY_CAP).map((animation) => ({
     channels: animation.listChannels().length,
     name: animation.getName() || 'unnamed',
     samplers: animation.listSamplers().length,
   }));
-  const skins = root.listSkins().map((skin) => ({
+  const skins = root.listSkins().slice(0, ARRAY_CAP).map((skin) => ({
     joints: skin.listJoints().length,
     name: skin.getName() || 'unnamed',
   }));
@@ -234,7 +239,7 @@ const extractOf = (document: Document) => {
   };
 };
 
-/** glTF feature service. */
+/** Model feature service: glTF/GLB inspection, extraction, optimization (DRACO/Meshopt) and conversion. */
 @Injectable()
 export class ModelService {
   constructor(
@@ -294,9 +299,12 @@ export class ModelService {
     // relying on the worker failing into a destroyed stream and a 500). The worker re-parses;
     // the double parse costs ~10% of optimize time and buys the honest 400.
     await readModel(buffer);
-    // No cache key is set: WorkerService keys on the serialized workerData, which here
-    // would mean stringifying the entire upload per request. The pptx/docx builds cache
-    // small JSON payloads; a binary upload does not belong in a worker cache key.
+    // Content-addressed cache key: sha256 of the GLB + the optimize options. Repeated
+    // identical optimizes are served/deduplicated from the worker cache/inflight map,
+    // and no binary bytes land in the key itself (only the digest does).
+    this.cls.cacheKey().set(
+      `${createHash('sha256').update(buffer).digest('hex')}:${superjson.stringify(query)}`,
+    );
     const stream = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
       workerData: {
         operation: 'optimize',

@@ -24,6 +24,7 @@ interface FileScanResult {
   viruses: string[];
 }
 
+/** Lazy, typed accessors over the CLS store for the current request context. */
 @Injectable()
 export class NormalizedClsService {
   private readonly mange = lazy(<T>(key: symbol) => {

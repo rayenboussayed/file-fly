@@ -42,8 +42,8 @@ Parses an uploaded CSV into typed JSON records.
 | --- | --- | --- |
 | query | <code>{ [x: string]: any; bom?: boolean; cast?: boolean; cast\_date?: boolean; columns?: boolean \| string[] \| any[]; comment?: string; comment\_no\_infix?: boolean; delimiter\_auto?: boolean; encoding?: &quot;ascii&quot; \| &quot;utf8&quot; \| &quot;utf16le&quot; \| &quot;ucs2&quot; \| &quot;base64&quot; \| &quot;latin1&quot; \| &quot;binary&quot; \| &quot;hex&quot;; escape?: string; from?: number; from\_line?: number; group\_columns\_by\_name?: boolean; ignore\_last\_delimiters?: boolean; ltrim?: boolean; max\_record\_size?: number; quote?: string \| false; relax\_column\_count?: boolean; relax\_column\_count\_less?: boolean; relax\_column\_count\_more?: boolean; relax\_quotes?: boolean; rtrim?: boolean; skip\_empty\_lines?: boolean; skip\_records\_with\_empty\_values?: boolean; skip\_records\_with\_error?: boolean; to?: number; to\_line?: number; trim?: boolean; }</code> | Flat csv-parse options. |
 
-src: packages/backend/src/resources/csv/csv.controller.ts:64  
-dist: packages/backend/dist/resources/csv/csv.controller.js:31
+src: packages/backend/src/resources/csv/csv.controller.ts:65  
+dist: packages/backend/dist/resources/csv/csv.controller.js:32
 <a name="CsvController+metadata"></a>
 
 ### csvController.metadata(query) ⇒ <code>Promise&lt;{ bom: boolean; columns: number; delimiter: string \| string[] \| Buffer&lt;ArrayBufferLike&gt; \| Buffer&lt;ArrayBufferLike&gt;[]; maxRows: number; perColumn: { index: number; types: Record&lt;&quot;string&quot; \| &quot;number&quot; \| &quot;boolean&quot; \| &quot;date&quot; \| &quot;empty&quot;, number&gt;; }[]; recordDelimiter: string \| string[] \| Buffer&lt;ArrayBufferLike&gt; \| Buffer&lt;ArrayBufferLike&gt;[]; rows: number; truncatedTypes: boolean; }&gt;</code>
@@ -56,5 +56,5 @@ Structural CSV metadata: rows, columns, delimiter, per-column type census.
 | --- | --- | --- |
 | query | <code>{ [x: string]: any; maxRows: number; trim?: boolean; bom?: boolean; escape?: string; quote?: string \| false; cast\_date?: boolean; comment?: string; comment\_no\_infix?: boolean; delimiter\_auto?: boolean; encoding?: &quot;ascii&quot; \| &quot;utf8&quot; \| &quot;utf16le&quot; \| &quot;ucs2&quot; \| &quot;base64&quot; \| &quot;latin1&quot; \| &quot;binary&quot; \| &quot;hex&quot;; max\_record\_size?: number; relax\_column\_count?: boolean; relax\_column\_count\_less?: boolean; relax\_column\_count\_more?: boolean; relax\_quotes?: boolean; skip\_empty\_lines?: boolean; }</code> | Flat csv-parse options plus `maxRows` for the type census. |
 
-src: packages/backend/src/resources/csv/csv.controller.ts:77  
-dist: packages/backend/dist/resources/csv/csv.controller.js:34
+src: packages/backend/src/resources/csv/csv.controller.ts:78  
+dist: packages/backend/dist/resources/csv/csv.controller.js:35
