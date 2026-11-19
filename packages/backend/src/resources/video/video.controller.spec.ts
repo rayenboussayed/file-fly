@@ -18,6 +18,7 @@ describe('VideoController', () => {
   it('covers metadata, stats, main, and screenshot', async () => {
     const processed = Readable.from([]);
     const videoService = {
+      dna: vi.fn(async () => ({ dna: true })),
       metadata: vi.fn(async () => ({ ok: true })),
       processor: vi.fn(async () => processed),
       screenshot: vi.fn(async () => processed),
@@ -33,9 +34,23 @@ describe('VideoController', () => {
     await expect(controller.statsPost()).resolves.toEqual({ stats: true });
     await controller.main(response as never, {} as never);
     expect(videoService.processor).toHaveBeenCalled();
+
+    await expect(controller.dnaGet()).resolves.toEqual({ dna: true });
+    await expect(controller.dnaPost()).resolves.toEqual({ dna: true });
+
+    const getResponse = { raw: rawSink(), type: vi.fn() };
+    await controller.mainGet(getResponse as never, {} as never);
+    await controller.mainPost(getResponse as never, {} as never);
+    expect(videoService.processor).toHaveBeenCalledTimes(3);
+
     const screenshotResponse = { raw: rawSink(), type: vi.fn() };
     await controller.screenshot(screenshotResponse as never, { frames: '1,2' } as never);
     expect(videoService.screenshot).toHaveBeenCalled();
     expect(screenshotResponse.raw.setHeader).toHaveBeenCalledWith('content-type', expect.stringContaining('multipart/mixed'));
+
+    const getScreenshot = { raw: rawSink(), type: vi.fn() };
+    await controller.screenshotGet(getScreenshot as never, { frames: '1' } as never);
+    await controller.screenshotPost(getScreenshot as never, { frames: '1' } as never);
+    expect(videoService.screenshot).toHaveBeenCalledTimes(3);
   });
 });

@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import { PassThrough } from 'node:stream';
+import { Readable } from 'node:stream';
+
 import { describe, expect, it } from 'vitest';
 
 import { FileTypeService } from './file-type.service.js';
@@ -56,5 +58,53 @@ describe('FileTypeService', () => {
     await service.signature({ stream });
 // eslint-disable-next-line sonarjs/prefer-specific-assertions
     expect(stored.length).toBe(1);
+  });
+});
+describe('FileTypeService signature download paths', () => {
+  it('consumes the whole probe branch to EOF once the signature is known', async () => {
+    const cls = { fileSignature: () => ({ set: vi.fn() }) };
+    const service = new FileTypeService(cls as never);
+
+    const pngHeader = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
+      'base64',
+    );
+    // Complete tiny PNG followed by 64 x 1 KB of trailing chunks.
+    const chunks = [
+      pngHeader,
+      ...Array.from({ length: 64 }, () => Buffer.alloc(1024, 0xab)),
+    ];
+    let pulled = 0;
+    async function* counted() {
+      for (const chunk of chunks) {
+        pulled += 1;
+        yield chunk;
+      }
+    }
+    const source = Readable.from(counted());
+
+    await service.signature({ stream: source });
+
+    // The probe pump drains the rest of the stream in the background; wait for it.
+    const deadline = Date.now() + 3_000;
+    while (pulled < chunks.length && Date.now() < deadline) {
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    expect(pulled).toBe(chunks.length);
+  });
+
+  it('destroys the probe branch when the stream errors mid-read', async () => {
+    const cls = { fileSignature: () => ({ set: vi.fn() }) };
+    const service = new FileTypeService(cls as never);
+
+    async function* broken() {
+      yield Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      throw new Error('connection reset');
+    }
+    const source = Readable.from(broken());
+
+    await expect(service.signature({ stream: source })).rejects.toThrow();
+    // The rejected upload is torn down on the service side.
+    expect(source.destroyed).toBe(true);
   });
 });

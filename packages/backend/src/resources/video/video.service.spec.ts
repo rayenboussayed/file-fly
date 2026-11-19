@@ -32,3 +32,40 @@ describe('VideoService', () => {
     await expect(service.metadata()).rejects.toThrow();
   });
 });
+describe('VideoService uncovered paths', () => {
+  it('covers dna with a worker-built response', async () => {
+    const workerService = {
+      createWorker: vi.fn(async () => Readable.from([JSON.stringify({ algorithm: 'vid-pdq' })])),
+    };
+    const service = new VideoService(
+      workerService as never,
+      { fileSignature: () => ({ get: () => ({ ext: 'mp4', mime: 'video/mp4' }) }) } as never,
+      { isVideo: () => true } as never,
+    );
+    await expect(service.dna()).resolves.toEqual({ algorithm: 'vid-pdq' });
+  });
+
+  it('rejects with 415 when the file signature is missing or not video', async () => {
+    const workerService = { createWorker: vi.fn() };
+    const service = new VideoService(
+      workerService as never,
+      { fileSignature: () => ({ get: () => undefined }) } as never,
+      { isVideo: () => true } as never,
+    );
+    await expect(service.dna()).rejects.toMatchObject({ status: 415 });
+    await expect(service.metadata()).rejects.toMatchObject({ status: 415 });
+    await expect(service.stats()).rejects.toMatchObject({ status: 415 });
+    await expect(service.processor({ payload: {} as never })).rejects.toMatchObject({ status: 415 });
+    await expect(service.screenshot({ payload: { frames: [0] } as never })).rejects.toMatchObject({ status: 415 });
+  });
+
+  it('rejects screenshot when the signature is not a video', async () => {
+    const workerService = { createWorker: vi.fn() };
+    const service = new VideoService(
+      workerService as never,
+      { fileSignature: () => ({ get: () => ({ ext: 'png', mime: 'image/png' }) }) } as never,
+      { isVideo: () => false } as never,
+    );
+    await expect(service.screenshot({ payload: { frames: [0] } as never })).rejects.toMatchObject({ status: 415 });
+  });
+});

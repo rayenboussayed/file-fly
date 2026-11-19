@@ -18,6 +18,7 @@ describe('AudioController', () => {
   it('covers metadata, stats, and main', async () => {
     const processed = Readable.from([]);
     const audioService = {
+      dna: vi.fn(async () => ({ dna: true })),
       metadata: vi.fn(async () => ({ ok: true })),
       processor: vi.fn(async () => processed),
       stats: vi.fn(async () => ({ stats: true })),
@@ -32,5 +33,12 @@ describe('AudioController', () => {
     await expect(controller.statsPost()).resolves.toEqual({ stats: true });
     await controller.main(response as never, {} as never);
     expect(audioService.processor).toHaveBeenCalled();
+    await expect(controller.dnaGet()).resolves.toEqual({ dna: true });
+    await expect(controller.dnaPost()).resolves.toEqual({ dna: true });
+
+    const getResponse = { raw: rawSink(), type: vi.fn() };
+    await controller.mainGet(getResponse as never, {} as never);
+    await controller.mainPost(getResponse as never, {} as never);
+    expect(audioService.processor).toHaveBeenCalledTimes(3);
   });
 });
