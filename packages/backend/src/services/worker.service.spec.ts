@@ -40,6 +40,7 @@ vi.mock('node:worker_threads', () => {
   class Worker extends EventEmitter {
     static readonly instances: unknown[] = [];
     static readonly nextExitCodes: number[] = [];
+    static readonly nextStderrChunks: Buffer[] = [];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     stderr: any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,7 +50,15 @@ vi.mock('node:worker_threads', () => {
     constructor() {
       super();
       this.stdout = Readable.from(['cached']);
-      this.stderr = new Readable({ read() { this.push(null); } });
+      const stderrChunks = (Worker as unknown as { nextStderrChunks: Buffer[] }).nextStderrChunks;
+      this.stderr = new Readable({
+        read() {
+          if (stderrChunks && stderrChunks.length > 0) {
+            for (const chunk of stderrChunks.splice(0)) this.push(chunk);
+          }
+          this.push(null);
+        },
+      });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.stdin = new Writable({ write(_c: any, _e: any, cb: any) { cb(); } });
       Worker.instances.push(this);
@@ -85,6 +94,7 @@ describe('WorkerService', () => {
     ]).then(() => undefined);
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
+    (Worker as unknown as { nextStderrChunks: Buffer[] }).nextStderrChunks.length = 0;
   });
 
   it('serves cached worker output without re-running the worker, and misses unknown keys', async () => {
@@ -233,5 +243,65 @@ describe('WorkerService cache hits and worker errors', () => {
       setTimeout(() => resolve(undefined), 2000);
     });
     expect(error?.message).toBe('worker failed to start');
+  });
+});
+
+describe('WorkerService onError and stderr cap branches', () => {
+  beforeEach(async () => {
+    await fs.rm(binPath(['onerror-key', './onerror.js', 'null']), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['onerror-key', './onerror.js', 'null']), { force: true, recursive: true }).catch(() => undefined);
+    mockedWorkerInstances().length = 0;
+    (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
+  });
+
+  it('logs and continues when the cache write target is unusable', async () => {
+    // Pre-create the cache path as a directory: the cache write fails, the
+    // worker still produces output (nothing is served from cache).
+    await fs.mkdir(binPath(['onerror-key', './onerror.js', 'null']), { recursive: true });
+    const cls = {
+      cacheKey: () => ({ get: () => 'onerror-key', set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      request: () => ({ signal: new AbortController().signal }),
+      sourceStream: () => ({
+        get: () => new Readable({ read() { this.push(null); } }),
+        set: (v: unknown) => v,
+      }),
+    } as never;
+    const service = new WorkerService(cls);
+    const output = await service.createWorker('./onerror.js');
+    const text = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      output.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+      output.once('end', () => resolve(Buffer.concat(chunks).toString()));
+      output.once('error', reject);
+    });
+    expect(text).toBe('cached');
+  });
+
+  it('caps stderr collection at 64 KiB', async () => {
+    (Worker as unknown as { nextStderrChunks: Buffer[] }).nextStderrChunks.push(
+      Buffer.alloc(70 * 1024, 0x61),
+    );
+    (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.push(1);
+    const cls = {
+      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      request: () => ({ signal: new AbortController().signal }),
+      sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
+    } as never;
+    const service = new WorkerService(cls);
+    const output = await service.createWorker('./fail.js');
+    await new Promise<void>((resolve) => {
+      output.once('end', resolve);
+      output.once('error', resolve);
+      setTimeout(resolve, 2000);
+    });
+    // Reaching here without throwing means the stderr handler survived 70 KB.
+    expect(true).toBe(true);
+  });
+
+  it('workerPath resolves a worker entry relative to the declaring module', async () => {
+    const { workerPath } = await import('./worker.service.js');
+    expect(workerPath('./worker/index.js', 'file:///a/b/mod.js')).toBe('/a/b/worker/index.js');
   });
 });

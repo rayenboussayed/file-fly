@@ -477,3 +477,40 @@ describe('XlsxService readBody fallbacks and raw mode', () => {
     expect(result.records).toEqual([{ a: 1, b: null }]);
   });
 });
+
+describe('XlsxService.metadata advanced arms', () => {
+  it('detects merges, autofilter and defined names without a sheet', async () => {
+    const workbook = await roundTrip({
+      sheets: [
+        {
+          autofilter: 'A1:B2',
+          merges: ['A1:A2'],
+          rows: [['h', 'x'], [1, 2]],
+        },
+      ],
+    });
+    workbook.Workbook = workbook.Workbook ?? {};
+    workbook.Workbook.Names = [{ Name: 'MyName', Ref: 'People!$A$1' }];
+    const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+    const meta = await serviceFor(bytes).metadata({ maxCells: 1000 });
+    expect(meta.sheets[0]?.autofilter).toBe(true);
+    expect(meta.sheets[0]?.merges).toBe(1);
+    const name = meta.definedNames.find((entry) => entry.name === 'MyName');
+    expect(name).toMatchObject({ name: 'MyName', ref: 'People!$A$1' });
+    expect(name?.sheet).toBeUndefined();
+  });
+
+  it('counts a mixed type census with numbers, strings, dates, booleans and errors', async () => {
+    const workbook = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['s', 'n', 'b', 'd'],
+      ['text', 42, true, new Date('2026-01-02T00:00:00Z')],
+      ['other', 7, false, new Date('2026-01-03T00:00:00Z')],
+    ]);
+    XLSX.utils.book_append_sheet(workbook, ws, 'Sheet1');
+    const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+    const meta = await serviceFor(bytes).metadata({ maxCells: 1000 });
+    expect(meta.sheets[0]?.rows).toBe(3);
+    expect(meta.sheets[0]?.types).toMatchObject({ b: 2, n: 2, s: 6 });
+  });
+});

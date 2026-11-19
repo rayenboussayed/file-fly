@@ -65,7 +65,7 @@ const readBody = async (
   maxCells: number,
 ): Promise<Buffer> => {
   const contentType = String(cls.request()?.headers?.['content-type'] ?? '');
-  const mime = contentType.split(';', 1)[0]?.trim() ?? '';
+  const mime = contentType.split(';', 1)[0]?.trim() ?? ''; // split always yields a first element; the ?? '' is for the type system
   if (mime !== SPREADSHEET_MIME && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for XLSX input`);
   }

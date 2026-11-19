@@ -492,3 +492,181 @@ describe('PptxService validation branches', () => {
     await expect(service.metadata()).rejects.toMatchObject({ status: 415 });
   });
 });
+
+describe('PptxService remaining branches', () => {
+  it('answers 413 when a single entry exceeds the per-entry cap (but total is under it)', async () => {
+    const { zipSync } = await import('fflate');
+    const entry = Buffer.alloc(33 * 1024 * 1024, 0x41);
+    const bytes = Buffer.from(zipSync({
+      '[Content_Types].xml': Buffer.from('<Types/>', 'utf8'),
+      'ppt/presentation.xml': Buffer.from('<p:presentation xmlns:p="p"><p:sldIdLst/></p:presentation>', 'utf8'),
+      'ppt/media/big.bin': entry,
+    }, { level: 0 }));
+    const service = makeService(bytes).service;
+    await expect(service.metadata()).rejects.toMatchObject({ status: 413 });
+  });
+
+  it('accepts an https hyperlink', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const valid = await buildPptxBytes();
+    const service = new PptxService(cls as never, {
+      createWorker: vi.fn(async () => Readable.from([valid])),
+    } as never);
+    await expect(
+      service.build({
+        layout: 'LAYOUT_16x9',
+        slides: [
+          {
+            elements: [
+              {
+                h: 1,
+                runs: [{ hyperlink: { url: 'https://example.com' }, text: 'link' }],
+                type: 'text',
+                w: 4,
+                x: 1,
+                y: 1,
+              },
+            ],
+          },
+        ],
+      }),
+    ).resolves.toBeInstanceOf(Buffer);
+  });
+
+  it('rejects payloads with more than 50k element objects', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const service = new PptxService(cls as never, { createWorker: vi.fn() } as never);
+    const huge = {
+      layout: 'LAYOUT_16x9',
+      slides: [
+        {
+          elements: Array.from({ length: 51_000 }, () => ({
+            type: 'text',
+            runs: [{ text: 'x' }],
+            x: 0,
+            y: 0,
+            w: 1,
+            h: 1,
+          })),
+        },
+      ],
+    } as never;
+    await expect(service.build(huge)).rejects.toMatchObject({ status: 413 });
+  });
+
+  it('tolerates a table whose rows are not arrays', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const valid = await buildPptxBytes();
+    const service = new PptxService(cls as never, {
+      createWorker: vi.fn(async () => Readable.from([valid])),
+    } as never);
+    const rowless = {
+      layout: 'LAYOUT_16x9',
+      slides: [
+        {
+          elements: [
+            { type: 'table', rows: 'not-an-array', x: 0, y: 0, w: 4, h: 2 },
+          ],
+        },
+      ],
+    } as never;
+    await expect(service.build(rowless)).resolves.toBeInstanceOf(Buffer);
+  });
+
+  it('treats a non-array row in a table as zero-width (defensive guard)', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const valid = await buildPptxBytes();
+    const service = new PptxService(cls as never, {
+      createWorker: vi.fn(async () => Readable.from([valid])),
+    } as never);
+    const odd = {
+      layout: 'LAYOUT_16x9',
+      slides: [
+        {
+          elements: [
+            {
+              type: 'table',
+              rows: [['x'], 'not-a-row'],
+              x: 0,
+              y: 0,
+              w: 4,
+              h: 2,
+            },
+          ],
+        },
+      ],
+    } as never;
+    await expect(service.build(odd)).resolves.toBeInstanceOf(Buffer);
+  });
+
+  it('reads spans from options.colspan/rowspan', async () => {
+    const cls = { cacheKey: () => ({ set: vi.fn() }) };
+    const service = new PptxService(cls as never, { createWorker: vi.fn() } as never);
+    await expect(
+      service.build({
+        layout: 'LAYOUT_16x9',
+        slides: [
+          {
+            elements: [
+              {
+                type: 'table',
+                rows: [
+                  [{ text: 'a' }, { text: 'b', options: { colspan: 2 } }],
+                  [{ text: 'c' }, { text: 'd', options: { rowspan: 9 } }],
+                ],
+                x: 0,
+                y: 0,
+                w: 4,
+                h: 2,
+              } as never,
+            ],
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ response: { code: 'PPTX_ROWSPAN_EXCEEDS_ROWS' } });
+  });
+
+  it('sorts numeric-looking notes slide parts after non-numeric ones', async () => {
+    const { zipSync } = await import('fflate');
+    const bytes = Buffer.from(
+      zipSync({
+        '[Content_Types].xml': Buffer.from(
+          '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+            '<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>' +
+            '</Types>',
+          'utf8',
+        ),
+        'ppt/presentation.xml': Buffer.from(
+          '<p:presentation xmlns:p="p" xmlns:r="r"><p:sldIdLst><p:sldId id="256" r:id="rIdX"/></p:sldIdLst></p:presentation>',
+          'utf8',
+        ),
+        'ppt/_rels/presentation.xml.rels': Buffer.from(
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+            '<Relationship Id="rIdX" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>' +
+            '</Relationships>',
+          'utf8',
+        ),
+        'ppt/slides/slide1.xml': Buffer.from(
+          '<p:sld xmlns:p="p"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>x</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
+          'utf8',
+        ),
+        'ppt/notesSlides/notesSlide10.xml': Buffer.from(
+          '<p:notes xmlns:p="p" xmlns:a="a"><p:cSld><p:sp><p:txBody><a:p><a:r><a:t>ten</a:t></a:r></a:p></p:txBody></p:sp></p:cSld></p:notes>',
+          'utf8',
+        ),
+        'ppt/notesSlides/notesSlide2.xml': Buffer.from(
+          '<p:notes xmlns:p="p" xmlns:a="a"><p:cSld><p:sp><p:txBody><a:p><a:r><a:t>two</a:t></a:r></a:p></p:txBody></p:sp></p:cSld></p:notes>',
+          'utf8',
+        ),
+        'ppt/notesSlides/notesSlideX.xml': Buffer.from(
+          '<p:notes xmlns:p="p" xmlns:a="a"><p:cSld><p:sp><p:txBody><a:p><a:r><a:t>zzz</a:t></a:r></a:p></p:txBody></p:sp></p:cSld></p:notes>',
+          'utf8',
+        ),
+      }),
+    );
+    const service = makeService(bytes).service;
+    const result = await service.extract();
+    // Non-numeric suffixes parse to NaN and sort as 0, ahead of numbered slides.
+    expect(result.structure.notes).toEqual(['zzz', 'two', 'ten']);
+  });
+});
