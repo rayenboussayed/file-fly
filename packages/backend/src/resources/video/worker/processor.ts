@@ -1,4 +1,4 @@
-import type { FilterAPI, NamedStages } from 'node-av/api';
+import { FilterAPI, type NamedStages } from 'node-av/api';
 
 import {
   Decoder,
@@ -14,6 +14,7 @@ import {
 import { workerData } from 'node:worker_threads';
 
 import type { MuxerFormat } from '@/constants/av-formats.js';
+import { createWorkerLogger } from '../../../logging/worker-logger.js';
 
 import { isAllowedOutputFormat, MP4_FRAGMENTED_OPTIONS } from '@/utils/capabilities.js';
 
@@ -57,8 +58,15 @@ export async function processMedia(payload: VideoProcessorType) {
     throw new Error('Video processing requires an audio or video stream');
   }
 
+  const logger = createWorkerLogger();
   const videoClip = videoTranscoding && videoStream;
-  const audioClip = audioTranscoding && audioStream;
+  // WebM supports only VP8/VP9/AV1 video and Vorbis/Opus audio; a passthrough
+  // AAC/x264/other audio would fail at the muxer with no useful message.
+  const webmAudioForced = format === 'webm' && audioStream && !audioTranscoding;
+  if (webmAudioForced) {
+    logger.warn('webm container requires opus or vorbis audio; transcoding audio to opus');
+  }
+  const audioClip = (audioTranscoding && audioStream) || webmAudioForced;
 
   if (!videoClip && !audioClip) {
     const control = pipeline(input, output);
@@ -95,9 +103,15 @@ export async function processMedia(payload: VideoProcessorType) {
 
   if (audioClip) {
     const decoder = await Decoder.create(audioStream!);
-    const audioFilters = buildAudioFilters(payload);
+    // Opus mandates 8..48 kHz sample rates and s16/flt samples; fltp is unsupported.
+    const requestedCodec = payload.audioCodec ?? (webmAudioForced ? 'opus' : 'aac');
+    const opusFilters = requestedCodec === 'opus' ? [
+      FilterAPI.create('aresample=48000'),
+      FilterAPI.create('aformat=sample_fmts=flt'),
+    ] : [];
+    const audioFilters = [...opusFilters, ...buildAudioFilters(payload)];
     const encoder = await Encoder.create(
-      payload.audioCodec === 'opus' ? FF_ENCODER_LIBOPUS : FF_ENCODER_AAC,
+      requestedCodec === 'opus' ? FF_ENCODER_LIBOPUS : FF_ENCODER_AAC,
       {
         bitrate: payload.audioBitrate ?? '128k',
         decoder,
@@ -111,10 +125,6 @@ export async function processMedia(payload: VideoProcessorType) {
     stages.audio = [heldDecoder, ...audioFilters, heldEncoder];
   } else {
     stages.audio = 'passthrough';
-  }
-
-  if (audioStream && !audioClip && audioTranscoding === true && !payload.audioNormalize && !payload.audioCodec && !payload.audioBitrate && !payload.audioChannels && !payload.audioSampleRate) {
-    // explicitly forced transcode provided nothing, leave as passthrough.
   }
 
   const control = pipeline(input, stages, output);

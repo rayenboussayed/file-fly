@@ -128,3 +128,63 @@ describe('video worker', () => {
     expect(Buffer.concat(chunks)).toHaveLength(0);
   }, 30000);
 });
+
+describe('video worker processMedia matrix', () => {
+  const runProcessor = async (payload: Record<string, unknown>) => {
+    const chunks = stubStdout();
+    await importWorker({ inputFormat: 'mp4', operation: 'processor', payload });
+    await waitForWorker(15_000);
+    return Buffer.concat(chunks);
+  };
+
+  beforeEach(() => {
+    vi.stubEnv('FILE_FLY_WORKER', '0');
+    stubStdin();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    vi.unstubAllEnvs();
+  });
+
+  it('transcodes to webm (non-mp4 container path)', async () => {
+    const out = await runProcessor({ codec: 'vp9', format: 'webm' });
+    // EBML magic
+    expect(out.subarray(0, 4).toString('hex')).toBe('1a45dfa3');
+  }, 30000);
+
+  it('transcodes both video and audio tracks (opus encoder path)', async () => {
+    const out = await runProcessor({
+      audioBitrate: '128k',
+      audioCodec: 'opus',
+      codec: 'h264',
+      format: 'matroska',
+    });
+    // EBML magic
+    expect(out.subarray(0, 4).toString('hex')).toBe('1a45dfa3');
+  }, 30000);
+
+  it('transcodes only audio when video passes through', async () => {
+    const out = await runProcessor({ audioBitrate: '128k', format: 'mp4' });
+    expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
+  }, 30000);
+
+  it('applies trim and fps filters through the full pipeline', async () => {
+    const out = await runProcessor({
+      format: 'mp4',
+      fps: 5,
+      trimEnd: 1,
+      trimStart: 0.2,
+    });
+    expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
+  }, 30000);
+
+  it('encodes with the vp9 encoder constant', async () => {
+    const out = await runProcessor({
+      codec: 'vp9',
+      format: 'mp4',
+    });
+    expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
+  }, 30000);
+});
