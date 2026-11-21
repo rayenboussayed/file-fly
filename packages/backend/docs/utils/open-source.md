@@ -21,11 +21,14 @@
 <dt><a href="#isPrivateIpv4">isPrivateIpv4(octets)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Whether an IPv4 literal sits in a loopback, private, link-local or CGNAT range.</p>
 </dd>
+<dt><a href="#octetsFromHextets">octetsFromHextets(highHex, lowHex)</a> ⇒ <code>[number, number, number, number]</code></dt>
+<dd><p>Turns two hextets holding an embedded IPv4 address into octets.</p>
+</dd>
 <dt><a href="#ipv4EmbeddedOctets">ipv4EmbeddedOctets(host)</a> ⇒ <code>[number, number, number, number]</code></dt>
-<dd><p>Extracts the embedded IPv4 octets from an IPv6 literal that carries an IPv4
-address in its last 32 bits. Node canonicalizes these to <code>::ffff:X:Y</code>,
-<code>::X:Y</code> (IPv4-compatible) or <code>64:ff9b::X:Y</code> / <code>64:ff9b:1::X:Y</code> (NAT64).
-Network-specific RFC 6052 prefixes with other bit offsets are out of scope.</p>
+<dd><p>Extracts an embedded IPv4 address from the IPv6 forms Node canonicalizes:
+IPv4-mapped and IPv4-translated (<code>::ffff:</code> with optional zero hextets),
+IPv4-compatible (<code>::</code>), NAT64 well-known/local-use, and 6to4 (<code>2002:</code>, which
+embeds the address in the first two hextets after the prefix).</p>
 </dd>
 <dt><a href="#isPrivateIpv6">isPrivateIpv6(host)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/fe80::/10
@@ -82,8 +85,8 @@ dist: packages/backend/dist/utils/open-source.js:8
 Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive.
 
 **Kind**: global constant  
-src: packages/backend/src/utils/open-source.ts:81  
-dist: packages/backend/dist/utils/open-source.js:44
+src: packages/backend/src/utils/open-source.ts:94  
+dist: packages/backend/dist/utils/open-source.js:81 (approx.)
 <a name="ipv4Octets"></a>
 
 ## ipv4Octets(host) ⇒ <code>[number, number, number, number]</code>
@@ -112,13 +115,28 @@ Whether an IPv4 literal sits in a loopback, private, link-local or CGNAT range.
 
 src: packages/backend/src/utils/open-source.ts:34  
 dist: packages/backend/dist/utils/open-source.js:16
+<a name="octetsFromHextets"></a>
+
+## octetsFromHextets(highHex, lowHex) ⇒ <code>[number, number, number, number]</code>
+Turns two hextets holding an embedded IPv4 address into octets.
+
+**Kind**: global function  
+**Returns**: <code>[number, number, number, number]</code> - The four octets, or undefined when either hextet is missing.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| highHex | <code>string</code> | The high 16 bits in hexadecimal. |
+| lowHex | <code>string</code> | The low 16 bits in hexadecimal. |
+
+src: packages/backend/src/utils/open-source.ts:54  
+dist: packages/backend/dist/utils/open-source.js:45 (approx.)
 <a name="ipv4EmbeddedOctets"></a>
 
 ## ipv4EmbeddedOctets(host) ⇒ <code>[number, number, number, number]</code>
-Extracts the embedded IPv4 octets from an IPv6 literal that carries an IPv4
-address in its last 32 bits. Node canonicalizes these to `::ffff:X:Y`,
-`::X:Y` (IPv4-compatible) or `64:ff9b::X:Y` / `64:ff9b:1::X:Y` (NAT64).
-Network-specific RFC 6052 prefixes with other bit offsets are out of scope.
+Extracts an embedded IPv4 address from the IPv6 forms Node canonicalizes:
+IPv4-mapped and IPv4-translated (`::ffff:` with optional zero hextets),
+IPv4-compatible (`::`), NAT64 well-known/local-use, and 6to4 (`2002:`, which
+embeds the address in the first two hextets after the prefix).
 
 **Kind**: global function  
 **Returns**: <code>[number, number, number, number]</code> - The four embedded octets, or undefined for any other host.  
@@ -127,8 +145,8 @@ Network-specific RFC 6052 prefixes with other bit offsets are out of scope.
 | --- | --- | --- |
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
-src: packages/backend/src/utils/open-source.ts:56  
-dist: packages/backend/dist/utils/open-source.js:27
+src: packages/backend/src/utils/open-source.ts:72  
+dist: packages/backend/dist/utils/open-source.js:37
 <a name="isPrivateIpv6"></a>
 
 ## isPrivateIpv6(host) ⇒ <code>boolean</code>
@@ -142,8 +160,8 @@ or embeds a private IPv4 address in a recognized IPv4-embedding prefix.
 | --- | --- | --- |
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
-src: packages/backend/src/utils/open-source.ts:72  
-dist: packages/backend/dist/utils/open-source.js:37
+src: packages/backend/src/utils/open-source.ts:85  
+dist: packages/backend/dist/utils/open-source.js:73 (approx.)
 <a name="assertEgressAllowed"></a>
 
 ## assertEgressAllowed(url)
@@ -165,8 +183,8 @@ such deployments.
 | --- | --- | --- |
 | url | <code>URL</code> | The parsed source URL. |
 
-src: packages/backend/src/utils/open-source.ts:96  
-dist: packages/backend/dist/utils/open-source.js:45
+src: packages/backend/src/utils/open-source.ts:109  
+dist: packages/backend/dist/utils/open-source.js:55
 <a name="openMediaSource"></a>
 
 ## openMediaSource(cls) ⇒ <code>Promise&lt;void&gt;</code>
@@ -198,5 +216,5 @@ self-destructs past the cap for unsized uploads and chunked downloads.
 | --- | --- | --- |
 | cls | <code>NormalizedClsService</code> | The normalized CLS service carrying the current request context. |
 
-src: packages/backend/src/utils/open-source.ts:159  
-dist: packages/backend/dist/utils/open-source.js:77
+src: packages/backend/src/utils/open-source.ts:172  
+dist: packages/backend/dist/utils/open-source.js:89

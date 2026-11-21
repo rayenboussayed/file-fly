@@ -21,7 +21,7 @@ Continuous cache maintenance: TTL, size cap (least-recently-used first), orphan 
 
 **Kind**: global variable  
 src: packages/backend/src/services/cache-janitor.service.ts:27  
-dist: packages/backend/dist/services/cache-janitor.service.js:43 (approx.)
+dist: packages/backend/dist/services/cache-janitor.service.js:13
 <a name="UNDICI_CACHE_PREFIX"></a>
 
 ## UNDICI\_CACHE\_PREFIX
@@ -29,4 +29,4 @@ Sidecars such as `-wal` and `-shm` share the store's file name as a prefix.
 
 **Kind**: global constant  
 src: packages/backend/src/services/cache-janitor.service.ts:23  
-dist: packages/backend/dist/services/cache-janitor.service.js:41 (approx.)
+dist: packages/backend/dist/services/cache-janitor.service.js:12

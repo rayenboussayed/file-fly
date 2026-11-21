@@ -2,7 +2,7 @@ import { PayloadTooLargeException } from '@nestjs/common';
 import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 
-import { bufferStream, ByteCapTransform, parseJsonBuffer } from './buffer.js';
+import { bufferStream, ByteCapTransform, parseJsonBuffer, readWorkerJson } from './buffer.js';
 
 describe('bufferStream', () => {
   it('concatenates a small stream into a single Buffer', async () => {
@@ -56,6 +56,17 @@ describe('parseJsonBuffer', () => {
 
   it('rejects malformed JSON', () => {
     expect(() => parseJsonBuffer(Buffer.from('{not json}'))).toThrow(SyntaxError);
+  });
+});
+
+describe('readWorkerJson', () => {
+  it('parses worker stdout and rejects an oversized payload', async () => {
+    await expect(readWorkerJson(Readable.from([Buffer.from('{"ok":true}')]))).resolves.toEqual({
+      ok: true,
+    });
+    await expect(
+      readWorkerJson(Readable.from([Buffer.alloc(8 * 1024 * 1024 + 1)])),
+    ).rejects.toBeInstanceOf(PayloadTooLargeException);
   });
 });
 

@@ -7,7 +7,10 @@ describe('buildCorsOptions', () => {
   it('allows exactly the auth, content-type and upload-hint request headers', () => {
     expect(buildCorsOptions(undefined).allowedHeaders).toEqual([
       'authorization',
+      'baggage',
       'content-type',
+      'traceparent',
+      'tracestate',
       'x-auth-password',
       'x-auth-username',
       HEADER_X_FILE_HASH,

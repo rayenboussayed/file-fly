@@ -79,4 +79,4 @@ Directory where tesseract.js stores its (gzipped) language data.
 
 **Kind**: global constant  
 src: packages/backend/src/constants/fs.ts:21  
-dist: packages/backend/dist/constants/fs.js:19 (approx.)
+dist: packages/backend/dist/constants/fs.js:10

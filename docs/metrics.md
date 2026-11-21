@@ -99,4 +99,12 @@ The persisted aggregation queries are all key-driven:
 - `perRoute`: `GROUP BY route, name`, plus `GROUP BY route, le` on `metric_hist`.
 - retention sweep: bounded `DELETE … WHERE bucket < ?` on the same primary keys.
 
+Four `CREATE INDEX IF NOT EXISTS` statements run on every open, including a
+version-1 database that predates them. `idx_metric_counter_bucket` serves the
+retention sweep, `idx_metric_counter_name_bucket` serves the `bucket`-filtered
+rollups, and `idx_metric_counter_ip_bucket` / `idx_metric_hist_bucket` serve the
+other two sweeps. Index creation is an optimization: if it fails, the store
+keeps working with the primary-key scans. The unit suite asserts the plans with
+`EXPLAIN QUERY PLAN`.
+
 At ~1k requests/minute with 10 routes and 13 counter names, the live set stays in the low millions of rows for a 35-day window — SQLite handles this trivially; the flush interval is the only hot-path cost.

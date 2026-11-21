@@ -24,8 +24,8 @@ trims, dedupes, sorts; defaults to `['eng']`, caps at 4 codes.
 | --- | --- | --- |
 | raw | <code>string</code> | Raw `lang` query parameter (already regex-validated). |
 
-src: packages/backend/src/resources/image/image.service.ts:110  
-dist: packages/backend/dist/resources/image/image.service.js:90
+src: packages/backend/src/resources/image/image.service.ts:106  
+dist: packages/backend/dist/resources/image/image.service.js:134 (approx.)
 <a name="ImageService+preprocess"></a>
 
 ### imageService.preprocess(input) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -41,5 +41,5 @@ input surfaces as [UnsupportedMediaTypeException](UnsupportedMediaTypeException)
 | --- | --- | --- |
 | input | <code>Buffer&lt;ArrayBufferLike&gt;</code> | Raw (signature-verified) image bytes. |
 
-src: packages/backend/src/resources/image/image.service.ts:131  
-dist: packages/backend/dist/resources/image/image.service.js:101
+src: packages/backend/src/resources/image/image.service.ts:127  
+dist: packages/backend/dist/resources/image/image.service.js:153 (approx.)

@@ -4,11 +4,15 @@ import * as AppHeaders from '@/constants/header.js';
  * Request headers a cross-origin client may send beyond the CORS-safelisted set.
  * The auth pair is included so a separately hosted client can pass the basic-auth
  * perimeter; content-type serves the JSON build routes and the file hash the
- * upload cache hint.
+ * upload cache hint. The W3C trace headers keep cross-origin telemetry working
+ * as documented in the README.
  */
 const allowedCorsHeaders = [
   'authorization',
+  'baggage',
   'content-type',
+  'traceparent',
+  'tracestate',
   'x-auth-password',
   'x-auth-username',
   AppHeaders.HEADER_X_FILE_HASH,

@@ -7,6 +7,8 @@ import { Transform, type TransformCallback } from 'node:stream';
 
 /** Maximum number of bytes buffered from a stream (20 MiB). */
 const MAX_BUFFER_BYTES = 20 * 1024 * 1024;
+/** Maximum JSON payload a worker may write to stdout (8 MiB). */
+const WORKER_JSON_MAX_BYTES = 8 * 1024 * 1024;
 
 /**
  * Passes stream chunks through while rejecting anything past a byte budget.
@@ -63,4 +65,14 @@ export async function bufferStream(
  */
 export function parseJsonBuffer(buffer: Buffer): unknown {
   return JSON.parse(buffer.toString('utf8').trim());
+}
+
+/**
+ * Buffers and parses the small JSON payload a worker writes to stdout.
+ * @param stdout - The worker's stdout stream.
+ * @returns The parsed JSON value.
+ */
+export async function readWorkerJson(stdout: Readable): Promise<unknown> {
+  // A misbehaving worker must not grow stdout unboundedly.
+  return parseJsonBuffer(await bufferStream(stdout, WORKER_JSON_MAX_BYTES));
 }

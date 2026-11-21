@@ -200,6 +200,10 @@ describe('openMediaSource', () => {
     'https://[64:ff9b::7f00:1]/x.jpg',
     'https://[64:ff9b::a9fe:a9fe]/x.jpg',
     'https://[64:ff9b:1::7f00:1]/x.jpg',
+    'https://[::ffff:0:127.0.0.1]/x.jpg',
+    'https://[::ffff:0:0:127.0.0.1]/x.jpg',
+    'https://[2002:7f00:1::]/x.jpg',
+    'https://[2002:c0a8:101::]/x.jpg',
   ])(
     'refuses the private or internal literal %s',
     async (source) => {
@@ -214,6 +218,8 @@ describe('openMediaSource', () => {
     'https://[::cb00:7107]/x.jpg',
     'https://[64:ff9b::cb00:7107]/x.jpg',
     'https://[64:ff9b:1::cb00:7107]/x.jpg',
+    'https://[::ffff:0:203.0.113.7]/x.jpg',
+    'https://[2002:cb00:7107::]/x.jpg',
   ])('allows the public IPv4-embedded literal %s', async (source) => {
     const { cls, state } = makeGetHarnessWith(source);
     await openMediaSource(cls);

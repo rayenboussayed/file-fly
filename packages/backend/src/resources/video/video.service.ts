@@ -5,7 +5,7 @@ import { Injectable, UnsupportedMediaTypeException } from '@nestjs/common';
 import { FileTypeService } from '@/services/file-type.service.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
-import { bufferStream, parseJsonBuffer } from '@/utils/buffer.js';
+import { readWorkerJson } from '@/utils/buffer.js';
 import { toDemuxerFormat } from '@/utils/input-format.js';
 
 import type { VideoProcessorType } from './schema.js';
@@ -30,9 +30,7 @@ export class VideoService {
         operation: 'dna',
       },
     });
-    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
-    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
-    return parseJsonBuffer(buffer);
+    return readWorkerJson(stdout);
   }
 
   async metadata(): Promise<unknown> {
@@ -44,9 +42,7 @@ export class VideoService {
         operation: 'metadata',
       },
     });
-    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
-    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
-    return parseJsonBuffer(buffer);
+    return readWorkerJson(stdout);
   }
 
   async processor(
@@ -90,8 +86,6 @@ export class VideoService {
         operation: 'stats',
       },
     });
-    // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
-    const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
-    return parseJsonBuffer(buffer);
+    return readWorkerJson(stdout);
   }
 }

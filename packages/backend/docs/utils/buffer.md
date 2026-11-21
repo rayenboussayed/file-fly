@@ -12,6 +12,9 @@
 <dt><a href="#MAX_BUFFER_BYTES">MAX_BUFFER_BYTES</a></dt>
 <dd><p>Maximum number of bytes buffered from a stream (20 MiB).</p>
 </dd>
+<dt><a href="#WORKER_JSON_MAX_BYTES">WORKER_JSON_MAX_BYTES</a></dt>
+<dd><p>Maximum JSON payload a worker may write to stdout (8 MiB).</p>
+</dd>
 </dl>
 
 ## Functions
@@ -23,6 +26,9 @@
 <dt><a href="#parseJsonBuffer">parseJsonBuffer(buffer)</a> ⇒ <code>unknown</code></dt>
 <dd><p>Parses a small JSON payload emitted by a worker.</p>
 </dd>
+<dt><a href="#readWorkerJson">readWorkerJson(stdout)</a> ⇒ <code>Promise&lt;unknown&gt;</code></dt>
+<dd><p>Buffers and parses the small JSON payload a worker writes to stdout.</p>
+</dd>
 </dl>
 
 <a name="ByteCapTransform"></a>
@@ -31,8 +37,8 @@
 Passes stream chunks through while rejecting anything past a byte budget.
 
 **Kind**: global class  
-src: packages/backend/src/utils/buffer.ts:14  
-dist: packages/backend/dist/utils/buffer.js:6
+src: packages/backend/src/utils/buffer.ts:16  
+dist: packages/backend/dist/utils/buffer.js:12 (approx.)
 <a name="new_ByteCapTransform_new"></a>
 
 ### new ByteCapTransform(maxBytes)
@@ -49,6 +55,14 @@ Maximum number of bytes buffered from a stream (20 MiB).
 **Kind**: global constant  
 src: packages/backend/src/utils/buffer.ts:9  
 dist: packages/backend/dist/utils/buffer.js:5
+<a name="WORKER_JSON_MAX_BYTES"></a>
+
+## WORKER\_JSON\_MAX\_BYTES
+Maximum JSON payload a worker may write to stdout (8 MiB).
+
+**Kind**: global constant  
+src: packages/backend/src/utils/buffer.ts:11  
+dist: packages/backend/dist/utils/buffer.js:8 (approx.)
 <a name="bufferStream"></a>
 
 ## bufferStream(stream, maxBytes) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -62,7 +76,7 @@ Buffers a readable stream into a single Buffer, enforcing a size cap.
 | stream | <code>Readable</code> | The readable stream to buffer. |
 | maxBytes | <code>number</code> | The maximum number of bytes to accept before throwing. |
 
-src: packages/backend/src/utils/buffer.ts:40  
+src: packages/backend/src/utils/buffer.ts:42  
 dist: packages/backend/dist/utils/buffer.js:22
 <a name="parseJsonBuffer"></a>
 
@@ -76,5 +90,19 @@ Parses a small JSON payload emitted by a worker.
 | --- | --- | --- |
 | buffer | <code>Buffer&lt;ArrayBufferLike&gt;</code> | UTF-8 encoded JSON bytes. |
 
-src: packages/backend/src/utils/buffer.ts:64  
-dist: packages/backend/dist/utils/buffer.js:36
+src: packages/backend/src/utils/buffer.ts:66  
+dist: packages/backend/dist/utils/buffer.js:38
+<a name="readWorkerJson"></a>
+
+## readWorkerJson(stdout) ⇒ <code>Promise&lt;unknown&gt;</code>
+Buffers and parses the small JSON payload a worker writes to stdout.
+
+**Kind**: global function  
+**Returns**: <code>Promise&lt;unknown&gt;</code> - The parsed JSON value.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| stdout | <code>Readable</code> | The worker's stdout stream. |
+
+src: packages/backend/src/utils/buffer.ts:75  
+dist: packages/backend/dist/utils/buffer.js:65 (approx.)

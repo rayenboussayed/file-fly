@@ -22,6 +22,19 @@ describe('exitWorker', () => {
     expect(destroy).toHaveBeenCalledOnce();
     expect(() => vi.advanceTimersByTime(250)).toThrow('exit 1');
   });
+
+  it('unrefs the backstop timer so it cannot hold the process open', () => {
+    vi.spyOn(process.stdin, 'destroy').mockReturnValue(process.stdin);
+    const unref = vi.fn();
+    // setTimeout normally returns a Timeout; the helper only calls unref on it.
+    vi.spyOn(globalThis, 'setTimeout').mockReturnValue(
+      { unref } as unknown as NodeJS.Timeout,
+    );
+
+    exitWorker(0);
+
+    expect(unref).toHaveBeenCalledOnce();
+  });
 });
 
 /** Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use. */

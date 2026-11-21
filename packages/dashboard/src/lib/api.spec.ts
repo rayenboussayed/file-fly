@@ -99,12 +99,18 @@ describe('fetchMetrics', () => {
     expect(snapshot.perIp[0]?.extra).toBe('kept');
   });
 
-  it('rejects a payload that violates the contract', async () => {
-    stubFetch(() => new Response(JSON.stringify({ ...fixture, totals: { requests: 'many' } }), {
+  it('rejects a payload that violates the contract without echoing it', async () => {
+    stubFetch(() => new Response(JSON.stringify({
+      ...fixture,
+      perIp: [{ ...fixture.perIp[0], ip: '203.0.113.7' }],
+      totals: { requests: 'many' },
+    }), {
       headers: { 'content-type': 'application/json' },
       status: 200,
     }));
-    await expect(fetchMetrics()).rejects.toBeInstanceOf(MetricsContractError);
+    const error = await fetchMetrics().catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(MetricsContractError);
+    expect((error as Error).message).not.toContain('203.0.113.7');
   });
 
   it('rejects a payload with missing top-level fields', async () => {

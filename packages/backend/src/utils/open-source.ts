@@ -46,21 +46,34 @@ const isPrivateIpv4 = (octets: [number, number, number, number]): boolean => {
 };
 
 /**
- * Extracts the embedded IPv4 octets from an IPv6 literal that carries an IPv4
- * address in its last 32 bits. Node canonicalizes these to `::ffff:X:Y`,
- * `::X:Y` (IPv4-compatible) or `64:ff9b::X:Y` / `64:ff9b:1::X:Y` (NAT64).
- * Network-specific RFC 6052 prefixes with other bit offsets are out of scope.
- * @param host - Lowercased bare host without brackets.
- * @returns The four embedded octets, or undefined for any other host.
+ * Turns two hextets holding an embedded IPv4 address into octets.
+ * @param highHex - The high 16 bits in hexadecimal.
+ * @param lowHex - The low 16 bits in hexadecimal.
+ * @returns The four octets, or undefined when either hextet is missing.
  */
-const ipv4EmbeddedOctets = (host: string): [number, number, number, number] | undefined => {
-  const match = /^(?:::ffff:|::|64:ff9b:1::|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
-  const highHex = match?.[1];
-  const lowHex = match?.[2];
+const octetsFromHextets = (
+  highHex: string | undefined,
+  lowHex: string | undefined,
+): [number, number, number, number] | undefined => {
   if (highHex === undefined || lowHex === undefined) return undefined;
   const high = Number.parseInt(highHex, 16);
   const low = Number.parseInt(lowHex, 16);
   return [high >> 8, high & 0xff, low >> 8, low & 0xff];
+};
+
+/**
+ * Extracts an embedded IPv4 address from the IPv6 forms Node canonicalizes:
+ * IPv4-mapped and IPv4-translated (`::ffff:` with optional zero hextets),
+ * IPv4-compatible (`::`), NAT64 well-known/local-use, and 6to4 (`2002:`, which
+ * embeds the address in the first two hextets after the prefix).
+ * @param host - Lowercased bare host without brackets.
+ * @returns The four embedded octets, or undefined for any other host.
+ */
+const ipv4EmbeddedOctets = (host: string): [number, number, number, number] | undefined => {
+  const tail = /^(?:::ffff:(?:0:){0,2}|::|64:ff9b:1::|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
+  if (tail) return octetsFromHextets(tail[1], tail[2]);
+  const sixToFour = /^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4})::(?:0:)*$/.exec(host);
+  return sixToFour ? octetsFromHextets(sixToFour[1], sixToFour[2]) : undefined;
 };
 
 /**
