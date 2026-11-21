@@ -4,6 +4,7 @@ import type { FastifyInstance, onRequestHookHandler } from 'fastify';
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { createHash, timingSafeEqual } from 'node:crypto';
 
+import { HEADER_X_AUTH_PASSWORD, HEADER_X_AUTH_USERNAME } from './constants/header.js';
 import { environment } from './environment.js';
 
 /** Logger for the basic-auth perimeter; one boot line, never per-request. */
@@ -82,8 +83,10 @@ export async function registerBasicAuth(instance: FastifyInstance): Promise<void
     // The x-auth pair is the only accepted transport: a client-supplied
     // Authorization header never reaches the plugin.
     delete request.headers.authorization;
-    const headerUsername = request.headers['x-auth-username'];
-    const headerPassword = request.headers['x-auth-password'];
+    const {
+      [HEADER_X_AUTH_PASSWORD]: headerPassword,
+      [HEADER_X_AUTH_USERNAME]: headerUsername,
+    } = request.headers;
     const pair = synthAuthorizationHeader(
       typeof headerUsername === 'string' ? headerUsername : undefined,
       typeof headerPassword === 'string' ? headerPassword : undefined,

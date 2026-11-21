@@ -3,6 +3,8 @@ import type { LoggerOptions } from 'pino';
 import type { Options as PinoHttpOptions } from 'pino-http';
 import type { PrettyOptions } from 'pino-pretty';
 
+import { HEADER_X_AUTH_PASSWORD, HEADER_X_AUTH_USERNAME } from '@/constants/header.js';
+
 /**
  * Inputs for the pino configuration builders.
  * `level` wins over the environment defaults when set.
@@ -32,8 +34,8 @@ export function stripQuery(url: string | undefined): string | undefined {
 export const redactPaths = [
   'req.headers.authorization',
   'req.headers.cookie',
-  'req.headers["x-auth-password"]',
-  'req.headers["x-auth-username"]',
+  `req.headers["${HEADER_X_AUTH_PASSWORD}"]`,
+  `req.headers["${HEADER_X_AUTH_USERNAME}"]`,
   'res.headers["set-cookie"]',
 ] as const;
 

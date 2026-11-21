@@ -13,8 +13,8 @@ const allowedCorsHeaders = [
   'content-type',
   'traceparent',
   'tracestate',
-  'x-auth-password',
-  'x-auth-username',
+  AppHeaders.HEADER_X_AUTH_PASSWORD,
+  AppHeaders.HEADER_X_AUTH_USERNAME,
   AppHeaders.HEADER_X_FILE_HASH,
 ] as const;
 
@@ -27,7 +27,7 @@ export function buildCorsOptions(origins: string[] | undefined) {
   return {
     allowedHeaders: [...allowedCorsHeaders],
     credentials: true,
-    exposedHeaders: Object.values(AppHeaders),
+    exposedHeaders: [AppHeaders.HEADER_X_FILE_HASH, AppHeaders.HEADER_X_FONT_SUBSET],
     origin: origins ?? false,
   };
 }

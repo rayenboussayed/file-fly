@@ -1,6 +1,8 @@
 import pino from 'pino';
 import { describe, expect, it } from 'vitest';
 
+import { HEADER_X_AUTH_PASSWORD, HEADER_X_AUTH_USERNAME } from '@/constants/header.js';
+
 import {
   buildPinoHttpOptions,
   buildPinoOptions,
@@ -55,8 +57,8 @@ describe('buildPinoOptions', () => {
         headers: {
           authorization: 'Bearer secret',
           cookie: 'session=secret',
-          'x-auth-password': 'secret',
-          'x-auth-username': 'alice',
+          [HEADER_X_AUTH_PASSWORD]: 'secret',
+          [HEADER_X_AUTH_USERNAME]: 'alice',
           'x-file-hash': 'keep-me',
         },
       },
