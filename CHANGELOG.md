@@ -2,7 +2,7 @@
 
 All notable changes to file-fly are documented here. The project has **no
 tagged releases yet** (`package.json` version `0.0.1`); dates are UTC and taken
-from the commit history (2026-10-31 .. 2026-11-19).
+from the commit history (2026-10-31 .. 2026-11-21).
 
 ## Unreleased
 
@@ -63,6 +63,19 @@ from the commit history (2026-10-31 .. 2026-11-19).
 
 ### Changed
 
+- Deep refactoring pass across backend, dashboard, tooling and docs
+  (`ed6002d`, `9c4daa5`, `bd80ffd`, `e426ce2`, `c2651fb`, `99ffc47`,
+  `22fd40f`). Shared worker-exit, byte-cap and JSON-buffer helpers replace
+  repeated copies; the egress guard decodes IPv4-mapped, IPv4-compatible and
+  well-known NAT64 literals; auth headers join pino redaction, `.env.*` is ignored except
+  the example, and production CORS has an explicit request-header allowlist.
+  The dashboard validates `/metrics` with a local zod schema and shares one
+  error-state component. Three request-agnostic services move into one global
+  module and composed decorators replace 25 interceptor annotations. Metrics
+  rollups gain idempotent indexes, and the janitor leaves the live undici
+  cache store alone. Reviews kept `WorkerService` per feature: its concurrency
+  budget is mutable state. The buffer-cap performance detour is recorded in
+  `docs/performance.md`.
 - Repository restructured into an npm workspaces monorepo:
   `packages/backend` (NestJS 12 + Fastify) and `packages/dashboard`
   (`81edcb1`); docker serves the dashboard from the backend image (`d2e1b9e`).

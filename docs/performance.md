@@ -29,6 +29,15 @@ before/after delta under an identical workload is the signal.
 | knip | `npm run knip` | clean | clean | clean |
 | root route latency (baseline) | `autocannon -c 25 -d 15` | ~10,315 req/s avg | not re-measured |
 
+A later refactor routed `bufferStream` through `stream.compose(ByteCapTransform)`.
+Against the task baseline of 1.4278 ms mean / 700.4 hz (`vitest bench --run
+--config ./vitest.config.perf.ts test/perf/buffer.bench.ts --compare`), two
+isolated runs of the compose path measured 1.60 and 1.81 ms mean; restoring the
+jutilities `streamSize` generator measured 1.22 ms with the same oversize
+rejection. No JSON artifacts were retained for those comparison runs; the
+ratios are recorded in commit `99ffc47`. Keep the buffer path generator-based
+when touching the cap.
+
 The bench suite does not exercise `createWorker`, so per-route overhead of the
 metrics interceptor is not covered by a micro-benchmark; the instrumentation
 is constant-time Map increments with a 1 s flush off the request path, and the
