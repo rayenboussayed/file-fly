@@ -3,11 +3,9 @@ import {
   Get,
   Post,
   ServiceUnavailableException,
-  UseInterceptors,
 } from '@nestjs/common';
 
-import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseMediaPipeline } from '@/interceptors/pipeline.decorator.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 /** Root routes: signature and antivirus verdicts for scanned payloads. */
@@ -22,7 +20,7 @@ export class AppController {
    * @returns The file signature's extension and MIME type.
    */
   @Get('signature')
-  @UseInterceptors(FileScannerInterceptor, FileParserInterceptor)
+  @UseMediaPipeline()
   signatureGet() {
     return this.signature();
   }
@@ -32,7 +30,7 @@ export class AppController {
    * @returns The file signature's extension and MIME type.
    */
   @Post('signature')
-  @UseInterceptors(FileScannerInterceptor, FileParserInterceptor)
+  @UseMediaPipeline()
   signaturePost() {
     return this.signature();
   }
@@ -42,7 +40,7 @@ export class AppController {
    * @returns Whether the file is infected and the list of detected viruses.
    */
   @Get('virus-scan')
-  @UseInterceptors(FileScannerInterceptor, FileParserInterceptor)
+  @UseMediaPipeline()
   virusScanGet() {
     return this.virusScan();
   }
@@ -52,7 +50,7 @@ export class AppController {
    * @returns Whether the file is infected and the list of detected viruses.
    */
   @Post('virus-scan')
-  @UseInterceptors(FileScannerInterceptor, FileParserInterceptor)
+  @UseMediaPipeline()
   virusScanPost() {
     return this.virusScan();
   }

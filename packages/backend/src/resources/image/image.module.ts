@@ -1,8 +1,5 @@
 import { Module } from '@nestjs/common';
 
-import { AntiVirusService } from '@/services/anti-virus.service.js';
-import { FileTypeService } from '@/services/file-type.service.js';
-import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { WorkerService } from '@/services/worker.service.js';
 
 import { ImageController } from './image.controller.js';
@@ -12,13 +9,6 @@ import { TesseractService } from './tesseract.service.js';
 /** Image feature module: processor, metadata, DNA, stats and OCR routes. */
 @Module({
   controllers: [ImageController],
-  providers: [
-    AntiVirusService,
-    FileTypeService,
-    ImageService,
-    NormalizedClsService,
-    TesseractService,
-    WorkerService,
-  ],
+  providers: [ImageService, TesseractService, WorkerService],
 })
 export class ImageModule {}

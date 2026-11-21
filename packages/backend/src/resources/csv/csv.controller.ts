@@ -8,10 +8,9 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
 
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseScanPipeline } from '@/interceptors/pipeline.decorator.js';
 import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
@@ -61,7 +60,7 @@ export class CsvController {
    * @returns The parsed records (201).
    */
   @Post('extract')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   extract(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: CsvExtractSchema }) query: CsvExtractType,
   ) {
@@ -74,7 +73,7 @@ export class CsvController {
    * @returns The metadata document (201).
    */
   @Post('metadata')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   metadata(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: CsvMetadataSchema }) query: CsvMetadataType,
   ) {

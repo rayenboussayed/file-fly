@@ -4,5 +4,5 @@
 CSV feature module: build, extract and metadata routes.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/csv/csv.module.ts:14  
-dist: packages/backend/dist/resources/csv/csv.module.js:12
+src: packages/backend/src/resources/csv/csv.module.ts:11  
+dist: packages/backend/dist/resources/csv/csv.module.js:10

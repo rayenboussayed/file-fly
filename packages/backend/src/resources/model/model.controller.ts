@@ -7,11 +7,10 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Readable } from 'node:stream';
 
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseScanPipeline } from '@/interceptors/pipeline.decorator.js';
 import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
@@ -45,7 +44,7 @@ export class ModelController {
    * @returns The converted bytes (201).
    */
   @Post('convert')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   async convert(
     @Response({ passthrough: false }) response: FastifyReply,
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: ModelConvertSchema }) query: ModelConvertType,
@@ -67,7 +66,7 @@ export class ModelController {
    * @returns The extraction document.
    */
   @Post('extract')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   // Bound only so the strict empty query schema rejects junk params; the value is unused.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   extract(@Query({ pipes: [new StandardSchemaValidationPipe()], schema: ModelExtractSchema }) _query: unknown) {
@@ -80,7 +79,7 @@ export class ModelController {
    * @returns The metadata document.
    */
   @Post('metadata')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   // Bound only so the strict empty query schema rejects junk params; the value is unused.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   metadata(@Query({ pipes: [new StandardSchemaValidationPipe()], schema: ModelMetadataSchema }) _query: unknown) {
@@ -94,7 +93,7 @@ export class ModelController {
    * @returns The optimized GLB bytes (201).
    */
   @Post('optimize')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   async optimize(
     @Response({ passthrough: false }) response: FastifyReply,
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: ModelOptimizeSchema }) query: ModelOptimizeType,

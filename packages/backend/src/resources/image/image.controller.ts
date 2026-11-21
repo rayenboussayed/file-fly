@@ -9,11 +9,9 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
 
-import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseMediaPipeline } from '@/interceptors/pipeline.decorator.js';
 import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
@@ -41,7 +39,7 @@ const SHARP_TO_MIME: Partial<Record<keyof FormatEnum, string>> = {
 
 /** Image routes: processor, metadata, DNA, stats and OCR (binary stream endpoints). */
 @Controller('image')
-@UseInterceptors(FileScannerInterceptor, FileParserInterceptor, ImageSignatureInterceptor)
+@UseMediaPipeline(ImageSignatureInterceptor)
 export class ImageController {
   constructor(
     private readonly imageService: ImageService,

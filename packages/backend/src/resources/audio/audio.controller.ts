@@ -8,11 +8,9 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
 
-import { FileParserInterceptor } from '@/interceptors/file-parser.interceptor.js';
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseMediaPipeline } from '@/interceptors/pipeline.decorator.js';
 import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { OUTPUT_CONTENT_TYPE } from '@/utils/capabilities.js';
@@ -24,7 +22,7 @@ import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 
 /** Audio routes: processor, metadata, DNA and stats (binary stream endpoints). */
 @Controller('audio')
-@UseInterceptors(FileScannerInterceptor, FileParserInterceptor, AudioSignatureInterceptor)
+@UseMediaPipeline(AudioSignatureInterceptor)
 export class AudioController {
   constructor(
     private readonly audioService: AudioService,

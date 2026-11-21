@@ -8,11 +8,10 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Readable } from 'node:stream';
 
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseScanPipeline } from '@/interceptors/pipeline.decorator.js';
 import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
@@ -65,7 +64,7 @@ export class XlsxController {
    * @returns The records and sheet name (201).
    */
   @Post('extract')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   extract(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: XlsxExtractSchema }) query: XlsxExtractType,
   ) {
@@ -78,7 +77,7 @@ export class XlsxController {
    * @returns The metadata document (201).
    */
   @Post('metadata')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   metadata(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: XlsxMetadataSchema }) query: XlsxMetadataType,
   ) {

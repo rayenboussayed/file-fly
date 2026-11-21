@@ -5,7 +5,7 @@ Font routes. All routes take the binary upload and bypass the JSON parser by
 design; they are ClamAV-scanned and font-signature gated (TTF/OTF/WOFF/WOFF2/TTC).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/font.controller.ts:37  
+src: packages/backend/src/resources/font/font.controller.ts:36  
 dist: packages/backend/dist/resources/font/font.controller.js:22
 
 * [FontController](#FontController)
@@ -26,7 +26,7 @@ Extracts the font's coverage and glyph inventory (201).
 | --- | --- | --- |
 | query | <code>{ [x: string]: any; limit?: number; }</code> | Optional collection member. |
 
-src: packages/backend/src/resources/font/font.controller.ts:50  
+src: packages/backend/src/resources/font/font.controller.ts:49  
 dist: packages/backend/dist/resources/font/font.controller.js:29
 <a name="FontController+metadata"></a>
 
@@ -40,7 +40,7 @@ Normalized font metadata (201).
 | --- | --- | --- |
 | query | <code>{ [x: string]: any; }</code> | Optional collection member. |
 
-src: packages/backend/src/resources/font/font.controller.ts:63  
+src: packages/backend/src/resources/font/font.controller.ts:62  
 dist: packages/backend/dist/resources/font/font.controller.js:32
 <a name="FontController+shape"></a>
 
@@ -54,7 +54,7 @@ Shapes text with the font's OpenType engine (201).
 | --- | --- | --- |
 | query | <code>{ [x: string]: any; direction?: &quot;auto&quot; \| &quot;ltr&quot; \| &quot;rtl&quot;; }</code> | Text plus optional script/language/direction/features. |
 
-src: packages/backend/src/resources/font/font.controller.ts:76  
+src: packages/backend/src/resources/font/font.controller.ts:75  
 dist: packages/backend/dist/resources/font/font.controller.js:35
 <a name="FontController+subset"></a>
 
@@ -70,5 +70,5 @@ The output is a minimal sfnt for PDF embedding (no cmap); it is not a web font.
 | response | <code>FastifyReply&lt;import(&quot;fastify&quot;).RouteGenericInterface, import(&quot;fastify&quot;).RawServerDefault, import(&quot;http&quot;).IncomingMessage, import(&quot;http&quot;).ServerResponse&lt;import(&quot;http&quot;).IncomingMessage&gt;, unknown, import(&quot;fastify&quot;).FastifySchema, import(&quot;fastify&quot;).FastifyTypeProviderDefault, unknown&gt;</code> | Raw reply, streamed as font/ttf. |
 | query | <code>{ [x: string]: any; }</code> | The text to include. |
 
-src: packages/backend/src/resources/font/font.controller.ts:91  
+src: packages/backend/src/resources/font/font.controller.ts:90  
 dist: packages/backend/dist/resources/font/font.controller.js:38

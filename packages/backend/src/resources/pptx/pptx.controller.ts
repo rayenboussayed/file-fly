@@ -8,11 +8,10 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Readable } from 'node:stream';
 
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseScanPipeline } from '@/interceptors/pipeline.decorator.js';
 import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
@@ -55,7 +54,7 @@ export class PptxController {
    * @returns The extracted metadata, slide texts and notes.
    */
   @Post('extract')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   // Bound only so the strict empty query schema rejects junk params; the value is unused.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   extract(@Query({ pipes: [new StandardSchemaValidationPipe()], schema: PptxExtractSchema }) _query: unknown) {
@@ -68,7 +67,7 @@ export class PptxController {
    * @returns The metadata document.
    */
   @Post('metadata')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   // Bound only so the strict empty query schema rejects junk params; the value is unused.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   metadata(@Query({ pipes: [new StandardSchemaValidationPipe()], schema: PptxMetadataSchema }) _query: unknown) {

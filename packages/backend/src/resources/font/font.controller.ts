@@ -7,12 +7,11 @@ import {
   Query,
   Response,
   StandardSchemaValidationPipe,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Readable } from 'node:stream';
 
 import { HEADER_X_FONT_SUBSET } from '@/constants/header.js';
-import { FileScannerInterceptor } from '@/interceptors/file-scanner.interceptor.js';
+import { UseScanPipeline } from '@/interceptors/pipeline.decorator.js';
 import { createOutMeter } from '@/metrics/out-meter.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
@@ -46,7 +45,7 @@ export class FontController {
    * @returns The extraction document.
    */
   @Post('extract')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   extract(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: FontExtractSchema }) query: FontExtractType,
   ) {
@@ -59,7 +58,7 @@ export class FontController {
    * @returns The metadata document.
    */
   @Post('metadata')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   metadata(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: FontMetaSchema }) query: FontMetaType,
   ) {
@@ -72,7 +71,7 @@ export class FontController {
    * @returns The shaped glyph run.
    */
   @Post('shape')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   shape(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: FontShapeSchema }) query: FontShapeType,
   ) {
@@ -87,7 +86,7 @@ export class FontController {
    * @returns The subsetted font bytes (201).
    */
   @Post('subset')
-  @UseInterceptors(FileScannerInterceptor)
+  @UseScanPipeline()
   async subset(
     @Response({ passthrough: false }) response: FastifyReply,
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: FontSubsetSchema }) query: FontSubsetType,

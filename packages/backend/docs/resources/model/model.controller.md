@@ -5,7 +5,7 @@ GLB routes. All routes take the binary upload and bypass the JSON parser by
 design; they are ClamAV-scanned and GLB-signature gated (`glTF` magic).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/model/model.controller.ts:35  
+src: packages/backend/src/resources/model/model.controller.ts:34  
 dist: packages/backend/dist/resources/model/model.controller.js:21
 
 * [ModelController](#ModelController)
@@ -27,7 +27,7 @@ Converts the uploaded GLB between container formats (201).
 | response | <code>FastifyReply&lt;import(&quot;fastify&quot;).RouteGenericInterface, import(&quot;fastify&quot;).RawServerDefault, import(&quot;http&quot;).IncomingMessage, import(&quot;http&quot;).ServerResponse&lt;import(&quot;http&quot;).IncomingMessage&gt;, unknown, import(&quot;fastify&quot;).FastifySchema, import(&quot;fastify&quot;).FastifyTypeProviderDefault, unknown&gt;</code> | Raw reply, streamed as model/gltf-binary or model/gltf+json. |
 | query | <code>{ to: &quot;glb&quot; \| &quot;gltf&quot;; }</code> | Target container (`glb` or self-contained `gltf`). |
 
-src: packages/backend/src/resources/model/model.controller.ts:49  
+src: packages/backend/src/resources/model/model.controller.ts:48  
 dist: packages/backend/dist/resources/model/model.controller.js:28
 <a name="ModelController+extract"></a>
 
@@ -41,7 +41,7 @@ Extracts the scene graph, meshes, materials, textures, animations and skins (201
 | --- | --- | --- |
 | _query | <code>unknown</code> | Empty query object; junk parameters are rejected with 400. |
 
-src: packages/backend/src/resources/model/model.controller.ts:73  
+src: packages/backend/src/resources/model/model.controller.ts:72  
 dist: packages/backend/dist/resources/model/model.controller.js:40
 <a name="ModelController+metadata"></a>
 
@@ -55,7 +55,7 @@ Normalized GLB metadata (201).
 | --- | --- | --- |
 | _query | <code>unknown</code> | Empty query object; junk parameters are rejected with 400. |
 
-src: packages/backend/src/resources/model/model.controller.ts:86  
+src: packages/backend/src/resources/model/model.controller.ts:85  
 dist: packages/backend/dist/resources/model/model.controller.js:43
 <a name="ModelController+optimize"></a>
 
@@ -70,5 +70,5 @@ Optimizes the uploaded model (dedup, prune, weld, optional simplify, optional me
 | response | <code>FastifyReply&lt;import(&quot;fastify&quot;).RouteGenericInterface, import(&quot;fastify&quot;).RawServerDefault, import(&quot;http&quot;).IncomingMessage, import(&quot;http&quot;).ServerResponse&lt;import(&quot;http&quot;).IncomingMessage&gt;, unknown, import(&quot;fastify&quot;).FastifySchema, import(&quot;fastify&quot;).FastifyTypeProviderDefault, unknown&gt;</code> | Raw reply, streamed as model/gltf-binary. |
 | query | <code>{ compress: &quot;none&quot; \| &quot;draco&quot; \| &quot;meshopt&quot;; weld: boolean; simplify?: number; }</code> | Compression codec and simplification options. |
 
-src: packages/backend/src/resources/model/model.controller.ts:98  
+src: packages/backend/src/resources/model/model.controller.ts:97  
 dist: packages/backend/dist/resources/model/model.controller.js:46

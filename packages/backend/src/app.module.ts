@@ -24,11 +24,9 @@ import { PdfModule } from './resources/pdf/pdf.module.js';
 import { PptxModule } from './resources/pptx/pptx.module.js';
 import { VideoModule } from './resources/video/video.module.js';
 import { XlsxModule } from './resources/xlsx/xlsx.module.js';
-import { AntiVirusService } from './services/anti-virus.service.js';
 import { CacheJanitorService } from './services/cache-janitor.service.js';
-import { FileTypeService } from './services/file-type.service.js';
-import { NormalizedClsService } from './services/normalized-cls.service.js';
 import { WorkerService } from './services/worker.service.js';
+import { SharedServicesModule } from './shared-services.module.js';
 
 /** Flushes pending spans and host metrics when Nest closes on SIGTERM; a no-op when telemetry is disabled. */
 @Injectable()
@@ -73,6 +71,7 @@ class OtelShutdownService implements OnApplicationShutdown {
       },
     }),
     AudioModule,
+    SharedServicesModule,
     CsvModule,
     DocxModule,
     FontModule,
@@ -96,10 +95,7 @@ class OtelShutdownService implements OnApplicationShutdown {
       useClass: MetricsInterceptor,
     },
     OtelShutdownService,
-    AntiVirusService,
     CacheJanitorService,
-    FileTypeService,
-    NormalizedClsService,
     WorkerService,
   ],
 })
