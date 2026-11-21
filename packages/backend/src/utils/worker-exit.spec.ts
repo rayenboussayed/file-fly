@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { exitWorker } from './worker-exit.js';
+import { exitWorker, standaloneExit } from './worker-exit.js';
 
 describe('exitWorker', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     process.exitCode = 0;
   });
 
@@ -34,6 +35,42 @@ describe('exitWorker', () => {
     exitWorker(0);
 
     expect(unref).toHaveBeenCalledOnce();
+  });
+});
+
+describe('standaloneExit', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    process.exitCode = 0;
+  });
+
+  it('is a no-op when FILE_FLY_WORKER is not set', () => {
+    vi.stubEnv('FILE_FLY_WORKER', undefined);
+    const destroy = vi.spyOn(process.stdin, 'destroy');
+    vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit ${String(code)}`);
+    });
+
+    standaloneExit(0);
+
+    expect(destroy).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(0);
+  });
+
+  it('exits when FILE_FLY_WORKER is set to 1', () => {
+    vi.stubEnv('FILE_FLY_WORKER', '1');
+    const destroy = vi.spyOn(process.stdin, 'destroy').mockReturnValue(process.stdin);
+    vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit ${code}`);
+    });
+    vi.useFakeTimers();
+
+    standaloneExit(2);
+
+    expect(process.exitCode).toBe(2);
+    expect(destroy).toHaveBeenCalledOnce();
   });
 });
 

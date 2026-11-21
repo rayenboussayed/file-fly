@@ -10,3 +10,14 @@ export function exitWorker(code: number): void {
   // eslint-disable-next-line n/no-process-exit -- native media handles can keep the worker alive; this is the bounded backstop.
   setTimeout(() => process.exit(code), 250).unref();
 }
+
+/**
+ * Ends a standalone worker process after its job finishes; a no-op when the
+ * worker runs inside WorkerService (unit specs import the module in-process).
+ * @param code - Exit code for the worker process.
+ */
+export function standaloneExit(code: number): void {
+  if (process.env.FILE_FLY_WORKER !== '1') return;
+  exitWorker(code);
+}
+

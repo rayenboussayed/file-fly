@@ -3,22 +3,13 @@ import { workerData } from 'node:worker_threads';
 import type { ModelOptimizeType } from '../schema.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
-import { exitWorker } from '../../../utils/worker-exit.js';
+import { standaloneExit } from '../../../utils/worker-exit.js';
 import { optimizeDocument, readModel, writeGlb } from '../gltf.js';
 
 const logger = createWorkerLogger();
-const runStandalone = process.env.FILE_FLY_WORKER === '1';
 
 /** Worker input: { operation: 'optimize', payload: { buffer, query } } from WorkerService. */
 type WorkerInput = { operation?: string; payload: { buffer: Buffer; query: ModelOptimizeType } };
-
-/**
- * Commits the worker's exit code; stdout exit is deferred so flush can complete.
- * @param code - The exit code to report.
- */
-const finishWorker = (code: number) => {
-  if (runStandalone) exitWorker(code); // unit specs import the module in-process
-};
 
 // workerData is set exclusively by ModelService.optimize's createWorker call with this exact shape.
 const data = workerData as WorkerInput;
@@ -38,14 +29,14 @@ if (data.operation === 'optimize') {
         }
       }
       // Exit only once the bytes are flushed; an early exit(0) would truncate the output.
-      process.stdout.write(out, () => finishWorker(0));
+      process.stdout.write(out, () => standaloneExit(0));
       return out;
     })
     .catch((error: unknown) => {
       logger.error({ err: error }, 'model optimize failed');
-      finishWorker(1);
+      standaloneExit(1);
     });
 } else {
   logger.error({ operation: data.operation }, 'unknown worker operation');
-  finishWorker(1);
+  standaloneExit(1);
 }
