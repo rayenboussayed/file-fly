@@ -99,6 +99,13 @@ The persisted aggregation queries are all key-driven:
 - `perRoute`: `GROUP BY route, name`, plus `GROUP BY route, le` on `metric_hist`.
 - retention sweep: bounded `DELETE … WHERE bucket < ?` on the same primary keys.
 
+The dashboard parses this payload with a zod schema in
+`packages/dashboard/src/lib/api.ts` and derives its row and snapshot types from
+that schema. The schema mirrors this document and the backend's `MetricsService`
+interfaces; a Playwright contract check in `packages/dashboard/test/e2e/`
+validates a live payload against it. The persisted query plans in this section
+did not change in the latest refactoring pass.
+
 Four `CREATE INDEX IF NOT EXISTS` statements run on every open, including a
 version-1 database that predates them. `idx_metric_counter_bucket` serves the
 retention sweep, `idx_metric_counter_name_bucket` serves the `bucket`-filtered

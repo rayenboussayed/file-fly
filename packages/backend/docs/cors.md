@@ -13,7 +13,7 @@ as documented in the README.</p>
 ## Functions
 
 <dl>
-<dt><a href="#buildCorsOptions">buildCorsOptions(origins)</a> ⇒ <code>{ allowedHeaders: any[]; credentials: boolean; exposedHeaders: unknown[]; origin: boolean | string[]; }</code></dt>
+<dt><a href="#buildCorsOptions">buildCorsOptions(origins)</a> ⇒ <code>{ allowedHeaders: any[]; credentials: boolean; exposedHeaders: any[]; origin: boolean | string[]; }</code></dt>
 <dd><p>Builds the production CORS options.</p>
 </dd>
 </dl>
@@ -32,11 +32,11 @@ src: packages/backend/src/cors.ts:10
 dist: packages/backend/dist/cors.js:2
 <a name="buildCorsOptions"></a>
 
-## buildCorsOptions(origins) ⇒ <code>{ allowedHeaders: any[]; credentials: boolean; exposedHeaders: unknown[]; origin: boolean \| string[]; }</code>
+## buildCorsOptions(origins) ⇒ <code>{ allowedHeaders: any[]; credentials: boolean; exposedHeaders: any[]; origin: boolean \| string[]; }</code>
 Builds the production CORS options.
 
 **Kind**: global function  
-**Returns**: <code>{ allowedHeaders: any[]; credentials: boolean; exposedHeaders: unknown[]; origin: boolean \| string[]; }</code> - The enableCors options object, with an explicit request-header allowlist.  
+**Returns**: <code>{ allowedHeaders: any[]; credentials: boolean; exposedHeaders: any[]; origin: boolean \| string[]; }</code> - The enableCors options object, with an explicit request-header allowlist.  
 
 | Param | Type | Description |
 | --- | --- | --- |

@@ -34,8 +34,8 @@ Media <code>source</code> parameters may embed signed remote URLs, so the query 
 Paths censored from any nested request/response object pino sees.
 
 **Kind**: global constant  
-src: packages/backend/src/logging/pino-options.ts:32  
-dist: packages/backend/dist/logging/pino-options.js:8
+src: packages/backend/src/logging/pino-options.ts:34  
+dist: packages/backend/dist/logging/pino-options.js:9
 <a name="stripQuery"></a>
 
 ## stripQuery(url) ⇒ <code>string</code>
@@ -49,8 +49,8 @@ Media `source` parameters may embed signed remote URLs, so the query must never 
 | --- | --- | --- |
 | url | <code>string</code> | The raw request URL. |
 
-src: packages/backend/src/logging/pino-options.ts:23  
-dist: packages/backend/dist/logging/pino-options.js:1
+src: packages/backend/src/logging/pino-options.ts:25  
+dist: packages/backend/dist/logging/pino-options.js:2
 <a name="serializeRequest"></a>
 
 ## serializeRequest(request) ⇒ <code>{ id: string \| number; method: string; url: string; }</code>
@@ -63,8 +63,8 @@ Request serializer: id, method and path only. Headers and query strings are drop
 | --- | --- | --- |
 | request | <code>IncomingMessage &amp; { id?: number \| string; }</code> | The raw Node request. |
 
-src: packages/backend/src/logging/pino-options.ts:45  
-dist: packages/backend/dist/logging/pino-options.js:15
+src: packages/backend/src/logging/pino-options.ts:47  
+dist: packages/backend/dist/logging/pino-options.js:16
 <a name="serializeResponse"></a>
 
 ## serializeResponse(response) ⇒ <code>{ statusCode: number; }</code>
@@ -77,8 +77,8 @@ Response serializer: status code only.
 | --- | --- | --- |
 | response | <code>ServerResponse&lt;IncomingMessage&gt;</code> | The raw Node response. |
 
-src: packages/backend/src/logging/pino-options.ts:58  
-dist: packages/backend/dist/logging/pino-options.js:20
+src: packages/backend/src/logging/pino-options.ts:60  
+dist: packages/backend/dist/logging/pino-options.js:21
 <a name="buildPinoHttpOptions"></a>
 
 ## buildPinoHttpOptions(environment) ⇒ <code>PinoHttpOptions&lt;IncomingMessage, ServerResponse&lt;IncomingMessage&gt;, never&gt;</code>
@@ -92,8 +92,8 @@ Builds the pino-http options used by nestjs-pino. Adds request auto-logging
 | --- | --- | --- |
 | environment | <code>PinoEnvironment</code> | Runtime inputs; see [PinoEnvironment](PinoEnvironment). |
 
-src: packages/backend/src/logging/pino-options.ts:71  
-dist: packages/backend/dist/logging/pino-options.js:24
+src: packages/backend/src/logging/pino-options.ts:73  
+dist: packages/backend/dist/logging/pino-options.js:25
 <a name="buildPinoOptions"></a>
 
 ## buildPinoOptions(environment) ⇒ <code>LoggerOptions&lt;never, boolean&gt;</code>
@@ -106,5 +106,5 @@ Builds the base pino options shared by the bootstrap logger and the request logg
 | --- | --- | --- |
 | environment | <code>PinoEnvironment</code> | Runtime inputs; see [PinoEnvironment](PinoEnvironment). |
 
-src: packages/backend/src/logging/pino-options.ts:89  
-dist: packages/backend/dist/logging/pino-options.js:34
+src: packages/backend/src/logging/pino-options.ts:91  
+dist: packages/backend/dist/logging/pino-options.js:35

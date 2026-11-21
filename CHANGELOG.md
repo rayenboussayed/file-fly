@@ -63,6 +63,11 @@ from the commit history (2026-10-31 .. 2026-11-21).
 
 ### Changed
 
+- Second deep refactoring pass: worker entries share one standalone-exit guard
+  (`ee38781`, `30ca6bc`); the auth header pair has one constant source shared by
+  the basic-auth perimeter, CORS and log redaction (`7945e2c`); both dashboard
+  pages poll through one `useMetricsQuery` hook (`ce676ac`). Generated API docs
+  were regenerated. The metrics contract and its query plans are unchanged.
 - Deep refactoring pass across backend, dashboard, tooling and docs
   (`ed6002d`, `9c4daa5`, `bd80ffd`, `e426ce2`, `c2651fb`, `99ffc47`,
   `22fd40f`). Shared worker-exit, byte-cap and JSON-buffer helpers replace

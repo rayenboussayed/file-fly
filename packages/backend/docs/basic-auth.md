@@ -49,8 +49,8 @@ the only credential transport.</p>
 Logger for the basic-auth perimeter; one boot line, never per-request.
 
 **Kind**: global constant  
-src: packages/backend/src/basic-auth.ts:10  
-dist: packages/backend/dist/basic-auth.js:4
+src: packages/backend/src/basic-auth.ts:11  
+dist: packages/backend/dist/basic-auth.js:5
 <a name="basicAuthEnabled"></a>
 
 ## basicAuthEnabled() ⇒ <code>boolean</code>
@@ -60,8 +60,8 @@ environment schema enforces pair-ness at boot; this pure helper mirrors it
 
 **Kind**: global function  
 **Returns**: <code>boolean</code> - True when `AUTH_USERNAME` and `AUTH_PASSWORD` are both non-empty.  
-src: packages/backend/src/basic-auth.ts:18  
-dist: packages/backend/dist/basic-auth.js:5
+src: packages/backend/src/basic-auth.ts:19  
+dist: packages/backend/dist/basic-auth.js:6
 <a name="isHealthPath"></a>
 
 ## isHealthPath(url) ⇒ <code>boolean</code>
@@ -76,8 +76,8 @@ query string or trailing slash) is exempt from the perimeter so Docker
 | --- | --- | --- |
 | url | <code>string</code> | The raw request URL, if available. |
 
-src: packages/backend/src/basic-auth.ts:29  
-dist: packages/backend/dist/basic-auth.js:8
+src: packages/backend/src/basic-auth.ts:30  
+dist: packages/backend/dist/basic-auth.js:9
 <a name="registerBasicAuth"></a>
 
 ## registerBasicAuth(instance) ⇒ <code>Promise&lt;void&gt;</code>
@@ -100,8 +100,8 @@ No-op (with a single boot warning) unless both `AUTH_USERNAME` and
 | --- | --- | --- |
 | instance | <code>FastifyInstance&lt;import(&quot;fastify&quot;).RawServerDefault, import(&quot;http&quot;).IncomingMessage, import(&quot;http&quot;).ServerResponse&lt;import(&quot;http&quot;).IncomingMessage&gt;, import(&quot;fastify&quot;).FastifyBaseLogger, import(&quot;fastify&quot;).FastifyTypeProviderDefault&gt;</code> | The Fastify instance to decorate, passed by the bootstrap. |
 
-src: packages/backend/src/basic-auth.ts:50  
-dist: packages/backend/dist/basic-auth.js:14
+src: packages/backend/src/basic-auth.ts:51  
+dist: packages/backend/dist/basic-auth.js:15
 <a name="resolveBasicAuthEnabled"></a>
 
 ## resolveBasicAuthEnabled(username, password) ⇒ <code>boolean</code>
@@ -119,7 +119,7 @@ Pure decision for the both-or-neither rule.
 | username | <code>string</code> | The configured `AUTH_USERNAME`, if any. |
 | password | <code>string</code> | The configured `AUTH_PASSWORD`, if any. |
 
-src: packages/backend/src/basic-auth.ts:107  
+src: packages/backend/src/basic-auth.ts:110  
 dist: packages/backend/dist/basic-auth.js:49
 <a name="synthAuthorizationHeader"></a>
 
@@ -135,7 +135,7 @@ Builds the `Authorization` header value for the plugin from the custom
 | username | <code>string</code> | The `x-auth-username` header value, if any. |
 | password | <code>string</code> | The `x-auth-password` header value, if any. |
 
-src: packages/backend/src/basic-auth.ts:128  
+src: packages/backend/src/basic-auth.ts:131  
 dist: packages/backend/dist/basic-auth.js:57
 <a name="credentialsMatch"></a>
 
@@ -150,5 +150,5 @@ Compares two credential strings in constant time (via SHA-256 digests of equal l
 | provided | <code>string</code> | The credential supplied by the client. |
 | expected | <code>string</code> | The configured credential. |
 
-src: packages/backend/src/basic-auth.ts:150  
+src: packages/backend/src/basic-auth.ts:153  
 dist: packages/backend/dist/basic-auth.js:67
