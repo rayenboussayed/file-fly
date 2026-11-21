@@ -47,6 +47,17 @@ CREATE TABLE IF NOT EXISTS metric_hist (
 ) STRICT;
 `;
 
+/**
+ * Indexes for the retention sweep (bucket prefix) and the name-keyed rollups.
+ * Idempotent so an existing version-1 database gains them on the next open.
+ */
+const INDEX_DDL = `
+CREATE INDEX IF NOT EXISTS idx_metric_counter_bucket ON metric_counter (bucket);
+CREATE INDEX IF NOT EXISTS idx_metric_counter_name_bucket ON metric_counter (name, bucket);
+CREATE INDEX IF NOT EXISTS idx_metric_counter_ip_bucket ON metric_counter_ip (bucket);
+CREATE INDEX IF NOT EXISTS idx_metric_hist_bucket ON metric_hist (bucket);
+`;
+
 /** Per-IP counters over the retained window. */
 export interface MetricsPerIp {
   bytesIn: number;
@@ -337,23 +348,28 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
    */
   record(record: MetricsRecord): void {
     if (this.disabled) return;
+    const now = new Date();
+    const hourBucket = isoHour(now);
+    const dayBucket = isoDay(now);
     const duration = Math.round(record.durationMs);
-    this.bumpPair('requests', record.route, record.ip, 0, 1);
-    this.bumpPair('bytes_in', record.route, record.ip, record.bytesIn, 1);
-    this.bumpPair('bytes_out', record.route, record.ip, record.bytesOut, 1);
-    if (record.filesIn) this.bumpPair('file_in', record.route, record.ip, 0, 1);
-    if (record.filesOut) this.bumpPair('file_out', record.route, record.ip, 0, 1);
-    if (record.status >= 500) this.bumpPair('server_errors', record.route, record.ip, 0, 1);
-    else if (record.status >= 400) this.bumpPair('client_errors', record.route, record.ip, 0, 1);
-    if (record.cacheOutcome) this.bumpPair(record.cacheOutcome === 'hit' ? 'cache_hit' : 'cache_miss', record.route, record.ip, 0, 1);
-    if (record.scan) this.bumpPair(`scan_${record.scan}`, record.route, record.ip, 0, 1);
-    this.bumpRoute('duration', record.route, duration, 1);
-    this.bumpHist(record.route, duration);
+    this.bumpPair('requests', record.route, record.ip, 0, 1, hourBucket, dayBucket);
+    this.bumpPair('bytes_in', record.route, record.ip, record.bytesIn, 1, hourBucket, dayBucket);
+    this.bumpPair('bytes_out', record.route, record.ip, record.bytesOut, 1, hourBucket, dayBucket);
+    if (record.filesIn) this.bumpPair('file_in', record.route, record.ip, 0, 1, hourBucket, dayBucket);
+    if (record.filesOut) this.bumpPair('file_out', record.route, record.ip, 0, 1, hourBucket, dayBucket);
+    if (record.status >= 500) this.bumpPair('server_errors', record.route, record.ip, 0, 1, hourBucket, dayBucket);
+    else if (record.status >= 400) this.bumpPair('client_errors', record.route, record.ip, 0, 1, hourBucket, dayBucket);
+    if (record.cacheOutcome) this.bumpPair(record.cacheOutcome === 'hit' ? 'cache_hit' : 'cache_miss', record.route, record.ip, 0, 1, hourBucket, dayBucket);
+    if (record.scan) this.bumpPair(`scan_${record.scan}`, record.route, record.ip, 0, 1, hourBucket, dayBucket);
+    this.bumpRoute('duration', record.route, duration, 1, hourBucket);
+    this.bumpHist(record.route, duration, hourBucket);
   }
 
   /**
-   * Builds the aggregated payload the dashboard consumes.
-   * @returns The snapshot; cached for 1 second to absorb dashboard polls.
+   * Builds the aggregated payload the dashboard consumes. Persisted rows are
+   * key-scoped and pending deltas are merged on every call, so the live fields
+   * stay current without a cache layer that could go stale between polls.
+   * @returns The current snapshot.
    */
   snapshot(): MetricsSnapshot {
     const base: MetricsSnapshot = {
@@ -429,8 +445,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     }
   }
 
-  private bumpHist(route: string, durationMs: number): void {
-    const bucket = isoHour(new Date());
+  private bumpHist(route: string, durationMs: number, bucket: string): void {
     const le = HISTOGRAM_LE.find((bound) => durationMs / 1000 <= bound) ?? 999_999;
     const key = `${route}|${bucket}|${le}`;
     if (this.deltaHist.size >= MAX_DELTA_KEYS && !this.deltaHist.has(key)) {
@@ -442,8 +457,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     this.deltaHist.set(key, current);
   }
 
-  private bumpIp(name: string, ip: string, bytes: number, count: number): void {
-    const bucket = isoDay(new Date());
+  private bumpIp(name: string, ip: string, bytes: number, count: number, bucket: string): void {
     const key = `${name}|${ip}|${bucket}`;
     if (this.deltaIp.size >= MAX_DELTA_KEYS && !this.deltaIp.has(key)) {
       this.deltaIp.clear();
@@ -455,13 +469,20 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     this.deltaIp.set(key, current);
   }
 
-  private bumpPair(name: string, route: string, ip: string, bytes: number, count: number): void {
-    this.bumpRoute(name, route, bytes, count);
-    this.bumpIp(name, ip, bytes, count);
+  private bumpPair(
+    name: string,
+    route: string,
+    ip: string,
+    bytes: number,
+    count: number,
+    hourBucket: string,
+    dayBucket: string,
+  ): void {
+    this.bumpRoute(name, route, bytes, count, hourBucket);
+    this.bumpIp(name, ip, bytes, count, dayBucket);
   }
 
-  private bumpRoute(name: string, route: string, bytes: number, count: number): void {
-    const bucket = isoHour(new Date());
+  private bumpRoute(name: string, route: string, bytes: number, count: number, bucket: string): void {
     const key = `${name}|${route}|${bucket}`;
     if (this.deltaRoute.size >= MAX_DELTA_KEYS && !this.deltaRoute.has(key)) {
       this.deltaRoute.clear();
@@ -495,12 +516,17 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     if (version === 0) {
       this.db.exec(SCHEMA_DDL);
       this.db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
-      return;
-    }
-    if (version !== SCHEMA_VERSION) {
+    } else if (version !== SCHEMA_VERSION) {
       this.db.close();
       this.db = undefined;
       throw new Error(`unsupported metrics schema version: ${String(version)}`);
+    }
+    try {
+      this.db.exec(INDEX_DDL);
+    } catch (error) {
+      // Index creation is an optimization. A read-only file or a lock must not
+      // turn a working store into a disabled one; the key scans still work.
+      this.logger.warn(`metrics indexes unavailable: ${String(error)}`);
     }
   }
 

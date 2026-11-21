@@ -45,7 +45,93 @@ afterEach(() => {
   }
 });
 
+/**
+ * Lists the hot-path indexes present in a metrics database.
+ * @param dbPath - Path to the temporary test database.
+ * @returns The names of the indexes created by the service.
+ */
+const indexNames = (dbPath: string): string[] => {
+  const db = new DatabaseSync(dbPath);
+  try {
+    // node:sqlite types query results as unknown; the selected column is a name string.
+    const rows = db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx\\_%' ESCAPE '\\'")
+      .all() as Array<{ name: string }>;
+    return rows.map((row) => row.name);
+  } finally {
+    db.close();
+  }
+};
+
+const HOT_INDEXES = [
+  'idx_metric_counter_bucket',
+  'idx_metric_counter_name_bucket',
+  'idx_metric_counter_ip_bucket',
+  'idx_metric_hist_bucket',
+];
+
+/**
+ * Returns the plan detail lines for a statement against a temporary store.
+ * @param dbPath - Path to the temporary test database.
+ * @param sql - Statement to explain.
+ * @returns The plan detail lines, in SQLite's order.
+ */
+const queryPlan = (dbPath: string, sql: string): string[] => {
+  const db = new DatabaseSync(dbPath);
+  try {
+    // node:sqlite types query results as unknown; EXPLAIN returns detail strings.
+    const rows = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all() as Array<{ detail: string }>;
+    return rows.map((row) => row.detail);
+  } finally {
+    db.close();
+  }
+};
+
 describe('MetricsService open', () => {
+  it('creates the hot-path indexes on a fresh store', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    tempDirs.push(dir);
+    const dbPath = path.join(dir, 'metrics.db');
+    const service = new MetricsService({ dbPath, flushIntervalMs: 0, retentionDays: 35 });
+    expect(service.snapshot().metricsDisabled).toBe(false);
+    expect(indexNames(dbPath)).toEqual(expect.arrayContaining(HOT_INDEXES));
+  });
+
+  it('adds the hot-path indexes to an existing version-1 database', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    tempDirs.push(dir);
+    const dbPath = path.join(dir, 'metrics.db');
+    const old = new DatabaseSync(dbPath);
+    old.exec(`
+      CREATE TABLE metric_counter (name TEXT NOT NULL, route TEXT NOT NULL, bucket TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, bytes INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (name, route, bucket)) STRICT;
+      CREATE TABLE metric_counter_ip (name TEXT NOT NULL, ip TEXT NOT NULL, bucket TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, bytes INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (name, ip, bucket)) STRICT;
+      CREATE TABLE metric_hist (route TEXT NOT NULL, bucket TEXT NOT NULL, le REAL NOT NULL, count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (route, bucket, le)) STRICT;
+      PRAGMA user_version = 1;
+    `);
+    old.close();
+    expect(indexNames(dbPath)).toEqual([]);
+
+    const service = new MetricsService({ dbPath, flushIntervalMs: 0, retentionDays: 35 });
+    expect(service.snapshot().metricsDisabled).toBe(false);
+    expect(indexNames(dbPath)).toEqual(expect.arrayContaining(HOT_INDEXES));
+  });
+
+  it('uses the new indexes for the retention sweep and the totals rollup', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    tempDirs.push(dir);
+    const dbPath = path.join(dir, 'metrics.db');
+    const service = new MetricsService({ dbPath, flushIntervalMs: 0, retentionDays: 35 });
+    expect(service.snapshot().metricsDisabled).toBe(false);
+
+    const sweepPlan = queryPlan(dbPath, "DELETE FROM metric_counter WHERE bucket < '2026-01-01T00'");
+    expect(sweepPlan.join(' ')).toContain('idx_metric_counter_bucket');
+    const totalsPlan = queryPlan(
+      dbPath,
+      "SELECT name, SUM(count) FROM metric_counter WHERE bucket >= '2026-01-01T00' GROUP BY name",
+    );
+    expect(totalsPlan.join(' ')).toContain('idx_metric_counter_name_bucket');
+  });
+
   it('creates the directory and database file', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
     tempDirs.push(dir);

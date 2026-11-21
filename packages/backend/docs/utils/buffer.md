@@ -31,8 +31,8 @@
 Passes stream chunks through while rejecting anything past a byte budget.
 
 **Kind**: global class  
-src: packages/backend/src/utils/buffer.ts:11  
-dist: packages/backend/dist/utils/buffer.js:5
+src: packages/backend/src/utils/buffer.ts:14  
+dist: packages/backend/dist/utils/buffer.js:10 (approx.)
 <a name="new_ByteCapTransform_new"></a>
 
 ### new ByteCapTransform(maxBytes)
@@ -47,8 +47,8 @@ dist: packages/backend/dist/utils/buffer.js:5
 Maximum number of bytes buffered from a stream (20 MiB).
 
 **Kind**: global constant  
-src: packages/backend/src/utils/buffer.ts:6  
-dist: packages/backend/dist/utils/buffer.js:4
+src: packages/backend/src/utils/buffer.ts:9  
+dist: packages/backend/dist/utils/buffer.js:6 (approx.)
 <a name="bufferStream"></a>
 
 ## bufferStream(stream, maxBytes) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -62,8 +62,8 @@ Buffers a readable stream into a single Buffer, enforcing a size cap.
 | stream | <code>Readable</code> | The readable stream to buffer. |
 | maxBytes | <code>number</code> | The maximum number of bytes to accept before throwing. |
 
-src: packages/backend/src/utils/buffer.ts:37  
-dist: packages/backend/dist/utils/buffer.js:21
+src: packages/backend/src/utils/buffer.ts:40  
+dist: packages/backend/dist/utils/buffer.js:35 (approx.)
 <a name="parseJsonBuffer"></a>
 
 ## parseJsonBuffer(buffer) ⇒ <code>unknown</code>
@@ -76,5 +76,5 @@ Parses a small JSON payload emitted by a worker.
 | --- | --- | --- |
 | buffer | <code>Buffer&lt;ArrayBufferLike&gt;</code> | UTF-8 encoded JSON bytes. |
 
-src: packages/backend/src/utils/buffer.ts:53  
-dist: packages/backend/dist/utils/buffer.js:28
+src: packages/backend/src/utils/buffer.ts:64  
+dist: packages/backend/dist/utils/buffer.js:55 (approx.)

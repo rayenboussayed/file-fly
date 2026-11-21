@@ -11,6 +11,11 @@ describe('bufferStream', () => {
     expect(result.equals(Buffer.from('hello world'))).toBe(true);
   });
 
+  it('accepts a stream exactly at the byte cap', async () => {
+    const result = await bufferStream(Readable.from([Buffer.from('abcd')]), 4);
+    expect(result.toString()).toBe('abcd');
+  });
+
   it('throws PayloadTooLargeException when exceeding a small maxBytes', async () => {
     await expect(bufferStream(Readable.from([Buffer.from('hello')]), 4)).rejects.toBeInstanceOf(
       PayloadTooLargeException,
