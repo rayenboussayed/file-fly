@@ -1,3 +1,4 @@
+import pino from 'pino';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -42,6 +43,31 @@ describe('buildPinoOptions', () => {
     expect(options.redact).toMatchObject({
       paths: expect.arrayContaining([...redactPaths]),
     });
+  });
+
+  it('redacts the basic-auth header pair when pino sees raw headers', () => {
+    const lines: string[] = [];
+    const sink = { write: (line: string) => { lines.push(line); } };
+    const logger = pino(buildPinoOptions({ isProduction: true }), sink);
+
+    logger.info({
+      req: {
+        headers: {
+          authorization: 'Bearer secret',
+          cookie: 'session=secret',
+          'x-auth-password': 'secret',
+          'x-auth-username': 'alice',
+          'x-file-hash': 'keep-me',
+        },
+      },
+    }, 'probe');
+
+    const output = lines.join('');
+    expect(output).toContain('"authorization":"[Redacted]"');
+    expect(output).toContain('"cookie":"[Redacted]"');
+    expect(output).toContain('"x-auth-password":"[Redacted]"');
+    expect(output).toContain('"x-auth-username":"[Redacted]"');
+    expect(output).toContain('"x-file-hash":"keep-me"');
   });
 });
 

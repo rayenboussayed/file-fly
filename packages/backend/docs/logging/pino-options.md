@@ -63,8 +63,8 @@ Request serializer: id, method and path only. Headers and query strings are drop
 | --- | --- | --- |
 | request | <code>IncomingMessage &amp; { id?: number \| string; }</code> | The raw Node request. |
 
-src: packages/backend/src/logging/pino-options.ts:43  
-dist: packages/backend/dist/logging/pino-options.js:13
+src: packages/backend/src/logging/pino-options.ts:45  
+dist: packages/backend/dist/logging/pino-options.js:15
 <a name="serializeResponse"></a>
 
 ## serializeResponse(response) ⇒ <code>{ statusCode: number; }</code>
@@ -77,8 +77,8 @@ Response serializer: status code only.
 | --- | --- | --- |
 | response | <code>ServerResponse&lt;IncomingMessage&gt;</code> | The raw Node response. |
 
-src: packages/backend/src/logging/pino-options.ts:56  
-dist: packages/backend/dist/logging/pino-options.js:18
+src: packages/backend/src/logging/pino-options.ts:58  
+dist: packages/backend/dist/logging/pino-options.js:20
 <a name="buildPinoHttpOptions"></a>
 
 ## buildPinoHttpOptions(environment) ⇒ <code>PinoHttpOptions&lt;IncomingMessage, ServerResponse&lt;IncomingMessage&gt;, never&gt;</code>
@@ -92,8 +92,8 @@ Builds the pino-http options used by nestjs-pino. Adds request auto-logging
 | --- | --- | --- |
 | environment | <code>PinoEnvironment</code> | Runtime inputs; see [PinoEnvironment](PinoEnvironment). |
 
-src: packages/backend/src/logging/pino-options.ts:69  
-dist: packages/backend/dist/logging/pino-options.js:22
+src: packages/backend/src/logging/pino-options.ts:71  
+dist: packages/backend/dist/logging/pino-options.js:24
 <a name="buildPinoOptions"></a>
 
 ## buildPinoOptions(environment) ⇒ <code>LoggerOptions&lt;never, boolean&gt;</code>
@@ -106,5 +106,5 @@ Builds the base pino options shared by the bootstrap logger and the request logg
 | --- | --- | --- |
 | environment | <code>PinoEnvironment</code> | Runtime inputs; see [PinoEnvironment](PinoEnvironment). |
 
-src: packages/backend/src/logging/pino-options.ts:87  
-dist: packages/backend/dist/logging/pino-options.js:32
+src: packages/backend/src/logging/pino-options.ts:89  
+dist: packages/backend/dist/logging/pino-options.js:34

@@ -16,11 +16,10 @@ import { Logger } from 'nestjs-pino';
 import { z } from 'zod';
 import { createSchema } from 'zod-openapi';
 
-import * as AppHeaders from '@/constants/header.js';
-
 import { AppModule } from './app.module.js';
 import { otelSDK } from './app.tracing.js';
 import { configureFastify } from './bootstrap.js';
+import { buildCorsOptions } from './cors.js';
 import { environment, isProduction } from './environment.js';
 import { bootstrapLogger } from './logging/bootstrap-logger.js';
 
@@ -60,12 +59,8 @@ async function bootstrap() {
   await configureFastify(app.getHttpAdapter().getInstance());
 
   if (isProduction) {
-    app.enableCors({
-      credentials: true,
-      exposedHeaders: Object.values(AppHeaders),
-      // Unset CORS_ORIGIN = cross-origin browser reads disabled, not wide open.
-      origin: environment.CORS_ORIGIN ?? false,
-    });
+    // Unset CORS_ORIGIN = cross-origin browser reads disabled, not wide open.
+    app.enableCors(buildCorsOptions(environment.CORS_ORIGIN));
     app.useSecurityHeaders();
     app.enableCsrfProtection();
   }

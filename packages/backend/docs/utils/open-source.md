@@ -83,7 +83,7 @@ Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive.
 
 **Kind**: global constant  
 src: packages/backend/src/utils/open-source.ts:81  
-dist: packages/backend/dist/utils/open-source.js:71 (approx.)
+dist: packages/backend/dist/utils/open-source.js:44
 <a name="ipv4Octets"></a>
 
 ## ipv4Octets(host) ⇒ <code>[number, number, number, number]</code>
@@ -128,7 +128,7 @@ Network-specific RFC 6052 prefixes with other bit offsets are out of scope.
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
 src: packages/backend/src/utils/open-source.ts:56  
-dist: packages/backend/dist/utils/open-source.js:47 (approx.)
+dist: packages/backend/dist/utils/open-source.js:27
 <a name="isPrivateIpv6"></a>
 
 ## isPrivateIpv6(host) ⇒ <code>boolean</code>
@@ -143,7 +143,7 @@ or embeds a private IPv4 address in a recognized IPv4-embedding prefix.
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
 src: packages/backend/src/utils/open-source.ts:72  
-dist: packages/backend/dist/utils/open-source.js:29
+dist: packages/backend/dist/utils/open-source.js:37
 <a name="assertEgressAllowed"></a>
 
 ## assertEgressAllowed(url)
@@ -166,7 +166,7 @@ such deployments.
 | url | <code>URL</code> | The parsed source URL. |
 
 src: packages/backend/src/utils/open-source.ts:96  
-dist: packages/backend/dist/utils/open-source.js:48
+dist: packages/backend/dist/utils/open-source.js:45
 <a name="openMediaSource"></a>
 
 ## openMediaSource(cls) ⇒ <code>Promise&lt;void&gt;</code>
