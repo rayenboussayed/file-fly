@@ -2,7 +2,7 @@ import { PayloadTooLargeException } from '@nestjs/common';
 import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 
-import { bufferStream } from './buffer.js';
+import { bufferStream, ByteCapTransform, parseJsonBuffer } from './buffer.js';
 
 describe('bufferStream', () => {
   it('concatenates a small stream into a single Buffer', async () => {
@@ -28,6 +28,29 @@ describe('bufferStream', () => {
       }
     }
     await expect(bufferStream(Readable.from(chunks()))).rejects.toBeInstanceOf(PayloadTooLargeException);
+  });
+});
+
+describe('ByteCapTransform', () => {
+  it('passes chunks through until the budget is exceeded', async () => {
+    const capped = Readable.from([Buffer.from('ab'), Buffer.from('cd')]).compose(
+      new ByteCapTransform(3),
+    );
+    const chunks: Buffer[] = [];
+    await expect(async () => {
+      for await (const chunk of capped) chunks.push(chunk);
+    }).rejects.toBeInstanceOf(PayloadTooLargeException);
+    expect(Buffer.concat(chunks).toString()).toBe('ab');
+  });
+});
+
+describe('parseJsonBuffer', () => {
+  it('parses a UTF-8 JSON payload with surrounding whitespace', () => {
+    expect(parseJsonBuffer(Buffer.from('  {"word":"caf\u00e9"}  '))).toEqual({ word: 'café' });
+  });
+
+  it('rejects malformed JSON', () => {
+    expect(() => parseJsonBuffer(Buffer.from('{not json}'))).toThrow(SyntaxError);
   });
 });
 

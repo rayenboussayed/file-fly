@@ -5,6 +5,7 @@ import type { DocxBuildType } from '../schema.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
 import { OoxmlReader } from '../../../services/ooxml-reader.js';
+import { exitWorker } from '../../../utils/worker-exit.js';
 import { buildBlock, buildSectionOptions } from '../elements.js';
 
 const logger = createWorkerLogger();
@@ -12,19 +13,14 @@ const logger = createWorkerLogger();
 /** Worker input: `{ operation: 'build', payload: DocxBuildType }` from WorkerService. */
 type WorkerInput = { operation?: string; payload: DocxBuildType };
 
-/**
- * Ends the worker with a clean exit, dropping the stdin handle so the event loop
- * drains, with a short backstop for native handles.
- * @param code - Exit code.
- */
 const runStandalone = process.env.FILE_FLY_WORKER === '1';
 
+/**
+ * Ends the worker with a clean exit when it runs standalone.
+ * @param code - Exit code.
+ */
 const finishWorker = (code: number) => {
-  if (!runStandalone) return; // unit specs import the module in-process
-  process.exitCode = code;
-  process.stdin.destroy();
-// eslint-disable-next-line n/no-process-exit -- worker threads need the explicit exit backstop; native media handles can linger past the stdin drain.
-  setTimeout(() => process.exit(code), 250).unref();
+  if (runStandalone) exitWorker(code); // unit specs import the module in-process
 };
 
 const buildNoteMap = (notes: NonNullable<DocxBuildType['footnotes']> | undefined) =>

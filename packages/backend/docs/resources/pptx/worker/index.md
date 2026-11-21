@@ -10,5 +10,5 @@ drains, with a short backstop for native handles.
 | --- | --- | --- |
 | code | <code>number</code> | Exit code. |
 
-src: packages/backend/src/resources/pptx/worker/index.ts:22  
-dist: packages/backend/dist/resources/pptx/worker/index.js:8
+src: packages/backend/src/resources/pptx/worker/index.ts:23  
+dist: packages/backend/dist/resources/pptx/worker/index.js:9

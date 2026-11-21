@@ -1,3 +1,11 @@
+## Classes
+
+<dl>
+<dt><a href="#ByteCapTransform">ByteCapTransform</a></dt>
+<dd><p>Passes stream chunks through while rejecting anything past a byte budget.</p>
+</dd>
+</dl>
+
 ## Constants
 
 <dl>
@@ -12,7 +20,26 @@
 <dt><a href="#bufferStream">bufferStream(stream, maxBytes)</a> ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code></dt>
 <dd><p>Buffers a readable stream into a single Buffer, enforcing a size cap.</p>
 </dd>
+<dt><a href="#parseJsonBuffer">parseJsonBuffer(buffer)</a> ⇒ <code>unknown</code></dt>
+<dd><p>Parses a small JSON payload emitted by a worker.</p>
+</dd>
 </dl>
+
+<a name="ByteCapTransform"></a>
+
+## ByteCapTransform
+Passes stream chunks through while rejecting anything past a byte budget.
+
+**Kind**: global class  
+src: packages/backend/src/utils/buffer.ts:12  
+dist: packages/backend/dist/utils/buffer.js:9 (approx.)
+<a name="new_ByteCapTransform_new"></a>
+
+### new ByteCapTransform(maxBytes)
+
+| Param | Type | Description |
+| --- | --- | --- |
+| maxBytes | <code>number</code> | Maximum bytes to accept before destroying the stream. |
 
 <a name="MAX_BUFFER_BYTES"></a>
 
@@ -20,8 +47,8 @@
 Maximum number of bytes buffered from a stream (20 MiB).
 
 **Kind**: global constant  
-src: packages/backend/src/utils/buffer.ts:8  
-dist: packages/backend/dist/utils/buffer.js:4
+src: packages/backend/src/utils/buffer.ts:7  
+dist: packages/backend/dist/utils/buffer.js:5 (approx.)
 <a name="bufferStream"></a>
 
 ## bufferStream(stream, maxBytes) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -35,5 +62,19 @@ Buffers a readable stream into a single Buffer, enforcing a size cap.
 | stream | <code>Readable</code> | The readable stream to buffer. |
 | maxBytes | <code>number</code> | The maximum number of bytes to accept before throwing. |
 
-src: packages/backend/src/utils/buffer.ts:16  
-dist: packages/backend/dist/utils/buffer.js:5
+src: packages/backend/src/utils/buffer.ts:38  
+dist: packages/backend/dist/utils/buffer.js:34 (approx.)
+<a name="parseJsonBuffer"></a>
+
+## parseJsonBuffer(buffer) ⇒ <code>unknown</code>
+Parses a small JSON payload emitted by a worker.
+
+**Kind**: global function  
+**Returns**: <code>unknown</code> - The parsed JSON value.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| buffer | <code>Buffer&lt;ArrayBufferLike&gt;</code> | UTF-8 encoded JSON bytes. |
+
+src: packages/backend/src/utils/buffer.ts:54  
+dist: packages/backend/dist/utils/buffer.js:46 (approx.)

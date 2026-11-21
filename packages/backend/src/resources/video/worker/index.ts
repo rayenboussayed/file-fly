@@ -3,6 +3,7 @@ import { workerData } from 'node:worker_threads';
 import type { VideoWorkerData } from '../type.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
+import { exitWorker as finishWorker } from '../../../utils/worker-exit.js';
 import { dna } from './dna.js';
 import { metadata, stats } from './inspect.js';
 import { processMedia } from './processor.js';
@@ -11,18 +12,6 @@ import { screenshot } from './screenshot.js';
 const logger = createWorkerLogger();
 
 const data: VideoWorkerData = workerData;
-
-/**
- * Ends the worker process once the job is done: drops the stdin handle so
- * the event loop drains naturally, with a short backstop if native handles linger.
- * @param code - Exit code for the worker process.
- */
-function finishWorker(code: number) {
-  process.exitCode = code;
-  process.stdin.destroy();
-  // eslint-disable-next-line n/no-process-exit -- native media handles can keep the worker alive; this is the bounded backstop.
-  setTimeout(() => process.exit(code), 250).unref();
-}
 
 /** Dispatches the requested video operation (processor/metadata/dna/stats/screenshot). */
 async function run() {

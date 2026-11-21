@@ -272,7 +272,7 @@ OTLP/HTTP traces endpoint for OpenTelemetry (`/v1/traces` appended when only the
 
 **Kind**: global variable  
 src: packages/backend/src/environment.ts:96  
-dist: packages/backend/dist/environment.js:40
+dist: packages/backend/dist/environment.js:41
 <a name="TESSERACT_DIR"></a>
 
 ## TESSERACT\_DIR

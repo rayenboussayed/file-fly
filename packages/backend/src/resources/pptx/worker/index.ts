@@ -4,6 +4,7 @@ import type { PptxBuildType } from '../schema.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
 import { OoxmlReader } from '../../../services/ooxml-reader.js';
+import { exitWorker } from '../../../utils/worker-exit.js';
 import { buildPresentation } from '../elements.js';
 import { PptxGenJs } from '../pptxgenjs.js';
 
@@ -20,11 +21,7 @@ const runStandalone = process.env.FILE_FLY_WORKER === '1';
  * @param code - Exit code.
  */
 const finishWorker = (code: number) => {
-  if (!runStandalone) return; // unit specs import the module in-process
-  process.exitCode = code;
-  process.stdin.destroy();
-// eslint-disable-next-line n/no-process-exit -- worker threads need the explicit exit backstop; native media handles can linger past the stdin drain.
-  setTimeout(() => process.exit(code), 250).unref();
+  if (runStandalone) exitWorker(code); // unit specs import the module in-process
 };
 
 const data = workerData as WorkerInput;

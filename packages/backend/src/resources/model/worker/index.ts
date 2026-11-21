@@ -3,6 +3,7 @@ import { workerData } from 'node:worker_threads';
 import type { ModelOptimizeType } from '../schema.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
+import { exitWorker } from '../../../utils/worker-exit.js';
 import { optimizeDocument, readModel, writeGlb } from '../gltf.js';
 
 const logger = createWorkerLogger();
@@ -16,11 +17,7 @@ type WorkerInput = { operation?: string; payload: { buffer: Buffer; query: Model
  * @param code - The exit code to report.
  */
 const finishWorker = (code: number) => {
-  if (!runStandalone) return; // unit specs import the module in-process
-  process.exitCode = code;
-  process.stdin.destroy();
-// eslint-disable-next-line n/no-process-exit -- worker threads need the explicit exit backstop; native wasm handles can linger past the stdin drain.
-  setTimeout(() => process.exit(code), 250).unref();
+  if (runStandalone) exitWorker(code); // unit specs import the module in-process
 };
 
 // workerData is set exclusively by ModelService.optimize's createWorker call with this exact shape.

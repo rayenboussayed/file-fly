@@ -1,12 +1,3 @@
-## Classes
-
-<dl>
-<dt><a href="#ByteCapTransform">ByteCapTransform</a></dt>
-<dd><p>Streams bytes through while counting them; self-destructs with a
-<code>PayloadTooLargeException</code> once the running total exceeds <code>maxBytes</code>.</p>
-</dd>
-</dl>
-
 ## Constants
 
 <dl>
@@ -61,23 +52,6 @@ is rejected 413 before any byte flows, and a byte-counting transform
 self-destructs past the cap for unsized uploads and chunked downloads.</p>
 </dd>
 </dl>
-
-<a name="ByteCapTransform"></a>
-
-## ByteCapTransform
-Streams bytes through while counting them; self-destructs with a
-`PayloadTooLargeException` once the running total exceeds `maxBytes`.
-
-**Kind**: global class  
-src: packages/backend/src/utils/open-source.ts:115  
-dist: packages/backend/dist/utils/open-source.js:61
-<a name="new_ByteCapTransform_new"></a>
-
-### new ByteCapTransform(maxBytes)
-
-| Param | Type | Description |
-| --- | --- | --- |
-| maxBytes | <code>number</code> | Maximum bytes to accept before destroying the stream. |
 
 <a name="FORWARDABLE_HEADERS"></a>
 
@@ -199,5 +173,5 @@ self-destructs past the cap for unsized uploads and chunked downloads.
 | --- | --- | --- |
 | cls | <code>NormalizedClsService</code> | The normalized CLS service carrying the current request context. |
 
-src: packages/backend/src/utils/open-source.ts:159  
-dist: packages/backend/dist/utils/open-source.js:77
+src: packages/backend/src/utils/open-source.ts:135  
+dist: packages/backend/dist/utils/open-source.js:117 (approx.)

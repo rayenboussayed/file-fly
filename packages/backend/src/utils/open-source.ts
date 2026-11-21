@@ -1,12 +1,12 @@
 import { BadRequestException, PayloadTooLargeException } from '@nestjs/common';
 import { streamSizeTransform } from 'jutilities/node/stream/size';
-import { Transform, type TransformCallback } from 'node:stream';
 import { request as netRequest } from 'undici';
 
 import type { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { environment } from '@/environment.js';
 import { SourceSchema } from '@/schema.js';
+import { ByteCapTransform } from '@/utils/buffer.js';
 
 /** Headers safe to forward to the remote origin; everything else is dropped. */
 const FORWARDABLE_HEADERS = new Set(['accept', 'accept-language', 'user-agent']);
@@ -107,30 +107,6 @@ const assertEgressAllowed = (url: URL): void => {
     });
   }
 };
-
-/**
- * Streams bytes through while counting them; self-destructs with a
- * `PayloadTooLargeException` once the running total exceeds `maxBytes`.
- */
-class ByteCapTransform extends Transform {
-  private bytes = 0;
-
-  /**
-   * @param maxBytes - Maximum bytes to accept before destroying the stream.
-   */
-  constructor(private readonly maxBytes: number) {
-    super();
-  }
-
-  override _transform(chunk: Buffer, _encoding: BufferEncoding, callback: TransformCallback): void {
-    this.bytes += chunk.length;
-    if (this.bytes > this.maxBytes) {
-      callback(new PayloadTooLargeException(`Input exceeds ${this.maxBytes} bytes`));
-      return;
-    }
-    callback(null, chunk);
-  }
-}
 
 /**
  * Opens the media source for the current request: sets the source direction

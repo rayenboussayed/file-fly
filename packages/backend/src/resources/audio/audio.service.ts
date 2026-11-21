@@ -4,7 +4,7 @@ import { Injectable, UnsupportedMediaTypeException } from '@nestjs/common';
 
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
-import { bufferStream } from '@/utils/buffer.js';
+import { bufferStream, parseJsonBuffer } from '@/utils/buffer.js';
 import { toDemuxerFormat } from '@/utils/input-format.js';
 
 import type { AudioProcessorType } from './schema.js';
@@ -28,7 +28,7 @@ export class AudioService {
     });
     // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
     const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
-    return JSON.parse(buffer.toString().trim());
+    return parseJsonBuffer(buffer);
   }
 
   async metadata(): Promise<unknown> {
@@ -42,7 +42,7 @@ export class AudioService {
     });
     // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
     const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
-    return JSON.parse(buffer.toString().trim());
+    return parseJsonBuffer(buffer);
   }
 
   async processor(
@@ -70,6 +70,6 @@ export class AudioService {
     });
     // Worker stdout is small JSON; cap at 8 MiB rather than letting a misbehaving worker grow unboundedly.
     const buffer = await bufferStream(stdout, 8 * 1024 * 1024);
-    return JSON.parse(buffer.toString().trim());
+    return parseJsonBuffer(buffer);
   }
 }

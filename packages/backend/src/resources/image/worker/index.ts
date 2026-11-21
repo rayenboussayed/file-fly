@@ -3,24 +3,13 @@ import { workerData } from 'node:worker_threads';
 import type { ImageWorkerData } from '../type.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
+import { exitWorker as finishWorker } from '../../../utils/worker-exit.js';
 import { metadata, stats } from './inspect.js';
 import { Processor } from './processor.js';
 
 const logger = createWorkerLogger();
 
 const data: ImageWorkerData = workerData;
-
-/**
- * Ends the worker process once the job is done: drops the stdin handle so
- * the event loop drains naturally, with a short backstop if native handles linger.
- * @param code - Exit code for the worker process.
- */
-export function finishWorker(code: number) {
-  process.exitCode = code;
-  process.stdin.destroy();
-  // eslint-disable-next-line n/no-process-exit -- native media handles can keep the worker alive; this is the bounded backstop.
-  setTimeout(() => process.exit(code), 250).unref();
-}
 
 /**
  * Dispatches the requested image operation (processor/metadata/stats).

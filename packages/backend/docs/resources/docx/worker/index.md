@@ -1,14 +1,13 @@
-<a name="runStandalone"></a>
+<a name="finishWorker"></a>
 
-## runStandalone
-Ends the worker with a clean exit, dropping the stdin handle so the event loop
-drains, with a short backstop for native handles.
+## finishWorker(code)
+Ends the worker with a clean exit when it runs standalone.
 
-**Kind**: global constant  
+**Kind**: global function  
 
-| Param | Description |
-| --- | --- |
-| code | Exit code. |
+| Param | Type | Description |
+| --- | --- | --- |
+| code | <code>number</code> | Exit code. |
 
-src: packages/backend/src/resources/docx/worker/index.ts:20  
-dist: packages/backend/dist/resources/docx/worker/index.js:7
+src: packages/backend/src/resources/docx/worker/index.ts:22  
+dist: packages/backend/dist/resources/docx/worker/index.js:8
