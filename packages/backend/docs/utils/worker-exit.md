@@ -9,8 +9,8 @@ outlive the drain. The timer is unref&#39;d, so it never holds the process open.
 <dt><a href="#standaloneExit">standaloneExit(code)</a></dt>
 <dd><p>Exits the worker thread when it is running standalone; a no-op otherwise.
 The guard reads <code>FILE_FLY_WORKER</code> at call time: WorkerService sets it to
-&quot;1&quot; before spawning, while unit specs stub it to &quot;0&quot; and import the module
-in-process.</p>
+&quot;1&quot; before spawning, while unit specs import the module in-process with the
+variable unset.</p>
 </dd>
 </dl>
 
@@ -34,8 +34,8 @@ dist: packages/backend/dist/utils/worker-exit.js:1
 ## standaloneExit(code)
 Exits the worker thread when it is running standalone; a no-op otherwise.
 The guard reads `FILE_FLY_WORKER` at call time: WorkerService sets it to
-"1" before spawning, while unit specs stub it to "0" and import the module
-in-process.
+"1" before spawning, while unit specs import the module in-process with the
+variable unset.
 
 **Kind**: global function  
 

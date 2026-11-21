@@ -2,13 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { exitWorker, standaloneExit } from './worker-exit.js';
 
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+  process.exitCode = 0;
+});
+
 describe('exitWorker', () => {
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-    vi.unstubAllEnvs();
-    process.exitCode = 0;
-  });
 
   it('sets the exit code, drops stdin, and exits after the unref backstop', () => {
     const destroy = vi.spyOn(process.stdin, 'destroy').mockReturnValue(process.stdin);
@@ -39,12 +40,6 @@ describe('exitWorker', () => {
 });
 
 describe('standaloneExit', () => {
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-    vi.unstubAllEnvs();
-    process.exitCode = 0;
-  });
 
   it('is a no-op when FILE_FLY_WORKER is not set', () => {
     vi.stubEnv('FILE_FLY_WORKER', undefined);

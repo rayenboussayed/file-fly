@@ -17,7 +17,7 @@ vi.mock('./api', async (importOriginal) => {
   return { ...original, fetchMetrics: mocks.fetchMetrics };
 });
 
-const snapshot = fixture as never;
+const snapshot: unknown = fixture;
 
 const renderMetricsQuery = () => {
   const queryClient = new QueryClient();

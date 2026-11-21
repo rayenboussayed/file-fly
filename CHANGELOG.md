@@ -63,7 +63,8 @@ from the commit history (2026-10-31 .. 2026-11-21).
 
 ### Changed
 
-- Second deep refactoring pass: worker entries share one standalone-exit guard
+- Second deep refactoring pass: document-family worker entries share one
+  standalone-exit guard
   (`ee38781`, `30ca6bc`); the auth header pair has one constant source shared by
   the basic-auth perimeter, CORS and log redaction (`7945e2c`); both dashboard
   pages poll through one `useMetricsQuery` hook (`ce676ac`). Generated API docs
