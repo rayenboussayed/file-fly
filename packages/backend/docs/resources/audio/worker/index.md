@@ -21,7 +21,7 @@ Dispatches the requested audio operation (processor/metadata/dna/stats).
 | inputData | <code>AudioWorkerData</code> | Worker dispatch data (defaults to the spawned worker's workerData). |
 
 src: packages/backend/src/resources/audio/worker/index.ts:19  
-dist: packages/backend/dist/resources/audio/worker/index.js:8
+dist: packages/backend/dist/resources/audio/worker/index.js:9
 <a name="startAudioWorker"></a>
 
 ## startAudioWorker() ⇒ <code>Promise&lt;any&gt;</code>
@@ -30,4 +30,4 @@ Runs the worker job and, only inside a spawned worker thread, finishes the proce
 **Kind**: global function  
 **Returns**: <code>Promise&lt;any&gt;</code> - The worker job promise (resolved when the job has been dispatched).  
 src: packages/backend/src/resources/audio/worker/index.ts:40  
-dist: packages/backend/dist/resources/audio/worker/index.js:23
+dist: packages/backend/dist/resources/audio/worker/index.js:25

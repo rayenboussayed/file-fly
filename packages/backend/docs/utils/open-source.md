@@ -21,8 +21,15 @@
 <dt><a href="#isPrivateIpv4">isPrivateIpv4(octets)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Whether an IPv4 literal sits in a loopback, private, link-local or CGNAT range.</p>
 </dd>
+<dt><a href="#ipv4EmbeddedOctets">ipv4EmbeddedOctets(host)</a> ⇒ <code>[number, number, number, number]</code></dt>
+<dd><p>Extracts the embedded IPv4 octets from an IPv6 literal that carries an IPv4
+address in its last 32 bits. Node canonicalizes these to <code>::ffff:X:Y</code>,
+<code>::X:Y</code> (IPv4-compatible) or <code>64:ff9b::X:Y</code> / <code>64:ff9b:1::X:Y</code> (NAT64).
+Network-specific RFC 6052 prefixes with other bit offsets are out of scope.</p>
+</dd>
 <dt><a href="#isPrivateIpv6">isPrivateIpv6(host)</a> ⇒ <code>boolean</code></dt>
-<dd><p>Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/fe80::/10.</p>
+<dd><p>Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/fe80::/10
+or embeds a private IPv4 address in a recognized IPv4-embedding prefix.</p>
 </dd>
 <dt><a href="#assertEgressAllowed">assertEgressAllowed(url)</a></dt>
 <dd><p>Enforces the egress rules for a user-supplied source URL:
@@ -75,8 +82,8 @@ dist: packages/backend/dist/utils/open-source.js:8
 Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive.
 
 **Kind**: global constant  
-src: packages/backend/src/utils/open-source.ts:57  
-dist: packages/backend/dist/utils/open-source.js:28
+src: packages/backend/src/utils/open-source.ts:81  
+dist: packages/backend/dist/utils/open-source.js:71 (approx.)
 <a name="ipv4Octets"></a>
 
 ## ipv4Octets(host) ⇒ <code>[number, number, number, number]</code>
@@ -105,10 +112,28 @@ Whether an IPv4 literal sits in a loopback, private, link-local or CGNAT range.
 
 src: packages/backend/src/utils/open-source.ts:34  
 dist: packages/backend/dist/utils/open-source.js:16
+<a name="ipv4EmbeddedOctets"></a>
+
+## ipv4EmbeddedOctets(host) ⇒ <code>[number, number, number, number]</code>
+Extracts the embedded IPv4 octets from an IPv6 literal that carries an IPv4
+address in its last 32 bits. Node canonicalizes these to `::ffff:X:Y`,
+`::X:Y` (IPv4-compatible) or `64:ff9b::X:Y` / `64:ff9b:1::X:Y` (NAT64).
+Network-specific RFC 6052 prefixes with other bit offsets are out of scope.
+
+**Kind**: global function  
+**Returns**: <code>[number, number, number, number]</code> - The four embedded octets, or undefined for any other host.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| host | <code>string</code> | Lowercased bare host without brackets. |
+
+src: packages/backend/src/utils/open-source.ts:56  
+dist: packages/backend/dist/utils/open-source.js:47 (approx.)
 <a name="isPrivateIpv6"></a>
 
 ## isPrivateIpv6(host) ⇒ <code>boolean</code>
-Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/fe80::/10.
+Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/fe80::/10
+or embeds a private IPv4 address in a recognized IPv4-embedding prefix.
 
 **Kind**: global function  
 **Returns**: <code>boolean</code> - True when the literal must not be fetched.  
@@ -117,8 +142,8 @@ Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/f
 | --- | --- | --- |
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
-src: packages/backend/src/utils/open-source.ts:53  
-dist: packages/backend/dist/utils/open-source.js:27
+src: packages/backend/src/utils/open-source.ts:72  
+dist: packages/backend/dist/utils/open-source.js:29
 <a name="assertEgressAllowed"></a>
 
 ## assertEgressAllowed(url)
@@ -140,8 +165,8 @@ such deployments.
 | --- | --- | --- |
 | url | <code>URL</code> | The parsed source URL. |
 
-src: packages/backend/src/utils/open-source.ts:72  
-dist: packages/backend/dist/utils/open-source.js:29
+src: packages/backend/src/utils/open-source.ts:96  
+dist: packages/backend/dist/utils/open-source.js:48
 <a name="openMediaSource"></a>
 
 ## openMediaSource(cls) ⇒ <code>Promise&lt;void&gt;</code>
@@ -173,5 +198,5 @@ self-destructs past the cap for unsized uploads and chunked downloads.
 | --- | --- | --- |
 | cls | <code>NormalizedClsService</code> | The normalized CLS service carrying the current request context. |
 
-src: packages/backend/src/utils/open-source.ts:135  
-dist: packages/backend/dist/utils/open-source.js:117 (approx.)
+src: packages/backend/src/utils/open-source.ts:159  
+dist: packages/backend/dist/utils/open-source.js:77

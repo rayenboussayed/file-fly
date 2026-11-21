@@ -12,3 +12,4 @@ outlive the drain. The timer is unref'd, so it never holds the process open.
 | code | <code>number</code> | Exit code for the worker process. |
 
 src: packages/backend/src/utils/worker-exit.ts:7  
+dist: packages/backend/dist/utils/worker-exit.js:1

@@ -16,7 +16,7 @@ Dispatches the requested video operation (processor/metadata/dna/stats/screensho
 
 **Kind**: global function  
 src: packages/backend/src/resources/video/worker/index.ts:17  
-dist: packages/backend/dist/resources/video/worker/index.js:11 (approx.)
+dist: packages/backend/dist/resources/video/worker/index.js:10
 <a name="startVideoWorker"></a>
 
 ## startVideoWorker() ⇒ <code>Promise&lt;any&gt;</code>
@@ -25,4 +25,4 @@ Runs the worker job and, only inside a spawned worker thread, finishes the proce
 **Kind**: global function  
 **Returns**: <code>Promise&lt;any&gt;</code> - The job (with exit-code handling attached when running as a worker thread).  
 src: packages/backend/src/resources/video/worker/index.ts:41  
-dist: packages/backend/dist/resources/video/worker/index.js:27
+dist: packages/backend/dist/resources/video/worker/index.js:29

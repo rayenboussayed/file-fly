@@ -46,12 +46,36 @@ const isPrivateIpv4 = (octets: [number, number, number, number]): boolean => {
 };
 
 /**
- * Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/fe80::/10.
+ * Extracts the embedded IPv4 octets from an IPv6 literal that carries an IPv4
+ * address in its last 32 bits. Node canonicalizes these to `::ffff:X:Y`,
+ * `::X:Y` (IPv4-compatible) or `64:ff9b::X:Y` / `64:ff9b:1::X:Y` (NAT64).
+ * Network-specific RFC 6052 prefixes with other bit offsets are out of scope.
+ * @param host - Lowercased bare host without brackets.
+ * @returns The four embedded octets, or undefined for any other host.
+ */
+const ipv4EmbeddedOctets = (host: string): [number, number, number, number] | undefined => {
+  const match = /^(?:::ffff:|::|64:ff9b:1::|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
+  const highHex = match?.[1];
+  const lowHex = match?.[2];
+  if (highHex === undefined || lowHex === undefined) return undefined;
+  const high = Number.parseInt(highHex, 16);
+  const low = Number.parseInt(lowHex, 16);
+  return [high >> 8, high & 0xff, low >> 8, low & 0xff];
+};
+
+/**
+ * Whether a bare IPv6 literal (already bracket-stripped) sits in ::1/::/fc00::/7/fe80::/10
+ * or embeds a private IPv4 address in a recognized IPv4-embedding prefix.
  * @param host - Lowercased bare host without brackets.
  * @returns True when the literal must not be fetched.
  */
-const isPrivateIpv6 = (host: string): boolean =>
-  host === '::1' || host === '::' || /^f[cd]/.test(host) || /^fe[89ab]/.test(host);
+const isPrivateIpv6 = (host: string): boolean => {
+  if (host === '::1' || host === '::' || /^f[cd]/.test(host) || /^fe[89ab]/.test(host)) {
+    return true;
+  }
+  const embedded = ipv4EmbeddedOctets(host);
+  return embedded !== undefined && isPrivateIpv4(embedded);
+};
 
 /** Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive. */
 const EGRESS_ALLOWLIST = (environment.EGRESS_ALLOWLIST ?? []).map((entry) =>

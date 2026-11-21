@@ -185,8 +185,22 @@ describe('openMediaSource', () => {
     expect(error).toMatchObject({ response: { code: 'SOURCE_SCHEME_NOT_ALLOWED' } });
   });
 
-// eslint-disable-next-line sonarjs/no-clear-text-protocols -- plaintext literals here are the subject under test (the egress guard must refuse them); they are never fetched
-  it.each(['http://127.0.0.1/internal.jpg', 'http://10.0.0.8/x.jpg', 'http://192.168.1.9/x.jpg', 'http://169.254.169.254/latest/meta-data', 'http://[::1]/x.jpg', 'http://localhost/x.jpg', 'https://printer.internal/x.jpg'])(
+// eslint-disable-next-line sonarjs/no-clear-text-protocols -- the plaintext literals on this line are the egress guard's test subjects; they are never fetched
+  it.each(['http://127.0.0.1/internal.jpg', 'http://10.0.0.8/x.jpg', 'http://192.168.1.9/x.jpg', 'http://169.254.169.254/latest/meta-data', 'http://[::1]/x.jpg', 'http://localhost/x.jpg', 'https://printer.internal/x.jpg',
+    'https://[::ffff:127.0.0.1]/internal.jpg',
+    'https://[::ffff:10.0.0.8]/x.jpg',
+    'https://[::ffff:169.254.169.254]/latest/meta-data',
+    'https://[::ffff:172.16.0.1]/x.jpg',
+    'https://[::ffff:192.168.1.9]/x.jpg',
+    'https://[::ffff:198.18.0.1]/x.jpg',
+    'https://[::ffff:100.64.0.1]/x.jpg',
+    'https://[::ffff:0.0.0.0]/x.jpg',
+    'https://[::127.0.0.1]/x.jpg',
+    'https://[::a00:8]/x.jpg',
+    'https://[64:ff9b::7f00:1]/x.jpg',
+    'https://[64:ff9b::a9fe:a9fe]/x.jpg',
+    'https://[64:ff9b:1::7f00:1]/x.jpg',
+  ])(
     'refuses the private or internal literal %s',
     async (source) => {
       const { cls } = makeGetHarnessWith(source);
@@ -194,6 +208,17 @@ describe('openMediaSource', () => {
       expect(error).toMatchObject({ response: { code: 'SOURCE_HOST_NOT_ALLOWED' } });
     },
   );
+
+  it.each([
+    'https://[::ffff:203.0.113.7]/x.jpg',
+    'https://[::cb00:7107]/x.jpg',
+    'https://[64:ff9b::cb00:7107]/x.jpg',
+    'https://[64:ff9b:1::cb00:7107]/x.jpg',
+  ])('allows the public IPv4-embedded literal %s', async (source) => {
+    const { cls, state } = makeGetHarnessWith(source);
+    await openMediaSource(cls);
+    expect(state.direction).toBe('download');
+  });
 
   it('rejects a declared remote content-length over the cap before streaming', async () => {
     mockResponseHeaders = { 'content-length': '99999999999' };
