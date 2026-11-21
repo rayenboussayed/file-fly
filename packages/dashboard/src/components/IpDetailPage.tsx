@@ -5,10 +5,9 @@ import { Heading } from '@astryxdesign/core/Heading';
 import { Link as TextLink } from '@astryxdesign/core/Link';
 import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
-import { useQuery } from '@tanstack/react-query';
 
-import { fetchMetrics } from '../lib/api.js';
 import { formatBytes, formatCount, formatPercent } from '../lib/format.js';
+import { useMetricsQuery } from '../lib/metrics-query.js';
 import { KpiCard } from './KpiCard.js';
 import { MetricsErrorState } from './MetricsErrorState.js';
 
@@ -20,12 +19,7 @@ import { MetricsErrorState } from './MetricsErrorState.js';
  */
 export function IpDetailPage(props: { ip: string }) {
   const { ip } = props;
-  const query = useQuery({
-    queryFn: fetchMetrics,
-    queryKey: ['metrics'],
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
-  });
+  const query = useMetricsQuery();
 
   const snapshot = query.data;
   if (query.isError) {

@@ -15,12 +15,10 @@ import { Chart } from '@tanstack/charts/react';
 import { scaleLinear } from '@tanstack/charts/scales/linear';
 import { scalePoint } from '@tanstack/charts/scales/point';
 import { tooltip } from '@tanstack/charts/tooltip';
-import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import type { MetricsPerIp, MetricsRouteStat } from '../lib/api.js';
 
-import { fetchMetrics } from '../lib/api.js';
 import {
   formatBytes,
   formatCount,
@@ -28,6 +26,7 @@ import {
   formatMs,
   formatPercent,
 } from '../lib/format.js';
+import { useMetricsQuery } from '../lib/metrics-query.js';
 import { KpiCard } from './KpiCard.js';
 import { MetricsErrorState } from './MetricsErrorState.js';
 
@@ -57,12 +56,7 @@ const routeComparators = {
  * @returns The overview page.
  */
 export function OverviewPage() {
-  const query = useQuery({
-    queryFn: fetchMetrics,
-    queryKey: ['metrics'],
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
-  });
+  const query = useMetricsQuery();
 
   const snapshot = query.data;
   const ipState = useTableSortableState<IpRow>({
