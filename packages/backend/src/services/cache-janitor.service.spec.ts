@@ -61,6 +61,36 @@ describe('CacheJanitorService', () => {
     expect(await fs.readdir(dir)).toEqual(['c.bin']);
   });
 
+  it('never reaps the live undici cache database', async () => {
+    vi.stubEnv('CACHE_DIR', dir);
+    const { CacheJanitorService } = await import('./cache-janitor.service.js');
+
+    const store = path.join(dir, 'undici-cache.db');
+    const wal = path.join(dir, 'undici-cache.db-wal');
+    const shm = path.join(dir, 'undici-cache.db-shm');
+    const entry = path.join(dir, 'old.cache');
+    await fs.writeFile(store, 'sqlite');
+    await fs.writeFile(wal, 'wal');
+    await fs.writeFile(shm, 'shm');
+    await fs.writeFile(entry, 'stale');
+    const old = new Date(Date.now() - 60_000);
+    await fs.utimes(store, old, old);
+    await fs.utimes(wal, old, old);
+    await fs.utimes(shm, old, old);
+    await fs.utimes(entry, old, old);
+
+    const service = new CacheJanitorService();
+    await service.onModuleInit();
+    await service.sweep({ maxBytes: 0, ttlMs: 1_000 });
+    service.onModuleDestroy();
+
+    expect((await fs.readdir(dir)).sort()).toEqual([
+      'undici-cache.db',
+      'undici-cache.db-shm',
+      'undici-cache.db-wal',
+    ]);
+  });
+
   it('keeps recent .tmp files and removes only expired ones', async () => {
     vi.stubEnv('CACHE_DIR', dir);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');

@@ -43,6 +43,10 @@ export class OoxmlReader {
 
   /**
    * Reads every entry of the package into memory.
+   *
+   * fflate allocates each output buffer at the declared `originalSize`, so the
+   * header caps below also bound the bytes actually inflated. Revisit this if
+   * the fflate version changes that behavior.
    * @param buffer - The full, already upload-capped file.
    * @param limits - Optional per-call cap overrides.
    * @returns The parts, keyed by zip path (e.g. `docProps/core.xml`).

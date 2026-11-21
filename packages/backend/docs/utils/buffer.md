@@ -32,7 +32,7 @@ Passes stream chunks through while rejecting anything past a byte budget.
 
 **Kind**: global class  
 src: packages/backend/src/utils/buffer.ts:14  
-dist: packages/backend/dist/utils/buffer.js:10 (approx.)
+dist: packages/backend/dist/utils/buffer.js:6
 <a name="new_ByteCapTransform_new"></a>
 
 ### new ByteCapTransform(maxBytes)
@@ -48,7 +48,7 @@ Maximum number of bytes buffered from a stream (20 MiB).
 
 **Kind**: global constant  
 src: packages/backend/src/utils/buffer.ts:9  
-dist: packages/backend/dist/utils/buffer.js:6 (approx.)
+dist: packages/backend/dist/utils/buffer.js:5
 <a name="bufferStream"></a>
 
 ## bufferStream(stream, maxBytes) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -63,7 +63,7 @@ Buffers a readable stream into a single Buffer, enforcing a size cap.
 | maxBytes | <code>number</code> | The maximum number of bytes to accept before throwing. |
 
 src: packages/backend/src/utils/buffer.ts:40  
-dist: packages/backend/dist/utils/buffer.js:35 (approx.)
+dist: packages/backend/dist/utils/buffer.js:22
 <a name="parseJsonBuffer"></a>
 
 ## parseJsonBuffer(buffer) ⇒ <code>unknown</code>
@@ -77,4 +77,4 @@ Parses a small JSON payload emitted by a worker.
 | buffer | <code>Buffer&lt;ArrayBufferLike&gt;</code> | UTF-8 encoded JSON bytes. |
 
 src: packages/backend/src/utils/buffer.ts:64  
-dist: packages/backend/dist/utils/buffer.js:55 (approx.)
+dist: packages/backend/dist/utils/buffer.js:36

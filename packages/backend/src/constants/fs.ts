@@ -9,8 +9,10 @@ export const CACHE_DIR = environment.CACHE_DIR;
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 /** Entries not used for this long are evicted. */
 export const CACHE_TTL_MS = environment.CACHE_TTL_MS;
-/** Soft cap for the whole cache dir; oldest-used entries are evicted first. */
+/** Soft cap for output entries; the undici store is excluded from the sweep. */
 export const CACHE_MAX_BYTES = environment.CACHE_MAX_BYTES;
+/** File backing undici's HTTP cache. Its WAL sidecars share this prefix. */
+export const UNDICI_CACHE_FILE = 'undici-cache.db';
 /** How often the cache janitor sweeps. */
 export const CACHE_SWEEP_INTERVAL_MS = environment.CACHE_SWEEP_INTERVAL_MS;
 /** Orphaned *.tmp files (crashed writers) older than this are removed. */

@@ -10,6 +10,7 @@ import {
   CACHE_SWEEP_INTERVAL_MS,
   CACHE_TMP_MAX_AGE_MS,
   CACHE_TTL_MS,
+  UNDICI_CACHE_FILE,
 } from '@/constants/fs.js';
 
 interface Entry {
@@ -17,6 +18,9 @@ interface Entry {
   mtimeMs: number;
   size: number;
 }
+
+/** Sidecars such as `-wal` and `-shm` share the store's file name as a prefix. */
+const UNDICI_CACHE_PREFIX = UNDICI_CACHE_FILE;
 
 /** Continuous cache maintenance: TTL, size cap (least-recently-used first), orphan cleanup. */
 @Injectable()
@@ -49,7 +53,10 @@ export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
       const now = Date.now();
       const live: Entry[] = [];
 
-      for (const name of await fs.promises.readdir(CACHE_DIR)) {
+      const names = (await fs.promises.readdir(CACHE_DIR)).filter(
+        (name) => !name.startsWith(UNDICI_CACHE_PREFIX),
+      );
+      for (const name of names) {
         const file = path.join(CACHE_DIR, name);
         const stat = await fs.promises.stat(file).catch(() => undefined);
         if (!stat?.isFile()) continue;

@@ -7,7 +7,7 @@ import {
   setGlobalDispatcher,
 } from 'undici';
 
-import { CACHE_DIR } from './constants/fs.js';
+import { CACHE_DIR, UNDICI_CACHE_FILE } from './constants/fs.js';
 import { isProduction } from './environment.js';
 
 const client = new Agent({
@@ -25,7 +25,7 @@ const client = new Agent({
 }).compose(
   interceptors.cache({
     store: new cacheStores.SqliteCacheStore({
-      location: path.join(CACHE_DIR, 'undici-cache.db'),
+      location: path.join(CACHE_DIR, UNDICI_CACHE_FILE),
     }),
   }),
 );

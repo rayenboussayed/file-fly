@@ -42,7 +42,7 @@ disables itself; media serving is never affected.
 
 **Kind**: global variable  
 src: packages/backend/src/metrics/metrics.service.ts:227  
-dist: packages/backend/dist/metrics/metrics.service.js:77
+dist: packages/backend/dist/metrics/metrics.service.js:73
 
 * [MetricsService](#MetricsService)
     * [.flush()](#MetricsService+flush)
@@ -61,7 +61,7 @@ Drains all pending deltas into a single transaction.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
 src: packages/backend/src/metrics/metrics.service.ts:264  
-dist: packages/backend/dist/metrics/metrics.service.js:105
+dist: packages/backend/dist/metrics/metrics.service.js:99
 <a name="MetricsService+inflightDec"></a>
 
 ### metricsService.inflightDec()
@@ -69,7 +69,7 @@ Decrements the live in-flight counter.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
 src: packages/backend/src/metrics/metrics.service.ts:305  
-dist: packages/backend/dist/metrics/metrics.service.js:198 (approx.)
+dist: packages/backend/dist/metrics/metrics.service.js:135
 <a name="MetricsService+inflightInc"></a>
 
 ### metricsService.inflightInc()
@@ -77,7 +77,7 @@ Increments the live in-flight counter.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
 src: packages/backend/src/metrics/metrics.service.ts:312  
-dist: packages/backend/dist/metrics/metrics.service.js:140
+dist: packages/backend/dist/metrics/metrics.service.js:138
 <a name="MetricsService+onApplicationBootstrap"></a>
 
 ### metricsService.onApplicationBootstrap()
@@ -85,7 +85,7 @@ Starts the flush and retention timers; never in unit tests.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
 src: packages/backend/src/metrics/metrics.service.ts:319  
-dist: packages/backend/dist/metrics/metrics.service.js:147
+dist: packages/backend/dist/metrics/metrics.service.js:141
 <a name="MetricsService+onApplicationShutdown"></a>
 
 ### metricsService.onApplicationShutdown()
@@ -106,7 +106,7 @@ Records one completed request.
 | record | <code>MetricsRecord</code> | Normalized request data from the interceptor. |
 
 src: packages/backend/src/metrics/metrics.service.ts:349  
-dist: packages/backend/dist/metrics/metrics.service.js:174
+dist: packages/backend/dist/metrics/metrics.service.js:163
 <a name="MetricsService+snapshot"></a>
 
 ### metricsService.snapshot() ⇒ <code>MetricsSnapshot</code>
@@ -117,7 +117,7 @@ stay current without a cache layer that could go stale between polls.
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
 **Returns**: <code>MetricsSnapshot</code> - The current snapshot.  
 src: packages/backend/src/metrics/metrics.service.ts:374  
-dist: packages/backend/dist/metrics/metrics.service.js:195
+dist: packages/backend/dist/metrics/metrics.service.js:188
 <a name="MetricsService+sweep"></a>
 
 ### metricsService.sweep(retentionDays)
@@ -130,7 +130,7 @@ Deletes hourly/daily rows older than `retentionDays`.
 | retentionDays | <code>number</code> | Days to keep; rows older than this are deleted. |
 
 src: packages/backend/src/metrics/metrics.service.ts:401  
-dist: packages/backend/dist/metrics/metrics.service.js:214
+dist: packages/backend/dist/metrics/metrics.service.js:210
 <a name="SCHEMA_VERSION"></a>
 
 ## SCHEMA\_VERSION
@@ -156,7 +156,7 @@ Idempotent so an existing version-1 database gains them on the next open.
 
 **Kind**: global constant  
 src: packages/backend/src/metrics/metrics.service.ts:54  
-dist: packages/backend/dist/metrics/metrics.service.js:77 (approx.)
+dist: packages/backend/dist/metrics/metrics.service.js:46
 <a name="MAX_DELTA_KEYS"></a>
 
 ## MAX\_DELTA\_KEYS
@@ -164,4 +164,4 @@ Bounded delta buffers: a persistently failing store drops counts rather than gro
 
 **Kind**: global constant  
 src: packages/backend/src/metrics/metrics.service.ts:198  
-dist: packages/backend/dist/metrics/metrics.service.js:60
+dist: packages/backend/dist/metrics/metrics.service.js:56

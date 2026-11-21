@@ -65,6 +65,10 @@ dist: packages/backend/dist/services/ooxml-reader.js:10
 ### OoxmlReader.readParts(buffer, limits) ⇒ <code>Map&lt;string, Buffer&lt;ArrayBufferLike&gt;&gt;</code>
 Reads every entry of the package into memory.
 
+fflate allocates each output buffer at the declared `originalSize`, so the
+header caps below also bound the bytes actually inflated. Revisit this if
+the fflate version changes that behavior.
+
 **Kind**: static method of [<code>OoxmlReader</code>](#OoxmlReader)  
 **Returns**: <code>Map&lt;string, Buffer&lt;ArrayBufferLike&gt;&gt;</code> - The parts, keyed by zip path (e.g. `docProps/core.xml`).  
 **Throws**:
@@ -77,8 +81,8 @@ Reads every entry of the package into memory.
 | buffer | <code>Buffer&lt;ArrayBufferLike&gt;</code> | The full, already upload-capped file. |
 | limits | <code>OoxmlReadLimits</code> | Optional per-call cap overrides. |
 
-src: packages/backend/src/services/ooxml-reader.ts:51  
-dist: packages/backend/dist/services/ooxml-reader.js:13
+src: packages/backend/src/services/ooxml-reader.ts:55  
+dist: packages/backend/dist/services/ooxml-reader.js:17
 <a name="OOXML_LIMITS"></a>
 
 ## OOXML\_LIMITS
