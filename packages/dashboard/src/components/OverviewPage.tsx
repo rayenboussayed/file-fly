@@ -20,7 +20,7 @@ import { useMemo } from 'react';
 
 import type { MetricsPerIp, MetricsRouteStat } from '../lib/api.js';
 
-import { ApiError, fetchMetrics, setMetricsToken } from '../lib/api.js';
+import { fetchMetrics } from '../lib/api.js';
 import {
   formatBytes,
   formatCount,
@@ -29,7 +29,7 @@ import {
   formatPercent,
 } from '../lib/format.js';
 import { KpiCard } from './KpiCard.js';
-import { TokenGate } from './TokenGate.js';
+import { MetricsErrorState } from './MetricsErrorState.js';
 
 type IpRow = MetricsPerIp;
 type RouteRow = MetricsRouteStat;
@@ -123,25 +123,8 @@ export function OverviewPage() {
   );
 
   if (query.isError) {
-    const status = query.error instanceof ApiError ? query.error.status : 0;
-    if (status === 401 || status === 503) {
-      return (
-        <TokenGate
-          onSubmit={(token) => {
-            setMetricsToken(token);
-            void query.refetch();
-          }}
-          reason={status}
-        />
-      );
-    }
     return (
-      <Card>
-        <VStack gap={2}>
-          <Text type="large">Could not load metrics</Text>
-          <Text>{query.error.message}</Text>
-        </VStack>
-      </Card>
+      <MetricsErrorState error={query.error} onRefetch={() => { void query.refetch(); }} />
     );
   }
 

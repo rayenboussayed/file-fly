@@ -22,6 +22,15 @@ describe('TokenGate', () => {
     expect((input as HTMLInputElement).value).toBe('');
   });
 
+  it('ignores a whitespace-only submit', () => {
+    const onSubmit = vi.fn();
+    render(<TokenGate onSubmit={onSubmit} reason={401} />);
+    const input = screen.getByPlaceholderText('METRICS_TOKEN');
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('disables the submit button while the token is blank', () => {
     render(<TokenGate onSubmit={() => undefined} reason={401} />);
     const input = screen.getByPlaceholderText('METRICS_TOKEN');

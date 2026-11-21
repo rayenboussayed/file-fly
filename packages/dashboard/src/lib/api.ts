@@ -1,70 +1,77 @@
 import { withTimeoutAsync } from 'jutilities/hof/timeout';
+import { z } from 'zod';
 
-/** Counters for one client IP over the retained window. */
-export interface MetricsPerIp extends Record<string, unknown> {
-  bytesIn: number;
-  bytesOut: number;
-  filesIn: number;
-  filesOut: number;
-  ip: string;
-  requests: number;
-}
+const metricsTotalsSchema = z.object({
+  avgMs: z.number(),
+  bytesIn: z.number(),
+  bytesOut: z.number(),
+  cacheHitRate: z.number(),
+  cacheHits: z.number(),
+  cacheMisses: z.number(),
+  clientErrors: z.number(),
+  filesIn: z.number(),
+  filesOut: z.number(),
+  requests: z.number(),
+  scanBlocked: z.number(),
+  scanClean: z.number(),
+  scanInfected: z.number(),
+  serverErrors: z.number(),
+});
 
-/** Latency and volume statistics for one route template. */
-export interface MetricsRouteStat extends Record<string, unknown> {
-  avgMs: number;
-  bytesOut: number;
-  errors: number;
-  p50: number;
-  p95: number;
-  p99: number;
-  requests: number;
-  route: string;
-}
+// Astryx Table constrains rows to Record<string, unknown>; passthrough supplies
+// the index signature and preserves extra keys the backend may add.
+const metricsPerIpSchema = z.object({
+  bytesIn: z.number(),
+  bytesOut: z.number(),
+  filesIn: z.number(),
+  filesOut: z.number(),
+  ip: z.string(),
+  requests: z.number(),
+}).passthrough();
 
-/** Everything the dashboard renders. */
-export interface MetricsSnapshot {
-  generatedAt: string;
-  inFlight: number;
-  last24h: MetricsSeriesPoint[];
-  metricsDisabled: boolean;
-  perIp: MetricsPerIp[];
-  perRoute: MetricsRouteStat[];
-  today: MetricsTotals;
-  totals: MetricsTotals;
-  uptimeSeconds: number;
-}
+const metricsRouteStatSchema = z.object({
+  avgMs: z.number(),
+  bytesOut: z.number(),
+  errors: z.number(),
+  p50: z.number(),
+  p95: z.number(),
+  p99: z.number(),
+  requests: z.number(),
+  route: z.string(),
+}).passthrough();
 
-/** One hourly data point (UTC). */
-interface MetricsSeriesPoint {
-  bucket: string;
-  bytesIn: number;
-  bytesOut: number;
-  errors: number;
-  requests: number;
-}
+const metricsSeriesPointSchema = z.object({
+  bucket: z.string(),
+  bytesIn: z.number(),
+  bytesOut: z.number(),
+  errors: z.number(),
+  requests: z.number(),
+});
 
 /**
- * Aggregated metrics payload served by `GET /metrics` on the backend.
- * Mirrors the backend contract; both sides are versioned together.
- * Table-bound row interfaces extend `Record<string, unknown>` per Astryx's data-driven Table.
+ * Runtime contract for the payload served by `GET /metrics`.
+ * Mirrors docs/metrics.md and the backend's metrics service; both sides ship together.
  */
-interface MetricsTotals {
-  avgMs: number;
-  bytesIn: number;
-  bytesOut: number;
-  cacheHitRate: number;
-  cacheHits: number;
-  cacheMisses: number;
-  clientErrors: number;
-  filesIn: number;
-  filesOut: number;
-  requests: number;
-  scanBlocked: number;
-  scanClean: number;
-  scanInfected: number;
-  serverErrors: number;
-}
+export const metricsSnapshotSchema = z.object({
+  generatedAt: z.string(),
+  inFlight: z.number(),
+  last24h: z.array(metricsSeriesPointSchema),
+  metricsDisabled: z.boolean(),
+  perIp: z.array(metricsPerIpSchema),
+  perRoute: z.array(metricsRouteStatSchema),
+  today: metricsTotalsSchema,
+  totals: metricsTotalsSchema,
+  uptimeSeconds: z.number(),
+});
+
+/** Counters for one client IP over the retained window. */
+export type MetricsPerIp = z.infer<typeof metricsPerIpSchema>;
+
+/** Latency and volume statistics for one route template. */
+export type MetricsRouteStat = z.infer<typeof metricsRouteStatSchema>;
+
+/** Everything the dashboard renders. */
+export type MetricsSnapshot = z.infer<typeof metricsSnapshotSchema>;
 
 /** Error carrying the HTTP status returned by the backend. */
 export class ApiError extends Error {
@@ -79,6 +86,15 @@ export class ApiError extends Error {
     super(`GET /metrics failed with HTTP ${String(status)}`);
     this.name = 'ApiError';
     this.status = status;
+  }
+}
+
+/** Error thrown when a successful response does not match the metrics contract. */
+export class MetricsContractError extends Error {
+  /** Creates a contract error with a fixed message that never echoes the payload. */
+  constructor() {
+    super('GET /metrics returned an unexpected payload');
+    this.name = 'MetricsContractError';
   }
 }
 
@@ -117,15 +133,19 @@ const metricsRequest = async (): Promise<Response> => {
 const timedRequest = withTimeoutAsync(metricsRequest, { timeoutMs: 8000 });
 
 /**
- * Fetches the current metrics snapshot.
+ * Fetches and validates the current metrics snapshot.
  *
  * The dashboard polls, so there is deliberately no retry wrapper: the next
  * poll is the retry. Failures surface as `ApiError` for 401/503 and render
- * the token gate / disabled banner.
+ * the token gate / disabled banner. A payload that does not match the contract
+ * becomes the same generic error, since it may contain client IPs.
  * @returns The aggregated metrics snapshot.
  * @throws ApiError When the backend answers with a non-2xx status.
+ * @throws MetricsContractError When the payload does not match the documented contract.
  */
 export async function fetchMetrics(): Promise<MetricsSnapshot> {
   const response = await timedRequest();
-  return (await response.json()) as MetricsSnapshot;
+  const parsed = metricsSnapshotSchema.safeParse(await response.json());
+  if (!parsed.success) throw new MetricsContractError();
+  return parsed.data;
 }

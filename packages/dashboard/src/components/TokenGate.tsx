@@ -55,7 +55,9 @@ export function TokenGate(props: TokenGateProps) {
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            onSubmit(value);
+            const token = value.trim();
+            if (token.length === 0) return;
+            onSubmit(token);
             setValue('');
           }}
         >

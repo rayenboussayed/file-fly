@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchMetrics } from '../lib/api.js';
 import { formatBytes, formatCount, formatPercent } from '../lib/format.js';
 import { KpiCard } from './KpiCard.js';
+import { MetricsErrorState } from './MetricsErrorState.js';
 
 /**
  * Single client IP: its totals plus its share of the fleet's traffic.
@@ -27,6 +28,12 @@ export function IpDetailPage(props: { ip: string }) {
   });
 
   const snapshot = query.data;
+  if (query.isError) {
+    return (
+      <MetricsErrorState error={query.error} onRefetch={() => { void query.refetch(); }} />
+    );
+  }
+
   if (query.isPending || !snapshot) {
     return (
       <Card>

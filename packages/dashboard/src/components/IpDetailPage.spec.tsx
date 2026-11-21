@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '../lib/api.js';
 import fixture from '../test/fixtures/metrics.fixture.json';
 import { IpDetailPage } from './IpDetailPage.js';
 
@@ -26,6 +27,7 @@ const renderPage = (ip: string) => {
 };
 
 beforeEach(() => {
+  sessionStorage.clear();
   mocks.fetchMetrics.mockReset();
 });
 
@@ -53,4 +55,24 @@ describe('IpDetailPage', () => {
     renderPage('192.0.2.250');
     expect(await screen.findByText('No counters for this IP')).toBeDefined();
   });
+
+  it('shows the token gate on a 401', async () => {
+    mocks.fetchMetrics.mockRejectedValue(new ApiError(401));
+    renderPage('203.0.113.7');
+    expect(await screen.findByText('Metrics access')).toBeDefined();
+  });
+
+  it('stores the token and refetches when the 401 gate is submitted', async () => {
+    mocks.fetchMetrics
+      .mockRejectedValueOnce(new ApiError(401))
+      .mockResolvedValueOnce(fixture as never);
+    renderPage('203.0.113.7');
+    const input = await screen.findByPlaceholderText('METRICS_TOKEN');
+    fireEvent.change(input, { target: { value: 'fresh-token' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(sessionStorage.getItem('file-fly-metrics-token')).toBe('fresh-token');
+    await waitFor(() => expect(mocks.fetchMetrics).toHaveBeenCalledTimes(2));
+  });
+
 });

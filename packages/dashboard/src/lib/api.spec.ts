@@ -4,6 +4,7 @@ import fixture from '../test/fixtures/metrics.fixture.json';
 import {
   ApiError,
   fetchMetrics,
+  MetricsContractError,
   metricsToken,
   setMetricsToken,
 } from './api.js';
@@ -86,5 +87,31 @@ describe('fetchMetrics', () => {
     const error = await fetchMetrics().catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).status).toBe(500);
+  });
+
+  it('keeps extra row fields at runtime', async () => {
+    stubFetch(() => new Response(JSON.stringify({
+      ...fixture,
+      perIp: fixture.perIp.map((row) => ({ ...row, extra: 'kept' })),
+    }), { headers: { 'content-type': 'application/json' }, status: 200 }));
+    const snapshot = await fetchMetrics();
+    expect(snapshot.perIp[0]?.ip).toBe(fixture.perIp[0]?.ip);
+    expect(snapshot.perIp[0]?.extra).toBe('kept');
+  });
+
+  it('rejects a payload that violates the contract', async () => {
+    stubFetch(() => new Response(JSON.stringify({ ...fixture, totals: { requests: 'many' } }), {
+      headers: { 'content-type': 'application/json' },
+      status: 200,
+    }));
+    await expect(fetchMetrics()).rejects.toBeInstanceOf(MetricsContractError);
+  });
+
+  it('rejects a payload with missing top-level fields', async () => {
+    stubFetch(() => new Response(JSON.stringify({ requests: 1 }), {
+      headers: { 'content-type': 'application/json' },
+      status: 200,
+    }));
+    await expect(fetchMetrics()).rejects.toBeInstanceOf(MetricsContractError);
   });
 });
