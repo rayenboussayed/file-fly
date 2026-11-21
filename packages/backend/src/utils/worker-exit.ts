@@ -12,8 +12,10 @@ export function exitWorker(code: number): void {
 }
 
 /**
- * Ends a standalone worker process after its job finishes; a no-op when the
- * worker runs inside WorkerService (unit specs import the module in-process).
+ * Exits the worker thread when it is running standalone; a no-op otherwise.
+ * The guard reads `FILE_FLY_WORKER` at call time: WorkerService sets it to
+ * "1" before spawning, while unit specs stub it to "0" and import the module
+ * in-process.
  * @param code - Exit code for the worker process.
  */
 export function standaloneExit(code: number): void {

@@ -86,7 +86,7 @@ Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive.
 
 **Kind**: global constant  
 src: packages/backend/src/utils/open-source.ts:94  
-dist: packages/backend/dist/utils/open-source.js:81 (approx.)
+dist: packages/backend/dist/utils/open-source.js:48
 <a name="ipv4Octets"></a>
 
 ## ipv4Octets(host) ⇒ <code>[number, number, number, number]</code>
@@ -129,7 +129,7 @@ Turns two hextets holding an embedded IPv4 address into octets.
 | lowHex | <code>string</code> | The low 16 bits in hexadecimal. |
 
 src: packages/backend/src/utils/open-source.ts:54  
-dist: packages/backend/dist/utils/open-source.js:45 (approx.)
+dist: packages/backend/dist/utils/open-source.js:27
 <a name="ipv4EmbeddedOctets"></a>
 
 ## ipv4EmbeddedOctets(host) ⇒ <code>[number, number, number, number]</code>
@@ -146,7 +146,7 @@ embeds the address in the first two hextets after the prefix).
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
 src: packages/backend/src/utils/open-source.ts:72  
-dist: packages/backend/dist/utils/open-source.js:37
+dist: packages/backend/dist/utils/open-source.js:34
 <a name="isPrivateIpv6"></a>
 
 ## isPrivateIpv6(host) ⇒ <code>boolean</code>
@@ -161,7 +161,7 @@ or embeds a private IPv4 address in a recognized IPv4-embedding prefix.
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
 src: packages/backend/src/utils/open-source.ts:85  
-dist: packages/backend/dist/utils/open-source.js:73 (approx.)
+dist: packages/backend/dist/utils/open-source.js:41
 <a name="assertEgressAllowed"></a>
 
 ## assertEgressAllowed(url)
@@ -184,7 +184,7 @@ such deployments.
 | url | <code>URL</code> | The parsed source URL. |
 
 src: packages/backend/src/utils/open-source.ts:109  
-dist: packages/backend/dist/utils/open-source.js:55
+dist: packages/backend/dist/utils/open-source.js:49
 <a name="openMediaSource"></a>
 
 ## openMediaSource(cls) ⇒ <code>Promise&lt;void&gt;</code>
@@ -217,4 +217,4 @@ self-destructs past the cap for unsized uploads and chunked downloads.
 | cls | <code>NormalizedClsService</code> | The normalized CLS service carrying the current request context. |
 
 src: packages/backend/src/utils/open-source.ts:172  
-dist: packages/backend/dist/utils/open-source.js:89
+dist: packages/backend/dist/utils/open-source.js:81

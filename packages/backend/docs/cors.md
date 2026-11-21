@@ -29,7 +29,7 @@ as documented in the README.
 
 **Kind**: global constant  
 src: packages/backend/src/cors.ts:10  
-dist: packages/backend/dist/cors.js:3
+dist: packages/backend/dist/cors.js:2
 <a name="buildCorsOptions"></a>
 
 ## buildCorsOptions(origins) ⇒ <code>{ allowedHeaders: any[]; credentials: boolean; exposedHeaders: unknown[]; origin: boolean \| string[]; }</code>
@@ -43,4 +43,4 @@ Builds the production CORS options.
 | origins | <code>string[]</code> | Configured CORS_ORIGIN values; undefined disables cross-origin reads. |
 
 src: packages/backend/src/cors.ts:26  
-dist: packages/backend/dist/cors.js:13
+dist: packages/backend/dist/cors.js:12
