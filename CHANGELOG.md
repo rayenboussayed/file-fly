@@ -7,6 +7,7 @@ from the commit history (2026-10-31 .. 2026-11-21).
 ## Unreleased
 
 ### Added
+- `GET|POST /video/audio` extracts the audio stream from an uploaded video using the existing node-av audio pipeline, streams the encoded result, and defaults to mp3 output. Query options mirror the audio processor except for codec and trim.
 
 - Media streaming pipeline: image/audio/video resources processed in worker
   threads with `jutilities` stream cache, streaming input (`0d9dd18`,

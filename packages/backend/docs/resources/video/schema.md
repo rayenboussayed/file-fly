@@ -7,6 +7,12 @@
 <dt><a href="#ScreenshotSchema">ScreenshotSchema</a></dt>
 <dd><p>Query parameters for <code>POST /video/screenshot</code> (extracted JPEG frames as multipart).</p>
 </dd>
+<dt><a href="#VideoAudioSchema">VideoAudioSchema</a></dt>
+<dd><p>Query parameters for <code>/video/audio</code> (audio extraction from a video upload).</p>
+<p>Reuses the audio processor options except <code>codec</code>, which is derived from
+<code>format</code> so an incompatible encoder/muxer pair can never be requested.
+<code>format</code> defaults to <code>mp3</code>.</p>
+</dd>
 </dl>
 
 ## Functions
@@ -24,16 +30,28 @@ validated, sorted, and capped array of seconds.</p>
 Query parameters for `/video/processor`, `/video/metadata`, `/video/dna` and `/video/stats` uploads.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/video/schema.ts:10  
-dist: packages/backend/dist/resources/video/schema.js:6
+src: packages/backend/src/resources/video/schema.ts:16  
+dist: packages/backend/dist/resources/video/schema.js:11
 <a name="ScreenshotSchema"></a>
 
 ## ScreenshotSchema
 Query parameters for `POST /video/screenshot` (extracted JPEG frames as multipart).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/video/schema.ts:43  
-dist: packages/backend/dist/resources/video/schema.js:32
+src: packages/backend/src/resources/video/schema.ts:53  
+dist: packages/backend/dist/resources/video/schema.js:37
+<a name="VideoAudioSchema"></a>
+
+## VideoAudioSchema
+Query parameters for `/video/audio` (audio extraction from a video upload).
+
+Reuses the audio processor options except `codec`, which is derived from
+`format` so an incompatible encoder/muxer pair can never be requested.
+`format` defaults to `mp3`.
+
+**Kind**: global constant  
+src: packages/backend/src/resources/video/schema.ts:83  
+dist: packages/backend/dist/resources/video/schema.js:52
 <a name="parseFrames"></a>
 
 ## parseFrames(raw) ⇒ <code>number[]</code>
@@ -47,5 +65,5 @@ validated, sorted, and capped array of seconds.
 | --- | --- | --- |
 | raw | <code>string</code> | Raw comma-separated frame string. |
 
-src: packages/backend/src/resources/video/schema.ts:56  
-dist: packages/backend/dist/resources/video/schema.js:35
+src: packages/backend/src/resources/video/schema.ts:66  
+dist: packages/backend/dist/resources/video/schema.js:40

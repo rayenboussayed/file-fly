@@ -19,7 +19,7 @@ npm workspaces monorepo:
 - **Image processing** — resize / crop / rotate / flip, blur, sharpen, median, normalize, greyscale, trim, negate, tint, format conversion via sharp. `GET|POST /image`
 - **OCR** — text extraction from images with tesseract.js (bounded worker pool). `GET|POST /image/ocr`
 - **Audio processing** — transcode and filter (trim, fade, gain, speed, normalize, compress, denoise) via FFmpeg. `GET|POST /audio`
-- **Video processing** — transcode (h264 / vp9 / av1), scale, fps, crf, trim, denoise, deinterlace, grayscale, normalize, sharpen; frame screenshots served as `multipart/mixed`. `GET|POST /video`, `GET|POST /video/screenshot`
+- **Video processing** — transcode (h264 / vp9 / av1), scale, fps, crf, trim, denoise, deinterlace, grayscale, normalize, sharpen; frame screenshots served as `multipart/mixed`. `GET|POST /video`, `GET|POST /video/audio`, `GET|POST /video/screenshot`
 - **Perceptual fingerprints ("DNA")** — PDQ for images, Chromaprint for audio, frame-sequence PDQ for video. For deduplication and triage, never identity. `GET|POST /{image,audio,video}/dna`
 - **Documents, spreadsheets and office formats** — CSV/XLSX/DOCX/PPTX/PDF build, extract and metadata (JSON schemas, ClamAV-scanned binary uploads). `POST /csv/{build,extract,metadata}`, `POST /xlsx/…`, `POST /docx/…`, `POST /pptx/…`, `POST /pdf/…`
 - **Fonts** — metadata, glyph inventory, OpenType shaping and minimal-for-embedding subsetting. `POST /font/{metadata,extract,shape,subset}`
@@ -90,6 +90,7 @@ All routes accept `GET` (media fetched server-side from `?source=<url>`; client 
 | `GET\|POST /audio/stats` | Audio stream statistics as JSON |
 | `GET\|POST /audio/dna` | Chromaprint fingerprint — `{ algorithm, version, env, hash, length }` |
 | `GET\|POST /video` | Process video. Query: `format` (default `mp4`, fragmented), `codec` (`h264`, `vp9`, `av1`), `crf`, `bitrate`, `preset`, `fps`, `width`, `height`, `rotate`, `flip`, `flop`, `trimStart`, `trimEnd`, `denoise`, `deinterlace`, `grayscale`, `normalize`, `sharpen`, `audioCodec`, `audioBitrate`, `audioNormalize`, … |
+| `GET\|POST /video/audio` | Extract and stream audio from a video. Query: `format` (`mp3` default, `ogg`, `adts`, `flac`, …), `codec` unavailable, `bitrate`, `channels`, `sampleRate`, `gain`, `normalize`, … |
 | `GET\|POST /video/screenshot` | Frame capture. Required query `frames=0,1.5,9` (up to 50, seconds) → `multipart/mixed`, one part per frame |
 | `GET\|POST /video/metadata` | Video stream metadata as JSON |
 | `GET\|POST /video/stats` | Video stream statistics as JSON |
