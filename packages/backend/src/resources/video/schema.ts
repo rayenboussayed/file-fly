@@ -4,7 +4,13 @@ import { SourceSchema } from '@/schema.js';
 import { STREAMABLE_OUTPUT_FORMATS } from '@/utils/capabilities.js';
 import { trimmed } from '@/utils/zod.js';
 
-const seconds = z.coerce.number().finite().min(0).max(24 * 60 * 60);
+import { AudioProcessorSchema } from '../audio/schema.js';
+
+const seconds = z.coerce
+  .number()
+  .finite()
+  .min(0)
+  .max(24 * 60 * 60);
 
 /** Query parameters for `/video/processor`, `/video/metadata`, `/video/dna` and `/video/stats` uploads. */
 export const VideoProcessorSchema = SourceSchema.partial().extend({
@@ -12,8 +18,12 @@ export const VideoProcessorSchema = SourceSchema.partial().extend({
   audioChannels: trimmed(z.enum(['1', '2'])).optional(),
   audioCodec: trimmed(z.enum(['aac', 'opus'])).optional(),
   audioNormalize: trimmed(z.stringbool()).default(false),
-  audioSampleRate: trimmed(z.enum(['16000', '24000', '44100', '48000'])).optional(),
-  bitrate: trimmed(z.enum(['512k', '1M', '2M', '5M', '10M', '20M', '50M'])).optional(),
+  audioSampleRate: trimmed(
+    z.enum(['16000', '24000', '44100', '48000']),
+  ).optional(),
+  bitrate: trimmed(
+    z.enum(['512k', '1M', '2M', '5M', '10M', '20M', '50M']),
+  ).optional(),
   codec: trimmed(z.enum(['h264', 'vp9', 'av1'])).optional(),
   crf: z.coerce.number().int().min(0).max(51).optional(),
   deinterlace: trimmed(z.stringbool()).default(false),
@@ -63,4 +73,14 @@ export function parseFrames(raw: string): number[] {
     .filter((value) => Number.isFinite(value) && value >= 0 && value <= 86400)
     .sort((a, b) => a - b)
     .slice(0, 50);
-}
+} /**
+   * Query parameters for `/video/audio` (audio extraction from a video upload).
+   *
+   * Reuses the audio processor options except `codec`, which is derived from
+   * `format` so an incompatible encoder/muxer pair can never be requested.
+   * `format` defaults to `mp3`.
+   */
+export const VideoAudioSchema = AudioProcessorSchema.omit({ codec: true });
+
+/** Validated options for `/video/audio`. */
+export type VideoAudioType = z.infer<typeof VideoAudioSchema>;
