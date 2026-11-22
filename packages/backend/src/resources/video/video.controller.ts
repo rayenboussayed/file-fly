@@ -21,13 +21,15 @@ import {
   parseFrames,
   ScreenshotSchema,
   type ScreenshotType,
+  VideoAudioSchema,
+  type VideoAudioType,
   VideoProcessorSchema,
   type VideoProcessorType,
 } from './schema.js';
 import { VideoSignatureInterceptor } from './video-signature.interceptor.js';
 import { VideoService } from './video.service.js';
 
-/** Video routes: processor, metadata, DNA, stats and screenshot (binary stream endpoints). */
+/** Video routes: processor, audio extraction, metadata, DNA, stats and screenshot (binary stream endpoints). */
 @Controller('video')
 @UseMediaPipeline(VideoSignatureInterceptor)
 export class VideoController {
@@ -35,6 +37,37 @@ export class VideoController {
     private readonly videoService: VideoService,
     private readonly cls: NormalizedClsService,
   ) {}
+
+  /**
+   * Streams the audio extracted from `/video/audio`.
+   * @param response - Fastify reply whose raw headers carry the content type.
+   * @param query - Validated audio options including the output format.
+   * @returns The piped response promise.
+   */
+  async audio(
+    response: FastifyReply,
+    query: VideoAudioType,
+  ) {
+    const processed = await this.videoService.audio({ payload: query });
+    response.raw.setHeader('content-type', OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
+    return pipeToReply(processed, response, createOutMeter(this.cls));
+  }
+
+  @Get('audio')
+  async audioGet(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: VideoAudioSchema }) query: VideoAudioType,
+  ) {
+    return this.audio(response, query);
+  }
+
+  @Post('audio')
+  async audioPost(
+    @Response({ passthrough: false }) response: FastifyReply,
+    @Query({ pipes: [new StandardSchemaValidationPipe()], schema: VideoAudioSchema }) query: VideoAudioType,
+  ) {
+    return this.audio(response, query);
+  }
 
   @Get('dna')
   async dnaGet() {

@@ -18,6 +18,7 @@ describe('VideoController', () => {
   it('covers metadata, stats, main, and screenshot', async () => {
     const processed = Readable.from([]);
     const videoService = {
+      audio: vi.fn(async () => Readable.from([])),
       dna: vi.fn(async () => ({ dna: true })),
       metadata: vi.fn(async () => ({ ok: true })),
       processor: vi.fn(async () => processed),
@@ -34,6 +35,12 @@ describe('VideoController', () => {
     await expect(controller.statsPost()).resolves.toEqual({ stats: true });
     await controller.main(response as never, {} as never);
     expect(videoService.processor).toHaveBeenCalled();
+
+    const audioResponse = { raw: rawSink(), type: vi.fn() };
+    await controller.audioGet(audioResponse as never, { format: 'mp3' } as never);
+    await controller.audioPost(audioResponse as never, { format: 'mp3' } as never);
+    expect(videoService.audio).toHaveBeenCalledTimes(2);
+    expect(audioResponse.raw.setHeader).toHaveBeenCalledWith('content-type', 'audio/mpeg');
 
     await expect(controller.dnaGet()).resolves.toEqual({ dna: true });
     await expect(controller.dnaPost()).resolves.toEqual({ dna: true });
