@@ -4,6 +4,7 @@ import type { VideoWorkerData } from '../type.js';
 
 import { createWorkerLogger } from '../../../logging/worker-logger.js';
 import { exitWorker as finishWorker } from '../../../utils/worker-exit.js';
+import { processMedia as processAudio } from '../../audio/worker/processor.js';
 import { dna } from './dna.js';
 import { metadata, stats } from './inspect.js';
 import { processMedia } from './processor.js';
@@ -13,9 +14,14 @@ const logger = createWorkerLogger();
 
 const data: VideoWorkerData = workerData;
 
-/** Dispatches the requested video operation (processor/metadata/dna/stats/screenshot). */
+/** Dispatches the requested video operation (processor/audio/metadata/dna/stats/screenshot). */
 async function run() {
   switch (data.operation) {
+  case 'audio': {
+    const payload = { ...data.payload, bitrate: data.payload.bitrate ?? '128k' };
+    await processAudio(payload, { inputFormat: data.inputFormat, operation: 'processor', payload });
+    break;
+  }
   case 'dna':
     await dna();
     break;

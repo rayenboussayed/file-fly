@@ -128,6 +128,23 @@ describe('video worker', () => {
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
   }, 30000);
 
+  it('audio extracts an mp3 stream from a video', async () => {
+    const chunks = stubStdout();
+    await importWorker({
+      inputFormat: 'mp4',
+      operation: 'audio',
+      payload: { format: 'mp3' },
+    });
+    await waitForWorker(15_000);
+    const out = Buffer.concat(chunks);
+    expect(out.length).toBeGreaterThan(100);
+    // MP3 starts with an ID3 tag or an MPEG frame sync.
+    const magic = out.subarray(0, 3).toString('latin1');
+    const second = out.at(1) ?? 0;
+    const frameSync = out.at(0) === 0xff && (second & 0xe0) === 0xe0;
+    expect(magic === 'ID3' || frameSync).toBe(true);
+  }, 30000);
+
   it('ignores unknown operations without writing bytes', async () => {
     const chunks = stubStdout();
     await importWorker({ inputFormat: 'mp4', operation: 'not-a-thing' });
