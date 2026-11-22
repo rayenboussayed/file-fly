@@ -49,7 +49,7 @@ export class VideoController {
     query: VideoAudioType,
   ) {
     const processed = await this.videoService.audio({ payload: query });
-    response.raw.setHeader('content-type', OUTPUT_CONTENT_TYPE[query.format as keyof typeof OUTPUT_CONTENT_TYPE] ?? 'application/octet-stream');
+    response.raw.setHeader('content-type', OUTPUT_CONTENT_TYPE[query.format]);
     return pipeToReply(processed, response, createOutMeter(this.cls));
   }
 
