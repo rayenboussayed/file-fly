@@ -20,6 +20,8 @@ describe('VideoService', () => {
     await expect(service.stats()).resolves.toEqual({ duration: 2 });
     const screenshot = await service.screenshot({ payload: { frames: '0.5,1' } as never });
     expect(screenshot).toBeDefined();
+    const audio = await service.audio({ payload: { format: 'mp3' } as never });
+    expect(audio).toBeDefined();
   });
 
   it('rejects unsupported input', async () => {
@@ -57,6 +59,7 @@ describe('VideoService uncovered paths', () => {
     await expect(service.stats()).rejects.toMatchObject({ status: 415 });
     await expect(service.processor({ payload: {} as never })).rejects.toMatchObject({ status: 415 });
     await expect(service.screenshot({ payload: { frames: '0' } as never })).rejects.toMatchObject({ status: 415 });
+    await expect(service.audio({ payload: { format: 'mp3' } as never })).rejects.toMatchObject({ status: 415 });
   });
 
   it('rejects screenshot when the signature is not a video', async () => {
@@ -67,6 +70,7 @@ describe('VideoService uncovered paths', () => {
       { isVideo: () => false } as never,
     );
     await expect(service.screenshot({ payload: { frames: '0' } as never })).rejects.toMatchObject({ status: 415 });
+    await expect(service.audio({ payload: { format: 'mp3' } as never })).rejects.toMatchObject({ status: 415 });
   });
 });
 
@@ -79,6 +83,7 @@ describe('VideoService demuxer table', () => {
       { isVideo: () => true } as never,
     );
     await expect(service.screenshot({ payload: { frames: '0' } as never })).rejects.toMatchObject({ status: 415 });
+    await expect(service.audio({ payload: { format: 'mp3' } as never })).rejects.toMatchObject({ status: 415 });
     expect(workerService.createWorker).not.toHaveBeenCalled();
   });
 });

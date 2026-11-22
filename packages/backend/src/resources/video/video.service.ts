@@ -8,7 +8,7 @@ import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { readWorkerJson } from '@/utils/buffer.js';
 import { toDemuxerFormat } from '@/utils/input-format.js';
 
-import type { VideoProcessorType } from './schema.js';
+import type { VideoAudioType, VideoProcessorType } from './schema.js';
 
 import { parseFrames, type ScreenshotType } from './schema.js';
 
@@ -20,6 +20,25 @@ export class VideoService {
     private readonly cls: NormalizedClsService,
     private readonly fileTypeService: FileTypeService,
   ) {}
+
+  /**
+   * Extracts the audio stream from a video upload.
+   * @param options - Audio extraction options.
+   * @param options.payload - Validated query options for the audio route.
+   * @returns A readable stream of the encoded audio.
+   * @throws UnsupportedMediaTypeException when the upload has no video signature or demuxer mapping.
+   */
+  async audio(options: { payload: VideoAudioType }): Promise<Readable> {
+    const signature = this.cls.fileSignature().get();
+    if (!signature || !this.fileTypeService.isVideo(signature.mime)) {
+      throw new UnsupportedMediaTypeException('Unsupported video input');
+    }
+    const inputFormat = toDemuxerFormat(signature);
+    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
+    return this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+      workerData: { inputFormat, operation: 'audio', payload: options.payload },
+    });
+  }
 
   async dna(): Promise<unknown> {
     const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
