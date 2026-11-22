@@ -35,6 +35,7 @@ export default async function setup() {
 
   await fs.promises.copyFile(path.join('assets', 'audios', 'audio-0.mp3'), path.join(FIXTURES_DIR, 'audio-0.mp3'));
   await fs.promises.copyFile(path.join('assets', 'videos', 'video-0.mp4'), path.join(FIXTURES_DIR, 'video-0.mp4'));
+  await fs.promises.copyFile(path.join('assets', 'videos', 'tiny.mp4'), path.join(FIXTURES_DIR, 'tiny.mp4'));
 
   await sharp({
     create: { background: { b: 220, g: 110, r: 30 }, channels: 3, height: 160, width: 640 },

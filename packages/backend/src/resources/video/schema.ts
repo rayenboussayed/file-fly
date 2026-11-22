@@ -80,7 +80,11 @@ export function parseFrames(raw: string): number[] {
    * `format` so an incompatible encoder/muxer pair can never be requested.
    * `format` defaults to `mp3`.
    */
-export const VideoAudioSchema = AudioProcessorSchema.omit({ codec: true });
+export const VideoAudioSchema = AudioProcessorSchema.omit({
+  codec: true,
+  trimEnd: true,
+  trimStart: true,
+});
 
 /** Validated options for `/video/audio`. */
 export type VideoAudioType = z.infer<typeof VideoAudioSchema>;

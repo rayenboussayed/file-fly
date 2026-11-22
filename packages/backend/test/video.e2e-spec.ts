@@ -224,4 +224,46 @@ describe('Video (e2e)', () => {
 
     expect(response.status).toBe(415);
   });
+
+  it('GET /video/audio streams mp3 extracted from a video', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/video/audio')
+      // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
+      .query({ source: `${fixtures.url}/tiny.mp4` })
+      .buffer(true)
+      .parse(binaryParser as never);
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toBe('audio/mpeg');
+    const body = response.body as Buffer;
+    expect(body.length).toBeGreaterThan(100);
+    const magic = body.subarray(0, 3).toString('latin1');
+    const frameSync = body.at(0) === 0xff && (body.at(1) ?? 0) >= 0xe0;
+    expect(magic === 'ID3' || frameSync).toBe(true);
+  });
+
+  it('POST /video/audio accepts an upload', async () => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fixture path is test-controlled
+    const video = await fs.promises.readFile(path.join(FIXTURES_DIR, 'tiny.mp4'));
+
+    const response = await request(app.getHttpServer())
+      .post('/video/audio')
+      .set('content-type', 'video/mp4')
+      .send(video)
+      .buffer(true)
+      .parse(binaryParser as never);
+
+    expect(response.status).toBe(201);
+    expect(response.headers['content-type']).toBe('audio/mpeg');
+    expect((response.body as Buffer).length).toBeGreaterThan(100);
+  });
+
+  it('rejects an unsupported codec query with 400', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/video/audio')
+      // eslint-disable-next-line deslint/no-sql-injection -- supertest .query() sets the HTTP query string, not SQL
+      .query({ codec: 'aac', source: `${fixtures.url}/tiny.mp4` });
+
+    expect(response.status).toBe(400);
+  });
 });

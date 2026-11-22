@@ -30,16 +30,12 @@ describe('VideoAudioSchema', () => {
       gain: '3',
       sampleRate: '48000',
       source: 'https://example.com/v.mp4',
-      trimEnd: '2',
-      trimStart: '1',
     });
     expect(parsed.format).toBe('ogg');
     expect(parsed.bitrate).toBe('192k');
     expect(parsed.channels).toBe('2');
     expect(parsed.sampleRate).toBe('48000');
     expect(parsed.gain).toBe(3);
-    expect(parsed.trimStart).toBe(1);
-    expect(parsed.trimEnd).toBe(2);
   });
 
   it('rejects unknown keys', () => {
@@ -49,6 +45,10 @@ describe('VideoAudioSchema', () => {
         source: 'https://example.com/v.mp4',
       }),
     ).toThrow();
+  });
+
+  it('rejects trim keys because trim on video input breaks the audio filter', () => {
+    expect(() => VideoAudioSchema.parse({ source: 'https://example.com/v.mp4', trimEnd: '2' })).toThrow();
   });
 
   it('rejects an invalid source url', () => {
