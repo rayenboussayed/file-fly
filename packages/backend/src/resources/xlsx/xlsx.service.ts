@@ -11,6 +11,7 @@ import { environment } from '@/environment.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { OoxmlReader } from '@/services/ooxml-reader.js';
 import { bufferStream } from '@/utils/buffer.js';
+import { requestContentType } from '@/utils/http.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
 import type { XlsxBuildType, XlsxExtractType, XlsxMetadataType, XlsxSheetType } from './schema.js';
@@ -64,7 +65,7 @@ const readBody = async (
   cls: NormalizedClsService,
   maxCells: number,
 ): Promise<Buffer> => {
-  const contentType = String(cls.request()?.headers?.['content-type'] ?? '');
+  const contentType = requestContentType(cls);
   const mime = contentType.split(';', 1)[0]?.trim() ?? ''; // split always yields a first element; the ?? '' is for the type system
   if (mime !== SPREADSHEET_MIME && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for XLSX input`);

@@ -14,6 +14,7 @@ import { OoxmlError, OoxmlReader } from '@/services/ooxml-reader.js';
 import { attr, collectByKey, collectRelationships, textOf, walkXml, xml } from '@/services/ooxml-xml.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream } from '@/utils/buffer.js';
+import { requestContentType } from '@/utils/http.js';
 import { hyperlinkUrlOk } from '@/utils/hyperlinks.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
@@ -47,7 +48,7 @@ const readPartsCapped = (
  * @returns The body bytes, capped.
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
-  const contentType = String(cls.request()?.headers?.['content-type'] ?? '');
+  const contentType = requestContentType(cls);
   const mime = contentType.split(';', 1)[0]?.trim() ?? '';
   if (mime !== DOCX_MIME && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for DOCX input`);

@@ -15,6 +15,7 @@ import { OoxmlError, OoxmlReader } from '@/services/ooxml-reader.js';
 import { attr, collectByKey, collectByLocalName, collectRelationships, textOf, xml, xmlRaw } from '@/services/ooxml-xml.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream } from '@/utils/buffer.js';
+import { requestContentType } from '@/utils/http.js';
 import { hyperlinkUrlOk } from '@/utils/hyperlinks.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
@@ -129,7 +130,7 @@ const rowWidth = (row: unknown): number => {
  * @returns The body bytes, capped.
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
-  const contentType = String(cls.request()?.headers?.['content-type'] ?? '');
+  const contentType = requestContentType(cls);
   const mime = contentType.split(';', 1)[0]?.trim() ?? ''; // split always yields a first element; the ?? '' is for the type system
   if (mime !== PPTX_MIME && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for PPTX input`);
