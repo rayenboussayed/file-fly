@@ -214,6 +214,28 @@ const zeroTotals = (): MetricsTotals => ({
   serverErrors: 0,
 });
 
+/** Parameter type accepted by `StatementSync.all()`, derived from `DatabaseSync`. */
+type SqlParam = ReturnType<DatabaseSync['prepare']>['all'] extends (
+  namedParameters: Record<string, infer _N>,
+  ...anonymousParameters: infer A
+) => unknown
+  ? A extends readonly unknown[]
+    ? A[number]
+    : never
+  : never;
+
+/**
+ * Runs a prepared statement and returns every row typed as `T`.
+ *
+ * node:sqlite types `StatementSync.all()` as `Record<string, SQLOutputValue>[]`,
+ * which is not assignable to a row-specific shape without an intermediate
+ * `unknown`, so the single cast below is unavoidable.
+ * @param db - Open SQLite database.
+ * @param sql - SQL text to prepare (passed through verbatim).
+ * @param params - Bound parameters for the statement.
+ * @returns All result rows as `T[]`.
+ */
+
 /**
  * Persistent, coalesced metrics store.
  *
@@ -410,7 +432,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     db: DatabaseSync,
     byRoute: Map<string, MetricsRouteStat & { durationCount: number; durationMs: number; }>,
   ): void {
-    const rows = db.prepare('SELECT route, le, SUM(count) count FROM metric_hist GROUP BY route, le').all() as unknown as Array<{ count: number; le: number; route: string; }>;
+    const rows = allRows<{ count: number; le: number; route: string; }>(db, 'SELECT route, le, SUM(count) count FROM metric_hist GROUP BY route, le');
     const hist = new Map<string, Map<number, number>>();
     const add = (route: string, le: number, count: number) => {
       const bucket = hist.get(route) ?? new Map<number, number>();
@@ -542,16 +564,17 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private perIp(db: DatabaseSync): MetricsPerIp[] {
-    const topIps = db.prepare(
+    const topIps = allRows<{ ip: string }>(
+      db,
       "SELECT ip FROM metric_counter_ip WHERE name = 'bytes_out' GROUP BY ip ORDER BY SUM(bytes) DESC LIMIT 50",
-    ).all() as unknown as Array<{ ip: string }>;
+    );
     const candidates = new Set<string>(topIps.map((row) => row.ip));
     for (const row of this.deltaIp.values()) candidates.add(row.ip);
     if (candidates.size === 0) return [];
     const filter = [...candidates].map(() => '?').join(',');
     // eslint-disable-next-line deslint/no-sql-injection -- the interpolated segment is placeholder marks only (?,?,…); every value binds via parameters
     const sql = `SELECT ip, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter_ip WHERE ip IN (${filter}) GROUP BY ip, name`;
-    const rows = db.prepare(sql).all(...candidates) as unknown as Array<{ bytes: number; count: number; ip: string; name: string; }>;
+    const rows = allRows<{ bytes: number; count: number; ip: string; name: string; }>(db, sql, ...candidates);
     const byIp = new Map<string, MetricsPerIp>();
     const ensure = (ip: string): MetricsPerIp => {
       const current = byIp.get(ip) ?? { bytesIn: 0, bytesOut: 0, filesIn: 0, filesOut: 0, ip, requests: 0 };
@@ -571,9 +594,10 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private perRoute(db: DatabaseSync): MetricsRouteStat[] {
-    const rows = db.prepare(
+    const rows = allRows<{ bytes: number; count: number; name: string; route: string; }>(
+      db,
       'SELECT route, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE name IN (\'requests\', \'bytes_out\', \'client_errors\', \'server_errors\', \'duration\') GROUP BY route, name',
-    ).all() as unknown as Array<{ bytes: number; count: number; name: string; route: string; }>;
+    );
     const byRoute = new Map<string, MetricsRouteStat & { durationCount: number; durationMs: number; }>();
     const ensure = (route: string) => {
       const current = byRoute.get(route) ?? { avgMs: 0, bytesOut: 0, durationCount: 0, durationMs: 0, errors: 0, p50: 0, p95: 0, p99: 0, requests: 0, route };
@@ -616,9 +640,11 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
 
   private series24h(db: DatabaseSync): MetricsSeriesPoint[] {
     const from = hourAgo(24);
-    const rows = db.prepare(
+    const rows = allRows<{ bucket: string; bytes: number; count: number; name: string; }>(
+      db,
       'SELECT bucket, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE bucket >= ? AND name IN (\'requests\', \'bytes_in\', \'bytes_out\', \'client_errors\', \'server_errors\') GROUP BY bucket, name',
-    ).all(from) as unknown as Array<{ bucket: string; bytes: number; count: number; name: string; }>;
+      from,
+    );
     const groups = new Map<string, MetricsSeriesPoint>();
     const assign = (bucket: string, name: string, count: number, bytes: number) => {
       let point = groups.get(bucket);
@@ -644,7 +670,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
   }
 
   private totals(db: DatabaseSync, fromHour: string): MetricsTotals {
-    const rows = db.prepare('SELECT name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE bucket >= ? GROUP BY name').all(fromHour) as unknown as Array<{ bytes: number; count: number; name: string; }>;
+    const rows = allRows<{ bytes: number; count: number; name: string; }>(db, 'SELECT name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE bucket >= ? GROUP BY name', fromHour);
     const totals = zeroTotals();
     let durationMs = 0;
     const visit = (row: { bytes: number; count: number; name: string; }) => {
@@ -659,4 +685,20 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     totals.avgMs = totals.requests === 0 ? 0 : durationMs / totals.requests;
     return totals;
   }
+}
+
+/**
+ * Runs a prepared statement and returns every row typed as `T`.
+ *
+ * node:sqlite types `StatementSync.all()` as `Record<string, SQLOutputValue>[]`,
+ * which is not assignable to a row-specific shape without an intermediate
+ * `unknown`, so the single cast below is unavoidable.
+ * @param db - Open SQLite database.
+ * @param sql - SQL text to prepare (passed through verbatim).
+ * @param params - Bound parameters for the statement.
+ * @returns All result rows as `T[]`.
+ */
+function allRows<T>(db: DatabaseSync, sql: string, ...params: SqlParam[]): T[] {
+  // node:sqlite's result type is not row-specific; this is the one unavoidable cast.
+  return db.prepare(sql).all(...params) as unknown as T[];
 }

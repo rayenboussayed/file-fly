@@ -27,7 +27,7 @@ interface FileScanResult {
 /** Lazy, typed accessors over the CLS store for the current request context. */
 @Injectable()
 export class NormalizedClsService {
-  private readonly mange = lazy(<T>(key: symbol) => {
+  private readonly accessor = lazy(<T>(key: symbol) => {
     return {
       get: () => this.cls.get<T>(key),
       set: (value: T) => this.cls.set(key, value),
@@ -38,31 +38,31 @@ export class NormalizedClsService {
   constructor(private readonly cls: ClsService) {}
 
   bytesIn() {
-    return this.mange<number>(CLS_BYTES_IN);
+    return this.accessor<number>(CLS_BYTES_IN);
   }
 
   bytesOut() {
-    return this.mange<number>(CLS_BYTES_OUT);
+    return this.accessor<number>(CLS_BYTES_OUT);
   }
 
   cacheKey() {
-    return this.mange<string>(CLS_CACHE_KEY);
+    return this.accessor<string>(CLS_CACHE_KEY);
   }
 
   cacheOutcome() {
-    return this.mange<'hit' | 'miss'>(CLS_CACHE_OUTCOME);
+    return this.accessor<'hit' | 'miss'>(CLS_CACHE_OUTCOME);
   }
 
   fileHash() {
-    return this.mange<string>(CLS_FILE_HASH);
+    return this.accessor<string>(CLS_FILE_HASH);
   }
 
   fileScan() {
-    return this.mange<FileScanResult>(CLS_FILE_SCAN);
+    return this.accessor<FileScanResult>(CLS_FILE_SCAN);
   }
 
   fileSignature() {
-    return this.mange<FileTypeResult>(CLS_FILE_SIGNATURE);
+    return this.accessor<FileTypeResult>(CLS_FILE_SIGNATURE);
   }
 
   request() {
@@ -74,10 +74,10 @@ export class NormalizedClsService {
   }
 
   sourceDirection() {
-    return this.mange<'download' | 'upload'>(CLS_SOURCE_DIRECTION);
+    return this.accessor<'download' | 'upload'>(CLS_SOURCE_DIRECTION);
   }
 
   sourceStream() {
-    return this.mange<Readable>(CLS_SOURCE_STREAM);
+    return this.accessor<Readable>(CLS_SOURCE_STREAM);
   }
 }
