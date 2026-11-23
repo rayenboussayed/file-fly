@@ -9,7 +9,7 @@ before this helper existed. It stays a pure function over the normalized CLS
 context so specs that stub only `request()` keep working.
 
 **Kind**: global function  
-**Returns**: <code>string</code> - The lower-case-independent media type, or `''` when missing.  
+**Returns**: <code>string</code> - The media type without parameters, or `''` when missing.  
 
 | Param | Type | Description |
 | --- | --- | --- |

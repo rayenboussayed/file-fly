@@ -47,11 +47,11 @@ export const telemetry = clientFn(() => {
   if (started || !telemetryEnabled(import.meta.env)) {
     return undefined;
   }
-  started = true;
   const rawEndpoint = import.meta.env.VITE_OTEL_OTLP_ENDPOINT;
   if (typeof rawEndpoint !== 'string') {
     return undefined;
   }
+  started = true;
   let endpoint = rawEndpoint.trim();
   while (endpoint.endsWith('/')) {
     endpoint = endpoint.slice(0, -1);

@@ -92,10 +92,28 @@ describe('worker pool memory', () => {
     const after = process.memoryUsage();
 
     const state = service as unknown as {
+      acquireWorkerSlot(): Promise<void>;
       inflight: Map<unknown, unknown>;
+      maxWorkers: number;
+      releaseWorkerSlot(): void;
       runningWorkers: number;
       workerWaiters: unknown[];
     };
+
+    // Drive the contention path directly: sequential calls never fill the queue.
+    state.runningWorkers = state.maxWorkers;
+    let acquired = false;
+    const waiting = state.acquireWorkerSlot().then(() => {
+      acquired = true;
+      return undefined;
+    });
+    expect(state.workerWaiters).toHaveLength(1);
+    state.releaseWorkerSlot();
+    await waiting;
+    expect(acquired).toBe(true);
+    expect(state.workerWaiters).toHaveLength(0);
+    state.runningWorkers = 0;
+
     expect(state.runningWorkers).toBe(0);
     expect(state.workerWaiters).toHaveLength(0);
     expect(state.inflight.size).toBe(0);
