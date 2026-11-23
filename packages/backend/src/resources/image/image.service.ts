@@ -15,6 +15,8 @@ import type { ImageDnaResult, ImageOcrResult } from './type.js';
 
 import { TesseractService } from './tesseract.service.js';
 
+const WORKER_ENTRY = workerPath('./worker/index.js', import.meta.url);
+
 /** Image feature service: streams uploads through sharp workers for processing, metadata, DNA, stats and OCR. */
 @Injectable()
 export class ImageService {
@@ -32,6 +34,7 @@ export class ImageService {
     if (!signature || !this.fileTypeService.isImage(signature.mime)) {
       throw new UnsupportedMediaTypeException('Unsupported image input');
     }
+    // By construction, FileParserInterceptor binds sourceStream before any service method runs.
     const stream = this.cls.sourceStream().get() as Readable;
     const input = await bufferStream(stream);
     // Pre-shrink to at most 1024 px on the long side (without enlargement):
@@ -60,7 +63,7 @@ export class ImageService {
   }
 
   async metadata(): Promise<unknown> {
-    const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: { operation: 'metadata' },
     });
     return readWorkerJson(stdout);
@@ -73,6 +76,7 @@ export class ImageService {
     if (!signature || !this.fileTypeService.isImage(signature.mime)) {
       throw new UnsupportedMediaTypeException('Unsupported image input');
     }
+    // By construction, FileParserInterceptor binds sourceStream before any service method runs.
     const buffer = await bufferStream(this.cls.sourceStream().get() as Readable);
     const input = await this.preprocess(buffer);
     return this.tesseract.recognize(input, this.parseLangs(options.payload.lang));
@@ -85,13 +89,13 @@ export class ImageService {
     if (!signature || !this.fileTypeService.isImage(signature.mime)) {
       throw new UnsupportedMediaTypeException('Unsupported image input');
     }
-    return this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    return this.workerService.createWorker(WORKER_ENTRY, {
       workerData: { operation: 'processor', payload: options.payload },
     });
   }
 
   async stats(): Promise<unknown> {
-    const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: { operation: 'stats' },
     });
     return readWorkerJson(stdout);

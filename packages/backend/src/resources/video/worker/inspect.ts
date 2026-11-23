@@ -8,7 +8,7 @@ import type { VideoWorkerData } from '../type.js';
 const data: VideoWorkerData = workerData;
 
 /**
- *
+ * Opens the video input with node-av and writes its container/stream metadata (including dimensions) as JSON to stdout.
  */
 export async function metadata() {
   // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
@@ -37,7 +37,7 @@ export async function metadata() {
 }
 
 /**
- *
+ * Opens the video input with node-av and writes its stream statistics (bitrate, dimensions, codec) as JSON to stdout.
  */
 export async function stats() {
   // node-av tolerates the socket as a Readable; stdin is always piped in the worker.

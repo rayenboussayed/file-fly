@@ -13,7 +13,7 @@ class Discard extends Writable {
 }
 
 /**
- *
+ * Reads image metadata from stdin via sharp and writes it as JSON to stdout.
  */
 export async function metadata() {
   const transformer = sharp({ limitInputPixels: 100_000_000 });
@@ -27,7 +27,7 @@ export async function metadata() {
 }
 
 /**
- *
+ * Reads image statistics from stdin via sharp and writes them as JSON to stdout.
  */
 export async function stats() {
   const transformer = sharp({ limitInputPixels: 100_000_000 });

@@ -12,6 +12,8 @@ import type { VideoAudioType, VideoProcessorType } from './schema.js';
 
 import { parseFrames, type ScreenshotType } from './schema.js';
 
+const WORKER_ENTRY = workerPath('./worker/index.js', import.meta.url);
+
 /** Video feature service: streams uploads through workers for processing, metadata, DNA fingerprinting, stats and screenshots. */
 @Injectable()
 export class VideoService {
@@ -33,17 +35,15 @@ export class VideoService {
     if (!signature || !this.fileTypeService.isVideo(signature.mime)) {
       throw new UnsupportedMediaTypeException('Unsupported video input');
     }
-    const inputFormat = toDemuxerFormat(signature);
-    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
-    return this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const inputFormat = this.requireInputFormat();
+    return this.workerService.createWorker(WORKER_ENTRY, {
       workerData: { inputFormat, operation: 'audio', payload: options.payload },
     });
   }
 
   async dna(): Promise<unknown> {
-    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
-    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
-    const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const inputFormat = this.requireInputFormat();
+    const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
         operation: 'dna',
@@ -53,9 +53,8 @@ export class VideoService {
   }
 
   async metadata(): Promise<unknown> {
-    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
-    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
-    const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const inputFormat = this.requireInputFormat();
+    const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
         operation: 'metadata',
@@ -67,9 +66,8 @@ export class VideoService {
   async processor(
     options: { payload: VideoProcessorType },
   ): Promise<Readable> {
-    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
-    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
-    return this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const inputFormat = this.requireInputFormat();
+    return this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
         operation: 'processor',
@@ -85,9 +83,8 @@ export class VideoService {
     if (!signature || !this.fileTypeService.isVideo(signature.mime)) {
       throw new UnsupportedMediaTypeException('Unsupported video input');
     }
-    const inputFormat = toDemuxerFormat(signature);
-    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
-    return this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const inputFormat = this.requireInputFormat();
+    return this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
         operation: 'screenshot',
@@ -97,14 +94,25 @@ export class VideoService {
   }
 
   async stats(): Promise<unknown> {
-    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
-    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
-    const stdout = await this.workerService.createWorker(workerPath('./worker/index.js', import.meta.url), {
+    const inputFormat = this.requireInputFormat();
+    const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
         operation: 'stats',
       },
     });
     return readWorkerJson(stdout);
+  }
+
+  /**
+   * Resolves the upload's detected signature to an FFmpeg demuxer format,
+   * throwing the route's 415 when the signature is missing or unsupported.
+   * @returns The resolved demuxer format name.
+   * @throws {UnsupportedMediaTypeException} When the signature has no demuxer mapping.
+   */
+  private requireInputFormat(): string {
+    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
+    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported video input');
+    return inputFormat;
   }
 }

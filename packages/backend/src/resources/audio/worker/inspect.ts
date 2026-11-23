@@ -8,6 +8,7 @@ import type { AudioWorkerData } from '../type.js';
 const data: AudioWorkerData = workerData;
 
 /**
+ * Opens the audio input with node-av and writes its container/stream metadata as JSON to stdout.
  *
 // eslint-disable-next-line jsdoc/require-param-description
  * @param inputData Description.
@@ -37,6 +38,7 @@ export async function metadata(inputData: AudioWorkerData = data) {
 }
 
 /**
+ * Opens the audio input with node-av and writes its stream statistics (bitrate, channels, sample rate, codec) as JSON to stdout.
  *
 // eslint-disable-next-line jsdoc/require-param-description
  * @param inputData Description.
