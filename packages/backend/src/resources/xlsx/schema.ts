@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 import { trimmed } from '@/utils/zod.js';
 
+/** Only the plain OOXML spreadsheet mime; templates, macros and other packages are rejected. */
+export const SPREADSHEET_MIME =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
 /** One cell in a build payload: primitive or a SheetJS `CellObject`. */
 const cellSchema = z.union([
   z.string(),

@@ -17,6 +17,7 @@ import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { pipeToReply } from '../../utils/pipe.js';
 import {
+  SPREADSHEET_MIME,
   XlsxBuildSchema,
   type XlsxBuildType,
   XlsxExtractSchema,
@@ -25,9 +26,6 @@ import {
   type XlsxMetadataType,
 } from './schema.js';
 import { XlsxService } from './xlsx.service.js';
-
-const SPREADSHEET_MIME =
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /**
  * Spreadsheet routes. `/xlsx/build` consumes JSON (no media interceptors);

@@ -149,13 +149,6 @@ const extractDocumentXml = (
 };
 
 /**
- * Validates build-payload cross-field rules the schema cannot express:
- * svg images must carry a fallback raster, hyperlinks need an allowed url or an anchor,
- * note/comment references must exist, ids must be unique, row spans must fit,
- * and the element count is capped to bound memory.
- * @param body - The validated build payload.
- */
-/**
  * Collects and rejects duplicate note/comment ids.
  * @param body - The validated build payload.
  * @returns The unique id sets.
@@ -185,6 +178,13 @@ const assertUniqueIds = (body: DocxBuildType): { commentIds: Set<number>; endnot
   return { commentIds, endnoteIds, noteIds };
 };
 
+/**
+ * Validates build-payload cross-field rules the schema cannot express:
+ * svg images must carry a fallback raster, hyperlinks need an allowed url or an anchor,
+ * note/comment references must exist, ids must be unique, row spans must fit,
+ * and the element count is capped to bound memory.
+ * @param body - The validated build payload.
+ */
 const assertBuildPayload = (body: DocxBuildType): void => {
   const { commentIds, endnoteIds, noteIds } = assertUniqueIds(body);
   const references = new Set((body.numbering ?? []).map((n) => n.reference));
@@ -246,10 +246,6 @@ const assertHyperlinkTarget = (record: Record<string, unknown>): void => {
 };
 
 /**
- * Collects every <w:tbl>-equivalent table element anywhere in the payload.
- * @param body
- */
-/**
  * Collects every table element anywhere in the payload.
  * @param body - The validated build payload.
  * @returns The table records, in document order.
@@ -271,10 +267,6 @@ const tables = (body: DocxBuildType): Array<Record<string, unknown>> => {
   return found;
 };
 
-/**
- * Rejects rowSpan values that exceed the rows remaining in their own table.
- * @param table
- */
 /**
  * Rejects rowSpan values exceeding the rows remaining in the table.
  * @param table - The table record.

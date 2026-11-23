@@ -14,11 +14,10 @@ import { bufferStream } from '@/utils/buffer.js';
 import { requestContentType } from '@/utils/http.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
-import type { XlsxBuildType, XlsxExtractType, XlsxMetadataType, XlsxSheetType } from './schema.js';
+import { SPREADSHEET_MIME, type XlsxBuildType, type XlsxExtractType, type XlsxMetadataType, type XlsxSheetType } from './schema.js';
 
-/** The only OOXML spreadsheet mime accepted: macro-enabled and template files are rejected. */
-const SPREADSHEET_MIME =
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+/** Maximum number of row records `/xlsx/extract` returns (defense-in-depth with the maxCells census). */
+const MAX_RECORDS = 1_000_000;
 
 /**
  * The scanner sees declared content types only; verify the bytes too.
@@ -160,20 +159,11 @@ const assertSafeCell = (cell: unknown): void => {
 };
 
 /**
- * Looks up a worksheet by exact name without prototype-index access.
- * @param sheets - The workbook's worksheet map.
- * @param name - Exact sheet name to find.
- * @returns The worksheet, or undefined when absent.
- */
-/**
  * Builds an exact-name worksheet lookup without prototype-index access.
  * One pass over the sheets map; the returned lookup is O(1).
  * @param sheets - The workbook's worksheet map.
  * @returns A name-keyed worksheet lookup.
  */
-/** Maximum number of row records `/xlsx/extract` returns (defense-in-depth with the maxCells census). */
-const MAX_RECORDS = 1_000_000;
-
 const findSheet = (
   sheets: Record<string, XLSX.WorkSheet>,
 ): ((name: string) => undefined | XLSX.WorkSheet) => {
