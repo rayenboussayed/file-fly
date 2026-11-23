@@ -1,4 +1,3 @@
-import { Card } from '@astryxdesign/core/Card';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -9,7 +8,7 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { formatBytes, formatCount, formatPercent } from '../lib/format.js';
 import { useMetricsQuery } from '../lib/metrics-query.js';
 import { KpiCard } from './KpiCard.js';
-import { MetricsErrorState } from './MetricsErrorState.js';
+import { metricsGate } from './MetricsGate.js';
 
 /**
  * Single client IP: its totals plus its share of the fleet's traffic.
@@ -21,21 +20,13 @@ export function IpDetailPage(props: { ip: string }) {
   const { ip } = props;
   const query = useMetricsQuery();
 
+  const gate = metricsGate(query);
+  if (gate) {
+    return gate;
+  }
+
   const snapshot = query.data;
-  if (query.isError) {
-    return (
-      <MetricsErrorState error={query.error} onRefetch={() => { void query.refetch(); }} />
-    );
-  }
-
-  if (query.isPending || !snapshot) {
-    return (
-      <Card>
-        <Text>Loading metrics…</Text>
-      </Card>
-    );
-  }
-
+  if (!snapshot) return null;
   const entry = snapshot.perIp.find((row) => row.ip === ip);
   const fleetBytesOut = snapshot.totals.bytesOut || 1;
 

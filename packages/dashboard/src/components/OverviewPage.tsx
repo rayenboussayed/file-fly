@@ -1,54 +1,41 @@
 import { Badge } from '@astryxdesign/core/Badge';
-import { Card } from '@astryxdesign/core/Card';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Heading } from '@astryxdesign/core/Heading';
-import { Link } from '@astryxdesign/core/Link';
-import {
-  Table,
-  useTableSortable,
-  useTableSortableState,
-} from '@astryxdesign/core/Table';
+import { useTableSortable, useTableSortableState } from '@astryxdesign/core/Table';
 import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
-import { areaY, barY, defineChart } from '@tanstack/charts';
-import { Chart } from '@tanstack/charts/react';
-import { scaleLinear } from '@tanstack/charts/scales/linear';
-import { scalePoint } from '@tanstack/charts/scales/point';
-import { tooltip } from '@tanstack/charts/tooltip';
-import { useMemo } from 'react';
 
 import type { MetricsPerIp, MetricsRouteStat } from '../lib/api.js';
 
 import {
   formatBytes,
   formatCount,
-  formatHourBucket,
   formatMs,
   formatPercent,
 } from '../lib/format.js';
 import { useMetricsQuery } from '../lib/metrics-query.js';
+import { IpTable } from './IpTable.js';
 import { KpiCard } from './KpiCard.js';
-import { MetricsErrorState } from './MetricsErrorState.js';
-
-type IpRow = MetricsPerIp;
-type RouteRow = MetricsRouteStat;
+import { metricsGate } from './MetricsGate.js';
+import { RouteTable } from './RouteTable.js';
+import { TrafficCharts } from './TrafficCharts.js';
 
 const ipComparators = {
-  bytesIn: (a: IpRow, b: IpRow) => a.bytesIn - b.bytesIn,
-  bytesOut: (a: IpRow, b: IpRow) => a.bytesOut - b.bytesOut,
-  filesIn: (a: IpRow, b: IpRow) => a.filesIn - b.filesIn,
-  filesOut: (a: IpRow, b: IpRow) => a.filesOut - b.filesOut,
-  requests: (a: IpRow, b: IpRow) => a.requests - b.requests,
+  bytesIn: (a: MetricsPerIp, b: MetricsPerIp) => a.bytesIn - b.bytesIn,
+  bytesOut: (a: MetricsPerIp, b: MetricsPerIp) => a.bytesOut - b.bytesOut,
+  filesIn: (a: MetricsPerIp, b: MetricsPerIp) => a.filesIn - b.filesIn,
+  filesOut: (a: MetricsPerIp, b: MetricsPerIp) => a.filesOut - b.filesOut,
+  requests: (a: MetricsPerIp, b: MetricsPerIp) => a.requests - b.requests,
 };
 
 const routeComparators = {
-  avgMs: (a: RouteRow, b: RouteRow) => a.avgMs - b.avgMs,
-  bytesOut: (a: RouteRow, b: RouteRow) => a.bytesOut - b.bytesOut,
-  errors: (a: RouteRow, b: RouteRow) => a.errors - b.errors,
-  p50: (a: RouteRow, b: RouteRow) => a.p50 - b.p50,
-  p95: (a: RouteRow, b: RouteRow) => a.p95 - b.p95,
-  p99: (a: RouteRow, b: RouteRow) => a.p99 - b.p99,
-  requests: (a: RouteRow, b: RouteRow) => a.requests - b.requests,
+  avgMs: (a: MetricsRouteStat, b: MetricsRouteStat) => a.avgMs - b.avgMs,
+  bytesOut: (a: MetricsRouteStat, b: MetricsRouteStat) => a.bytesOut - b.bytesOut,
+  errors: (a: MetricsRouteStat, b: MetricsRouteStat) => a.errors - b.errors,
+  p50: (a: MetricsRouteStat, b: MetricsRouteStat) => a.p50 - b.p50,
+  p95: (a: MetricsRouteStat, b: MetricsRouteStat) => a.p95 - b.p95,
+  p99: (a: MetricsRouteStat, b: MetricsRouteStat) => a.p99 - b.p99,
+  requests: (a: MetricsRouteStat, b: MetricsRouteStat) => a.requests - b.requests,
 };
 
 /**
@@ -59,97 +46,48 @@ export function OverviewPage() {
   const query = useMetricsQuery();
 
   const snapshot = query.data;
-  const ipState = useTableSortableState<IpRow>({
+  const ipState = useTableSortableState<MetricsPerIp>({
     comparators: ipComparators,
     data: snapshot?.perIp ?? [],
     defaultSort: [{ direction: 'descending', sortKey: 'bytesOut' }],
   });
-  const ipSort = useTableSortable<IpRow>(ipState.sortConfig);
-  const routeState = useTableSortableState<RouteRow>({
+  const ipSort = useTableSortable<MetricsPerIp>(ipState.sortConfig);
+  const routeState = useTableSortableState<MetricsRouteStat>({
     comparators: routeComparators,
     data: snapshot?.perRoute ?? [],
     defaultSort: [{ direction: 'descending', sortKey: 'requests' }],
   });
-  const routeSort = useTableSortable<RouteRow>(routeState.sortConfig);
+  const routeSort = useTableSortable<MetricsRouteStat>(routeState.sortConfig);
 
-  const series = useMemo(
-    () =>
-      (snapshot?.last24h ?? []).map((point) => ({
-        ...point,
-        bytesOutGb: point.bytesOut / 1024 ** 3,
-        hour: formatHourBucket(point.bucket),
-      })),
-    [snapshot?.last24h],
-  );
-  const requestsChart = useMemo(
-    () =>
-      defineChart({
-        marks: [areaY(series, { x: 'hour', y: 'requests' })],
-        scales: {
-          x: { scale: () => scalePoint<string>().padding(0.4) },
-          y: {
-            axis: { label: 'Requests' },
-            grid: true,
-            nice: true,
-            scale: scaleLinear,
-          },
-        },
-        tooltip,
-      }),
-    [series],
-  );
-  const bytesChart = useMemo(
-    () =>
-      defineChart({
-        marks: [barY(series, { x: 'hour', y: 'bytesOutGb' })],
-        scales: {
-          x: { scale: () => scalePoint<string>().padding(0.4) },
-          y: {
-            axis: { label: 'Bytes out / hour' },
-            grid: true,
-            nice: true,
-            scale: scaleLinear,
-          },
-        },
-        tooltip,
-      }),
-    [series],
-  );
-
-  if (query.isError) {
-    return (
-      <MetricsErrorState error={query.error} onRefetch={() => { void query.refetch(); }} />
-    );
+  const gate = metricsGate(query);
+  if (gate) {
+    return gate;
   }
 
-  if (query.isPending || !snapshot) {
-    return (
-      <Card>
-        <Text>Loading metrics…</Text>
-      </Card>
-    );
-  }
-
-  const { today, totals } = snapshot;
+  const snap = query.data;
+  if (!snap) return null;
+  const { today, totals } = snap;
   const errorRate =
     totals.requests === 0
       ? 0
       : (totals.clientErrors + totals.serverErrors) / totals.requests;
+
+  const uptimeText = `uptime ${formatMs(snap.uptimeSeconds * 1000)} · updated ${new Date(snap.generatedAt).toLocaleTimeString()}${snap.metricsDisabled ? ' · store disabled' : ''}`;
 
   return (
     <VStack gap={4}>
       <VStack gap={1}>
         <Heading level={2}>Metrics</Heading>
         <Text hasTabularNumbers type="supporting">
-          {`uptime ${formatMs(snapshot.uptimeSeconds * 1000)} · updated ${new Date(snapshot.generatedAt).toLocaleTimeString()}${snapshot.metricsDisabled ? ' · store disabled' : ''}`}
+          {uptimeText}
         </Text>
-        {snapshot.metricsDisabled ? (
+        {snap.metricsDisabled ? (
           <Badge label="metrics store disabled" variant="warning" />
         ) : null}
       </VStack>
 
       <Grid columns={6} gap={2}>
-        <KpiCard label="In-flight now" value={formatCount(snapshot.inFlight)} />
+        <KpiCard label="In-flight now" value={formatCount(snap.inFlight)} />
         <KpiCard
           label="Requests (all time)"
           supporting={`${formatCount(today.requests)} today`}
@@ -176,146 +114,16 @@ export function OverviewPage() {
         />
       </Grid>
 
-      <Grid columns={2} gap={2}>
-        <Card>
-          <VStack gap={2}>
-            <Text type="large">Requests (24h)</Text>
-            <Chart
-              ariaLabel="Requests per hour, last 24 hours"
-              definition={requestsChart}
-              height={220}
-            />
-          </VStack>
-        </Card>
-        <Card>
-          <VStack gap={2}>
-            <Text type="large">GB transferred out per hour (24h)</Text>
-            <Chart
-              ariaLabel="Bytes served per hour, last 24 hours"
-              definition={bytesChart}
-              height={220}
-            />
-          </VStack>
-        </Card>
-      </Grid>
+      <TrafficCharts snapshot={snap} />
 
       <VStack gap={2}>
         <Heading level={3}>By client IP</Heading>
-        <Table
-          columns={[
-            {
-              header: 'IP',
-              key: 'ip',
-              renderCell: (row: IpRow) => (
-                <Link href={`/ip/${encodeURIComponent(row.ip)}`}>{row.ip}</Link>
-              ),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'Requests',
-              key: 'requests',
-              renderCell: (row: IpRow) => formatCount(row.requests),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'Files in',
-              key: 'filesIn',
-              renderCell: (row: IpRow) => formatCount(row.filesIn),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'Files out',
-              key: 'filesOut',
-              renderCell: (row: IpRow) => formatCount(row.filesOut),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'GB in',
-              key: 'bytesIn',
-              renderCell: (row: IpRow) => formatBytes(row.bytesIn),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'GB out',
-              key: 'bytesOut',
-              renderCell: (row: IpRow) => formatBytes(row.bytesOut),
-              sortable: true,
-            },
-          ]}
-          data={ipState.sortedData}
-          hasHover
-          idKey="ip"
-          isStriped
-          plugins={{ sort: ipSort }}
-        />
+        <IpTable data={ipState.sortedData} sortPlugin={ipSort} />
       </VStack>
 
       <VStack gap={2}>
         <Heading level={3}>By route</Heading>
-        <Table
-          columns={[
-            { header: 'Route', key: 'route', sortable: true },
-            {
-              align: 'end',
-              header: 'Requests',
-              key: 'requests',
-              renderCell: (row: RouteRow) => formatCount(row.requests),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'Errors',
-              key: 'errors',
-              renderCell: (row: RouteRow) => formatCount(row.errors),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'avg',
-              key: 'avgMs',
-              renderCell: (row: RouteRow) => formatMs(row.avgMs),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'p50',
-              key: 'p50',
-              renderCell: (row: RouteRow) => formatMs(row.p50),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'p95',
-              key: 'p95',
-              renderCell: (row: RouteRow) => formatMs(row.p95),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'p99',
-              key: 'p99',
-              renderCell: (row: RouteRow) => formatMs(row.p99),
-              sortable: true,
-            },
-            {
-              align: 'end',
-              header: 'GB out',
-              key: 'bytesOut',
-              renderCell: (row: RouteRow) => formatBytes(row.bytesOut),
-              sortable: true,
-            },
-          ]}
-          data={routeState.sortedData}
-          hasHover
-          idKey="route"
-          isStriped
-          plugins={{ sort: routeSort }}
-        />
+        <RouteTable data={routeState.sortedData} sortPlugin={routeSort} />
       </VStack>
     </VStack>
   );
