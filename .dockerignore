@@ -12,3 +12,6 @@ coverage
 **/assets
 **/cache
 **/test/results
+.env
+.env.*
+!.env.example
