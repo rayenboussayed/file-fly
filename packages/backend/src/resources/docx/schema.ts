@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { trimmed } from '@/utils/zod.js';
+import { EmptyQuerySchema, trimmed } from '@/utils/zod.js';
 
 const hexColor = trimmed(z.string().regex(/^[0-9a-f]{6}$/i));
 
@@ -9,10 +9,10 @@ export const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 /** Flat query parameters for `POST /docx/extract` (empty; rejects junk params). */
-export const DocxExtractSchema = z.object({}).strict();
+export const DocxExtractSchema = EmptyQuerySchema;
 
 /** Flat query parameters for `POST /docx/metadata` (empty; rejects junk params). */
-export const DocxMetadataSchema = z.object({}).strict();
+export const DocxMetadataSchema = EmptyQuerySchema;
 const points = z.number().min(0).max(2000);
 
 /** A formatted text run; every TextRun option is mirrored here. */

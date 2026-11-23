@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { trimmed } from '@/utils/zod.js';
+import { EmptyQuerySchema, trimmed } from '@/utils/zod.js';
 
 /** Only the plain OOXML presentation mime; templates, macros and other packages are rejected. */
 export const PPTX_MIME =
@@ -398,7 +398,7 @@ export const PptxBuildSchema = z
 export type PptxBuildType = z.infer<typeof PptxBuildSchema>;
 
 /** Flat query parameters for `POST /pptx/extract` (empty; rejects junk params). */
-export const PptxExtractSchema = z.object({}).strict();
+export const PptxExtractSchema = EmptyQuerySchema;
 
 /** Flat query parameters for `POST /pptx/metadata` (empty; rejects junk params). */
-export const PptxMetadataSchema = z.object({}).strict();
+export const PptxMetadataSchema = EmptyQuerySchema;

@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
 /**
+ * A query schema that accepts only an empty object and rejects any unknown key.
+ *
+ * Shared by every document/model endpoint whose query string must be empty
+ * (extract/metadata style routes). Reusing one instance keeps the strict-empty
+ * behaviour identical across all of them.
+ */
+export const EmptyQuerySchema = z.object({}).strict();
+
+/**
  * Trim the input string, then validate it with the given schema.
  * @param schema - The schema to apply after trimming.
  * @returns Zod pipe: string().trim() piped into `schema`.

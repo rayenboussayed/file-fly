@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { EmptyQuerySchema } from '@/utils/zod.js';
+
 /** Only the binary glTF container; .gltf JSON with external resources is not accepted. */
 export const MODEL_MIME = 'model/gltf-binary';
 
@@ -35,6 +37,6 @@ export const ModelConvertSchema = z
 export type ModelConvertType = z.infer<typeof ModelConvertSchema>;
 
 /** Flat query parameters for `POST /model/metadata` (empty; rejects junk params). */
-export const ModelMetadataSchema = z.object({}).strict();
+export const ModelMetadataSchema = EmptyQuerySchema;
 /** Flat query parameters for `POST /model/extract` (empty; rejects junk params). */
-export const ModelExtractSchema = z.object({}).strict();
+export const ModelExtractSchema = EmptyQuerySchema;

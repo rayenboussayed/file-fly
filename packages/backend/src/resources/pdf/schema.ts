@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { trimmed } from '@/utils/zod.js';
+import { EmptyQuerySchema, trimmed } from '@/utils/zod.js';
 
 /** Only the plain PDF mime. */
 export const PDF_MIME = 'application/pdf';
@@ -269,6 +269,6 @@ export type PdfBuildType = z.infer<typeof PdfBuildSchema>;
 export type PdfPageType = z.infer<typeof pageSchema>;
 
 /** Flat query parameters for `POST /pdf/extract` (empty; rejects junk params). */
-export const PdfExtractSchema = z.object({}).strict();
+export const PdfExtractSchema = EmptyQuerySchema;
 /** Flat query parameters for `POST /pdf/metadata` (empty; rejects junk params). */
-export const PdfMetadataSchema = z.object({}).strict();
+export const PdfMetadataSchema = EmptyQuerySchema;
