@@ -10,7 +10,7 @@ import { extractText, getDocumentProxy, getMeta } from 'unpdf';
 import { environment } from '@/environment.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { bufferStream } from '@/utils/buffer.js';
-import { requestContentType } from '@/utils/http.js';
+import { requestMime } from '@/utils/http.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
 import { buildPdfDocument } from './builder.js';
@@ -23,8 +23,7 @@ import { PDF_MIME, type PdfBuildType } from './schema.js';
  * @returns The body bytes, capped.
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
-  const contentType = requestContentType(cls);
-  const mime = contentType.split(';', 1)[0]?.trim() ?? '';
+  const mime = requestMime(cls);
   if (mime !== PDF_MIME && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for PDF input`);
   }

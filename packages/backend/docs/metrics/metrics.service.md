@@ -52,7 +52,7 @@ the persisted rows, so the payload is always fresh. A failed store logs and
 disables itself; media serving is never affected.
 
 **Kind**: global variable  
-src: packages/backend/src/metrics/metrics.service.ts:249  
+src: packages/backend/src/metrics/metrics.service.ts:237  
 dist: packages/backend/dist/metrics/metrics.service.js:73
 
 * [MetricsService](#MetricsService)
@@ -71,7 +71,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:73
 Drains all pending deltas into a single transaction.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:286  
+src: packages/backend/src/metrics/metrics.service.ts:274  
 dist: packages/backend/dist/metrics/metrics.service.js:99
 <a name="MetricsService+inflightDec"></a>
 
@@ -79,7 +79,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:99
 Decrements the live in-flight counter.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:327  
+src: packages/backend/src/metrics/metrics.service.ts:315  
 dist: packages/backend/dist/metrics/metrics.service.js:135
 <a name="MetricsService+inflightInc"></a>
 
@@ -87,7 +87,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:135
 Increments the live in-flight counter.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:334  
+src: packages/backend/src/metrics/metrics.service.ts:322  
 dist: packages/backend/dist/metrics/metrics.service.js:138
 <a name="MetricsService+onApplicationBootstrap"></a>
 
@@ -95,7 +95,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:138
 Starts the flush and retention timers; never in unit tests.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:341  
+src: packages/backend/src/metrics/metrics.service.ts:329  
 dist: packages/backend/dist/metrics/metrics.service.js:141
 <a name="MetricsService+onApplicationShutdown"></a>
 
@@ -103,7 +103,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:141
 Stops timers, flushes the last deltas and closes the database.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:360  
+src: packages/backend/src/metrics/metrics.service.ts:348  
 dist: packages/backend/dist/metrics/metrics.service.js:157
 <a name="MetricsService+record"></a>
 
@@ -116,7 +116,7 @@ Records one completed request.
 | --- | --- | --- |
 | record | <code>MetricsRecord</code> | Normalized request data from the interceptor. |
 
-src: packages/backend/src/metrics/metrics.service.ts:371  
+src: packages/backend/src/metrics/metrics.service.ts:359  
 dist: packages/backend/dist/metrics/metrics.service.js:163
 <a name="MetricsService+snapshot"></a>
 
@@ -127,7 +127,7 @@ stay current without a cache layer that could go stale between polls.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
 **Returns**: <code>MetricsSnapshot</code> - The current snapshot.  
-src: packages/backend/src/metrics/metrics.service.ts:396  
+src: packages/backend/src/metrics/metrics.service.ts:384  
 dist: packages/backend/dist/metrics/metrics.service.js:188
 <a name="MetricsService+sweep"></a>
 
@@ -140,7 +140,7 @@ Deletes hourly/daily rows older than `retentionDays`.
 | --- | --- | --- |
 | retentionDays | <code>number</code> | Days to keep; rows older than this are deleted. |
 
-src: packages/backend/src/metrics/metrics.service.ts:423  
+src: packages/backend/src/metrics/metrics.service.ts:411  
 dist: packages/backend/dist/metrics/metrics.service.js:210
 <a name="SCHEMA_VERSION"></a>
 
@@ -194,5 +194,5 @@ which is not assignable to a row-specific shape without an intermediate
 | sql | <code>string</code> | SQL text to prepare (passed through verbatim). |
 | ...params | <code>import(&quot;node:sqlite&quot;).SQLInputValue[]</code> | Bound parameters for the statement. |
 
-src: packages/backend/src/metrics/metrics.service.ts:701  
+src: packages/backend/src/metrics/metrics.service.ts:689  
 dist: packages/backend/dist/metrics/metrics.service.js:500

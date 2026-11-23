@@ -13,7 +13,7 @@ import { buffer2stream } from 'jutilities/node/stream/buffer';
 import { environment } from '@/environment.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { bufferStream } from '@/utils/buffer.js';
-import { requestContentType } from '@/utils/http.js';
+import { requestMime } from '@/utils/http.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
 import type { CsvBuildType, CsvExtractType, CsvMetadataType } from './schema.js';
@@ -50,8 +50,7 @@ export const toBadRequest = (error: unknown): BadRequestException => {
  * @throws {UnsupportedMediaTypeException} For any other content type.
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
-  const contentType = requestContentType(cls);
-  const mime = contentType.split(';', 1)[0]?.trim() ?? ''; // split always yields a first element; the ?? '' is for the type system
+  const mime = requestMime(cls);
   if (mime !== 'text/csv' && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for CSV input`);
   }

@@ -1,20 +1,19 @@
-<a name="requestContentType"></a>
+<a name="requestMime"></a>
 
-## requestContentType(cls) ⇒ <code>string</code>
-Reads the current request's `content-type` header as a string.
+## requestMime(cls) ⇒ <code>string</code>
+Reads the current request's media type without parameters.
 
-Returns `''` when the request or the header is absent, mirroring
-`String(cls.request()?.headers?.['content-type'] ?? '')`. Kept as a pure
-function over the normalized CLS context so specs that stub only `request()`
-keep working without changes (no method is added to
-[NormalizedClsService](NormalizedClsService)).
+Returns `''` when the request or the header is absent. The header is split
+before `;` and trimmed, matching the expression each document service used
+before this helper existed. It stays a pure function over the normalized CLS
+context so specs that stub only `request()` keep working.
 
 **Kind**: global function  
-**Returns**: <code>string</code> - The raw content-type header value, or `''` when missing.  
+**Returns**: <code>string</code> - The lower-case-independent media type, or `''` when missing.  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | cls | <code>NormalizedClsService</code> | Normalized request context carrying the current request. |
 
-src: packages/backend/src/utils/http.ts:14  
+src: packages/backend/src/utils/http.ts:13  
 dist: packages/backend/dist/utils/http.js:1

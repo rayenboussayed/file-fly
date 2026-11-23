@@ -225,18 +225,6 @@ type SqlParam = ReturnType<DatabaseSync['prepare']>['all'] extends (
   : never;
 
 /**
- * Runs a prepared statement and returns every row typed as `T`.
- *
- * node:sqlite types `StatementSync.all()` as `Record<string, SQLOutputValue>[]`,
- * which is not assignable to a row-specific shape without an intermediate
- * `unknown`, so the single cast below is unavoidable.
- * @param db - Open SQLite database.
- * @param sql - SQL text to prepare (passed through verbatim).
- * @param params - Bound parameters for the statement.
- * @returns All result rows as `T[]`.
- */
-
-/**
  * Persistent, coalesced metrics store.
  *
  * Writes never happen on the request path: `record()` bumps in-memory delta

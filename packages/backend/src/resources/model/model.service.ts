@@ -13,7 +13,7 @@ import { environment } from '@/environment.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream } from '@/utils/buffer.js';
-import { requestContentType } from '@/utils/http.js';
+import { requestMime } from '@/utils/http.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
 import { readModel, writeGlb, writeGltfJson } from './gltf.js';
@@ -25,8 +25,7 @@ import { MODEL_MIME, type ModelConvertType, type ModelOptimizeType } from './sch
  * @returns The body bytes, capped.
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
-  const contentType = requestContentType(cls);
-  const mime = contentType.split(';', 1)[0]?.trim() ?? '';
+  const mime = requestMime(cls);
   if (mime !== MODEL_MIME && mime !== 'application/octet-stream') {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for GLB input`);
   }
