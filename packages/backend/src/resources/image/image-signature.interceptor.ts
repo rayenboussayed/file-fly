@@ -1,11 +1,7 @@
-import {
-  CallHandler,
-  Injectable,
-  NestInterceptor,
-  UnsupportedMediaTypeException,
-} from '@nestjs/common';
+import { CallHandler, Injectable, NestInterceptor } from '@nestjs/common';
 
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
+import { guardSignature } from '@/utils/signature-guard.js';
 
 import { FileTypeService } from '../../services/file-type.service.js';
 
@@ -18,12 +14,12 @@ export class ImageSignatureInterceptor implements NestInterceptor {
   ) {}
 
   intercept(_: never, next: CallHandler) {
-    const request = this.cls.request();
-    if (!request.url.startsWith('/image')) return next.handle();
-    const signature = this.cls.fileSignature().get();
-    if (signature && !this.fileTypeService.isImage(signature.mime)) {
-      throw new UnsupportedMediaTypeException('File is not an image');
-    }
-    return next.handle();
+    return guardSignature(
+      '/image',
+      (mime) => this.fileTypeService.isImage(mime),
+      'File is not an image',
+      this.cls,
+      next,
+    );
   }
 }
