@@ -21,6 +21,13 @@ const REALM = 'file-fly';
  */
 const STANDARD_HEADER_DISABLED = '';
 
+// The package appends AUTH_NAME/AUTH_PASS from the host environment to explicit
+// credentials and uses AUTH_REALM for its challenge. Removing those keys keeps
+// the repo's pair authoritative even when the perimeter is disabled.
+delete process.env.AUTH_NAME;
+delete process.env.AUTH_PASS;
+delete process.env.AUTH_REALM;
+
 /** Credentials narrowed to required strings once the both-or-neither rule passes. */
 const AUTH_CREDENTIALS = (() => {
   const name = environment.AUTH_USERNAME;
@@ -48,7 +55,7 @@ export function basicAuthEnabled(): boolean {
  */
 export function isHealthPath(url: string | undefined): boolean {
   if (url === undefined) return false;
-  const path = url.split('?', 1).join('');
+  const [path] = url.split('?', 1);
   return path === '/health' || path === '/health/';
 }
 
@@ -72,15 +79,16 @@ export async function registerBasicAuth(instance: FastifyInstance): Promise<void
       next();
       return;
     }
+    const missingPair = !hasCredentialPair(request);
     const context = new ExecutionContextHost([request, reply], Object, Object);
     try {
       if (!guard.canActivate(context)) {
-        rejectRequest(reply, !hasCredentialPair(request));
+        rejectRequest(reply, missingPair);
         return;
       }
     } catch (error) {
       if (!(error instanceof UnauthorizedException)) throw error;
-      rejectRequest(reply, !hasCredentialPair(request));
+      rejectRequest(reply, missingPair);
       return;
     }
     next();
@@ -118,11 +126,6 @@ export function resolveBasicAuthEnabled(
  * @returns The configured `BasicAuthGuard` instance.
  */
 async function createGuard(credentials: { name: string; pass: string }) {
-  // The package appends AUTH_NAME/AUTH_PASS from the host environment to the
-  // explicit credentials. Removing those keys keeps the repo's pair authoritative.
-  delete process.env.AUTH_NAME;
-  delete process.env.AUTH_PASS;
-  delete process.env.AUTH_REALM;
   const { BasicAuthGuard } = await import('nest-basic-auth');
   return new BasicAuthGuard({
     credentials,
@@ -143,13 +146,25 @@ async function createGuard(credentials: { name: string; pass: string }) {
  */
 function hasCredentialPair(request: FastifyRequest): boolean {
   const {
-    [HEADER_X_AUTH_PASSWORD]: password,
-    [HEADER_X_AUTH_USERNAME]: username,
+    [HEADER_X_AUTH_PASSWORD]: passwordValue,
+    [HEADER_X_AUTH_USERNAME]: usernameValue,
   } = request.headers;
+  const username = readHeader(usernameValue);
+  const password = readHeader(passwordValue);
   return (
-    typeof username === 'string' && username.length > 0 &&
-    typeof password === 'string' && password.length > 0
+    username !== undefined && username.length > 0 &&
+    password !== undefined && password.length > 0
   );
+}
+
+/**
+ * Reads a header the same way the package guard does, including its fallback to
+ * the first value of a duplicated header.
+ * @param value - The header value from Fastify.
+ * @returns A string value, or undefined when absent.
+ */
+function readHeader(value: string | string[] | undefined): string | undefined {
+  return typeof value === 'string' ? value : value?.[0];
 }
 
 /**

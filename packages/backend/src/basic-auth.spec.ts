@@ -193,14 +193,37 @@ describe('basic-auth perimeter', () => {
       expect(response.json()).toEqual(MISSING_BODY);
     });
 
-    it('rejects when the guard returns false without throwing', async () => {
+    it.each([
+      {
+        body: INVALID_BODY,
+        headers: { 'x-auth-password': 'secret', 'x-auth-username': 'alice' },
+        label: 'a complete pair',
+      },
+      { body: MISSING_BODY, headers: {}, label: 'no pair' },
+    ])('rejects when the guard returns false with $label', async ({ body, headers }) => {
       const module_ = await loadEnabled();
       const instance = await boot(module_);
       mockCanActivate.mockReturnValue(false);
-      const response = await instance.inject({ method: 'GET', url: '/probe' });
+      const response = await instance.inject({ headers, method: 'GET', url: '/probe' });
       expect(response.statusCode).toBe(401);
       expect(response.headers['www-authenticate']).toBeUndefined();
-      expect(response.json()).toEqual(MISSING_BODY);
+      expect(response.json()).toEqual(body);
+    });
+
+    it('treats duplicate x-auth headers as a wrong pair', async () => {
+      const module_ = await loadEnabled();
+      const instance = await boot(module_);
+      rejectWithChallenge();
+      const response = await instance.inject({
+        headers: {
+          'x-auth-password': ['wrong'],
+          'x-auth-username': ['alice'],
+        },
+        method: 'GET',
+        url: '/probe',
+      });
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toEqual(INVALID_BODY);
     });
 
     it('rejects a wrong pair with the invalid-credentials body and the challenge', async () => {
