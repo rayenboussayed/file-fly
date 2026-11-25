@@ -1,8 +1,8 @@
 // eslint-disable-next-line n/no-extraneous-import
-import type { FastifyInstance, onRequestHookHandler } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest, onRequestHookHandler } from 'fastify';
 
 import { Logger, UnauthorizedException } from '@nestjs/common';
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 
 import { HEADER_X_AUTH_PASSWORD, HEADER_X_AUTH_USERNAME } from './constants/header.js';
 import { environment } from './environment.js';
@@ -10,14 +10,33 @@ import { environment } from './environment.js';
 /** Logger for the basic-auth perimeter; one boot line, never per-request. */
 const logger = new Logger('BasicAuth');
 
+/** Realm reported in the challenge emitted by the package's guard. */
+const REALM = 'file-fly';
+
 /**
- * Whether the perimeter is active. Implemented by both-or-neither: the
- * environment schema enforces pair-ness at boot; this pure helper mirrors it
- * (and throws on a half-configured pair) so it can be unit-tested in isolation.
- * @returns True when `AUTH_USERNAME` and `AUTH_PASSWORD` are both non-empty.
+ * Empty header name. The guard reads `options.header ?? 'authorization'`, so an
+ * empty string makes it look up a header HTTP cannot carry. Standard
+ * `Authorization` stays ignored, which preserves the x-auth contract and leaves
+ * the `/metrics` bearer token untouched.
+ */
+const STANDARD_HEADER_DISABLED = '';
+
+/** Credentials narrowed to required strings once the both-or-neither rule passes. */
+const AUTH_CREDENTIALS = (() => {
+  const name = environment.AUTH_USERNAME;
+  const pass = environment.AUTH_PASSWORD;
+  return resolveBasicAuthEnabled(name, pass)
+    ? { name: String(name), pass: String(pass) }
+    : undefined;
+})();
+
+/**
+ * Whether the perimeter is active. The environment schema enforces both-or-neither
+ * at boot, so a configured pair is always complete.
+ * @returns True when `AUTH_USERNAME` and `AUTH_PASSWORD` are both set.
  */
 export function basicAuthEnabled(): boolean {
-  return resolveBasicAuthEnabled(environment.AUTH_USERNAME, environment.AUTH_PASSWORD);
+  return AUTH_CREDENTIALS !== undefined;
 }
 
 /**
@@ -29,72 +48,42 @@ export function basicAuthEnabled(): boolean {
  */
 export function isHealthPath(url: string | undefined): boolean {
   if (url === undefined) return false;
-  const path = url.split('?', 1)[0] ?? '';
+  const path = url.split('?', 1).join('');
   return path === '/health' || path === '/health/';
 }
 
 /**
- * Installs the basic-auth perimeter on the Fastify instance.
+ * Installs the package-backed perimeter on the Fastify instance.
  *
- * Every route except `/health` requires the `x-auth-username` and
- * `x-auth-password` headers, re-sent on every request. `@fastify/basic-auth`
- * performs parsing and the 401; a `validate` closure enforces the configured
- * pair in constant time. A client-sent `Authorization` header is never
- * honored — a shim rewrites the x-auth pair into `Authorization` for the
- * plugin (or removes an attacker's own `Authorization`), so the x-auth pair is
- * the only credential transport.
- *
- * No-op (with a single boot warning) unless both `AUTH_USERNAME` and
- * `AUTH_PASSWORD` are set.
+ * The guard runs in an `onRequest` hook, ahead of body parsing and Nest
+ * interceptors, so it also covers routes Fastify registers outside Nest, such
+ * as static dashboard assets, Swagger and unmatched URLs. `/health` stays public.
+ * No-op (with a single boot warning) unless both credentials are configured.
  * @param instance - The Fastify instance to decorate, passed by the bootstrap.
  */
 export async function registerBasicAuth(instance: FastifyInstance): Promise<void> {
-  if (!basicAuthEnabled()) {
+  if (AUTH_CREDENTIALS === undefined) {
     logger.warn('AUTH_USERNAME/AUTH_PASSWORD are not set; basic auth is disabled');
     return;
   }
-  const expectedUser = environment.AUTH_USERNAME ?? '';
-  const expectedPassword = environment.AUTH_PASSWORD ?? '';
-
-  const plugin = (await import('@fastify/basic-auth')).default;
-  await instance.register(plugin, {
-    // A challenge would send browsers into an unfulfillable prompt; this is a
-    // header-pair contract for API clients, not a browser SSO flow.
-    authenticate: false,
-    async validate(username: string, password: string): Promise<Error | undefined> {
-      if (
-        !credentialsMatch(username, expectedUser) ||
-        !credentialsMatch(password, expectedPassword)
-      ) {
-        return new UnauthorizedException('Invalid credentials');
-      }
-      return undefined;
-    },
-  });
-
-  // The plugin decorates the instance with `basicAuth` during registration and
-  // the declaration merging makes it available to TypeScript; the hook resolves
-  // it at request time, when the plugin has finished loading.
+  const guard = await createGuard(AUTH_CREDENTIALS);
   const perimeter: onRequestHookHandler = (request, reply, next) => {
     if (isHealthPath(request.raw.url)) {
       next();
       return;
     }
-    // The x-auth pair is the only accepted transport: a client-supplied
-    // Authorization header never reaches the plugin.
-    delete request.headers.authorization;
-    const {
-      [HEADER_X_AUTH_PASSWORD]: headerPassword,
-      [HEADER_X_AUTH_USERNAME]: headerUsername,
-    } = request.headers;
-    const pair = synthAuthorizationHeader(
-      typeof headerUsername === 'string' ? headerUsername : undefined,
-      typeof headerPassword === 'string' ? headerPassword : undefined,
-    );
-    if (pair !== undefined) {
-      request.headers.authorization = pair;
+    const context = new ExecutionContextHost([request, reply], Object, Object);
+    try {
+      if (!guard.canActivate(context)) {
+        rejectRequest(reply, !hasCredentialPair(request));
+        return;
+      }
+    } catch (error) {
+      if (!(error instanceof UnauthorizedException)) throw error;
+      rejectRequest(reply, !hasCredentialPair(request));
+      return;
     }
-    instance.basicAuth(request, reply, next);
+    next();
   };
   instance.addHook('onRequest', perimeter);
   logger.log('Basic auth perimeter enabled for all routes except /health');
@@ -122,36 +111,60 @@ export function resolveBasicAuthEnabled(
 }
 
 /**
- * Builds the `Authorization` header value for the plugin from the custom
- * `x-auth-*` pair, or `undefined` when the pair is incomplete.
- * @param username - The `x-auth-username` header value, if any.
- * @param password - The `x-auth-password` header value, if any.
- * @returns A `Basic <base64(user:pass)>` header value, or undefined.
+ * Builds the package guard from the configured pair once at boot.
+ * @param credentials - The validated username and password pair.
+ * @param credentials.name - The configured username.
+ * @param credentials.pass - The configured password.
+ * @returns The configured `BasicAuthGuard` instance.
  */
-export function synthAuthorizationHeader(
-  username: string | undefined,
-  password: string | undefined,
-): string | undefined {
-  if (
-    typeof username !== 'string' ||
-    typeof password !== 'string' ||
-    username.length === 0 ||
-    password.length === 0
-  ) {
-    return undefined;
-  }
-  const joined = `${username}:${password}`;
-  return `Basic ${Buffer.from(joined, 'utf8').toString('base64')}`;
+async function createGuard(credentials: { name: string; pass: string }) {
+  // The package appends AUTH_NAME/AUTH_PASS from the host environment to the
+  // explicit credentials. Removing those keys keeps the repo's pair authoritative.
+  delete process.env.AUTH_NAME;
+  delete process.env.AUTH_PASS;
+  delete process.env.AUTH_REALM;
+  const { BasicAuthGuard } = await import('nest-basic-auth');
+  return new BasicAuthGuard({
+    credentials,
+    header: STANDARD_HEADER_DISABLED,
+    headerNames: {
+      name: HEADER_X_AUTH_USERNAME,
+      pass: HEADER_X_AUTH_PASSWORD,
+    },
+    realm: REALM,
+  });
 }
 
 /**
- * Compares two credential strings in constant time (via SHA-256 digests of equal length).
- * @param provided - The credential supplied by the client.
- * @param expected - The configured credential.
- * @returns True when both digests match exactly.
+ * Whether the request supplied both x-auth headers. Used only to preserve the
+ * exact 401 body shape for a missing pair.
+ * @param request - The incoming Fastify request.
+ * @returns True when both header values are non-empty strings.
  */
-function credentialsMatch(provided: string, expected: string): boolean {
-  const providedDigest = createHash('sha256').update(provided, 'utf8').digest();
-  const expectedDigest = createHash('sha256').update(expected, 'utf8').digest();
-  return timingSafeEqual(providedDigest, expectedDigest);
+function hasCredentialPair(request: FastifyRequest): boolean {
+  const {
+    [HEADER_X_AUTH_PASSWORD]: password,
+    [HEADER_X_AUTH_USERNAME]: username,
+  } = request.headers;
+  return (
+    typeof username === 'string' && username.length > 0 &&
+    typeof password === 'string' && password.length > 0
+  );
+}
+
+/**
+ * Sends a 401 with the challenge set by the guard and the repo's existing body.
+ * @param reply - The Fastify reply to complete.
+ * @param missingPair - Whether the request had no complete x-auth pair.
+ * @returns The sent reply.
+ */
+function rejectRequest(reply: FastifyReply, missingPair: boolean): FastifyReply {
+  const challenge = reply.getHeader('www-authenticate');
+  if (challenge !== undefined) {
+    reply.header('www-authenticate', challenge);
+  }
+  const body = missingPair
+    ? { message: 'Missing or bad formatted authorization header', statusCode: 401 }
+    : { error: 'Unauthorized', message: 'Invalid credentials', statusCode: 401 };
+  return reply.code(401).send(body);
 }

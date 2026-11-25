@@ -173,10 +173,11 @@ curl 'http://localhost:3000/image?source=https%3A%2F%2Fexample.com%2Fphoto.jpg&f
 
 ## Authentication
 
-The app implements HTTP basic auth as a perimeter via
-[`@fastify/basic-auth`](https://www.npmjs.com/package/@fastify/basic-auth).
-It is **opt-in and disabled by default**: it engages only when both
-`AUTH_USERNAME` and `AUTH_PASSWORD` are set (setting just one fails boot).
+The app implements HTTP basic auth as a perimeter. The implementation now
+delegates to `nest-basic-auth@1.0.0`, which runs as a guard inside the
+Fastify `onRequest` hook. It is **opt-in and disabled by default**: it
+engages only when both `AUTH_USERNAME` and `AUTH_PASSWORD` are set (setting
+just one fails boot).
 
 When enabled, **every route except `/health`** requires the credential on
 **every request**, presented as two plain headers — not as the standard
@@ -188,8 +189,14 @@ curl -H "x-auth-username: alice" -H "x-auth-password: s3cret" \
 ```
 
 - Missing, incomplete or wrong credentials get `401` (a wrong password gets a
-  constant-time digest comparison). There is no `WWW-Authenticate` challenge —
-  this is a header-pair contract for API clients, not a browser SSO flow.
+  constant-time digest comparison). `401` responses now carry
+  `WWW-Authenticate: Basic realm="file-fly"` (the one deliberate contract
+  change); the body keeps the header-pair shapes below. This remains a
+  header-pair contract for API clients, not a browser SSO flow.
+- Missing or incomplete pair body:
+  `{"message":"Missing or bad formatted authorization header","statusCode":401}`.
+- Wrong pair body:
+  `{"error":"Unauthorized","message":"Invalid credentials","statusCode":401}`.
 - A client-sent `Authorization` header is never honored.
 - `GET /health` stays open so the Docker `HEALTHCHECK` and orchestrators can
   probe without credentials.

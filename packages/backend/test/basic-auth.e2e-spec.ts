@@ -11,6 +11,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const FIXTURES_DIR = path.join('test', 'results', 'fixtures');
 const IMAGE = path.join(FIXTURES_DIR, 'photo.jpg');
 const AUTH_HEADERS = { 'x-auth-password': 'e2e-secret', 'x-auth-username': 'e2e-user' };
+const MISSING_BODY = { message: 'Missing or bad formatted authorization header', statusCode: 401 };
+const INVALID_BODY = { error: 'Unauthorized', message: 'Invalid credentials', statusCode: 401 };
+const CHALLENGE = 'Basic realm="file-fly"';
 
 let app: NestFastifyApplication;
 
@@ -36,25 +39,37 @@ describe('basic auth perimeter (e2e)', () => {
     expect(response.body).toMatchObject({ status: 'ok' });
   });
 
-  it('GET / answers 401 without credentials, with no WWW-Authenticate challenge', async () => {
-    const response = await request(app.getHttpServer()).get('/');
+  it.each([
+    { body: MISSING_BODY, headers: {}, label: 'no credentials' },
+    {
+      body: INVALID_BODY,
+      headers: { 'x-auth-password': 'wrong', 'x-auth-username': 'e2e-user' },
+      label: 'a wrong password',
+    },
+    {
+      body: INVALID_BODY,
+      headers: { 'x-auth-password': 'wrong-pass', 'x-auth-username': 'wrong-user' },
+      label: 'a wrong pair',
+    },
+  ])('GET / answers 401 with $label and a WWW-Authenticate challenge', async ({ body, headers }) => {
+    const response = await request(app.getHttpServer()).get('/').set(headers);
     expect(response.status).toBe(401);
-    expect(response.headers['www-authenticate']).toBeUndefined();
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(body);
   });
 
-  it('GET / answers 401 with a wrong password', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/')
-      .set('x-auth-username', 'e2e-user')
-      .set('x-auth-password', 'wrong');
+  it.each([
+    { headers: { 'x-auth-username': 'e2e-user' }, label: 'only a username' },
+    { headers: { 'x-auth-password': 'e2e-secret' }, label: 'only a password' },
+    {
+      headers: { 'x-auth-password': '', 'x-auth-username': 'e2e-user' },
+      label: 'a partial pair',
+    },
+  ])('GET / answers 401 with $label', async ({ headers }) => {
+    const response = await request(app.getHttpServer()).get('/').set(headers);
     expect(response.status).toBe(401);
-  });
-
-  it('GET / answers 401 with only a username', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/')
-      .set('x-auth-username', 'e2e-user');
-    expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(MISSING_BODY);
   });
 
   it('GET / answers 401 when a standard Authorization header is used instead', async () => {
@@ -64,6 +79,26 @@ describe('basic auth perimeter (e2e)', () => {
       .get('/')
       .set('authorization', authorization);
     expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(MISSING_BODY);
+  });
+
+  it('GET / answers 401 for a malformed base64 Authorization header', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/')
+      .set('authorization', 'Basic %%%not-base64%%%');
+    expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(MISSING_BODY);
+  });
+
+  it('GET / answers 200 when the x-auth pair is sent alongside a Bearer token', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/')
+      .set(AUTH_HEADERS)
+      .set('authorization', 'Bearer some-opaque-token');
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('<div id="root"></div>');
   });
 
   it('GET / answers 200 with the x-auth pair', async () => {
@@ -75,6 +110,8 @@ describe('basic auth perimeter (e2e)', () => {
   it('GET /assets/app.abc123.js is protected too (dashboard behind the perimeter)', async () => {
     const unauthed = await request(app.getHttpServer()).get('/assets/app.abc123.js');
     expect(unauthed.status).toBe(401);
+    expect(unauthed.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(unauthed.body).toEqual(MISSING_BODY);
     const authed = await request(app.getHttpServer())
       .get('/assets/app.abc123.js')
       .set(AUTH_HEADERS);
@@ -84,6 +121,8 @@ describe('basic auth perimeter (e2e)', () => {
   it('GET /metrics answers 401 without the pair (perimeter first, even in development)', async () => {
     const response = await request(app.getHttpServer()).get('/metrics');
     expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(MISSING_BODY);
   });
 
   it('GET /metrics answers 200 with the pair (no METRICS_TOKEN needed for the perimeter to pass)', async () => {
@@ -99,6 +138,8 @@ describe('basic auth perimeter (e2e)', () => {
       .set('content-type', 'image/jpeg')
       .send(image);
     expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(MISSING_BODY);
   });
 
   it('POST /image answers 201 with the pair (operation proceeds normally)', async () => {
@@ -114,5 +155,26 @@ describe('basic auth perimeter (e2e)', () => {
   it('GET /swagger is behind the perimeter too', async () => {
     const unauthed = await request(app.getHttpServer()).get('/swagger');
     expect(unauthed.status).toBe(401);
+    expect(unauthed.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(unauthed.body).toEqual(MISSING_BODY);
+    const authed = await request(app.getHttpServer()).get('/swagger').set(AUTH_HEADERS);
+    expect(authed.status).not.toBe(401);
+  });
+
+  it('GET /unknown-url is behind the perimeter too', async () => {
+    const response = await request(app.getHttpServer()).get('/this-route-does-not-exist');
+    expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(MISSING_BODY);
+  });
+
+  it('OPTIONS preflight with an Origin is behind the perimeter', async () => {
+    const response = await request(app.getHttpServer())
+      .options('/')
+      .set('Origin', 'http://example.com')
+      .set('Access-Control-Request-Method', 'GET');
+    expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toBe(CHALLENGE);
+    expect(response.body).toEqual(MISSING_BODY);
   });
 });

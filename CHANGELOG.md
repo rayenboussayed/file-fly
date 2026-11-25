@@ -41,15 +41,20 @@ from the commit history (2026-10-31 .. 2026-11-21).
   `docs/screenshots/dashboard-overview.png` and `dashboard-ip-detail.png`.
   Runs via `npm run test:e2e -w file-fly-dashboard`; deliberately excluded
   from `npm run check` (screenshots are refreshed and committed intentionally).
-- Basic auth perimeter via `@fastify/basic-auth` (`src/basic-auth.ts`): engages
-  only when both `AUTH_USERNAME` and `AUTH_PASSWORD` are set (either alone
-  fails boot). When enabled, every route except `/health` requires the pair as
-  `x-auth-username` / `x-auth-password` headers, re-sent on every request —
-  the standard `Authorization` header is never honored and no `WWW-Authenticate`
-  challenge is emitted. Digests are compared with `timingSafeEqual`; the
-  perimeter is a fastify `onRequest` hook, ahead of body parsing. Shared edge
-  wiring now lives in `src/bootstrap.ts` (`configureFastify`), used by both
-  `main.ts` and the e2e harness. See README → Authentication.
+- Basic auth perimeter (`src/basic-auth.ts`): the implementation now delegates
+  to `nest-basic-auth@1.0.0`, running as a guard inside the Fastify
+  `onRequest` hook. Engages only when both `AUTH_USERNAME` and
+  `AUTH_PASSWORD` are set (either alone fails boot). When enabled, every route
+  except `/health` requires the pair as `x-auth-username` /
+  `x-auth-password` headers, re-sent on every request — the standard
+  `Authorization` header is never honored. `AUTH_NAME`, `AUTH_PASS` and
+  `AUTH_REALM` are scrubbed before the package loads. Digests are compared
+  with `timingSafeEqual`; the perimeter is a fastify `onRequest` hook, ahead
+  of body parsing. The one deliberate contract change: `401` responses now
+  carry `WWW-Authenticate: Basic realm="file-fly"` (bodies keep the two
+  shapes, missing pair vs wrong pair). Shared edge wiring now lives in
+  `src/bootstrap.ts` (`configureFastify`), used by both `main.ts` and the e2e
+  harness. See README → Authentication.
 - OpenTelemetry bridge (opt-in): `src/app.tracing.ts` starts a `NodeSDK`
   (auto-instrumentations incl. http/nestjs-core/pino/undici +
   `@fastify/otel` with `/health` ignored) **before** NestFactory when
