@@ -57,7 +57,7 @@ export class FileParserInterceptor implements NestInterceptor {
     };
 
     if (this.cls.sourceDirection().get() === 'download') {
-      // eslint-disable-next-line security/detect-object-injection
+       
       const clientHash = request.headers[HEADER_X_FILE_HASH]?.toString().trim();
       if (clientHash) this.cls.fileHash().set(clientHash);
       this.cls
@@ -67,7 +67,7 @@ export class FileParserInterceptor implements NestInterceptor {
     }
 
     const fileHash =
-// eslint-disable-next-line security/detect-object-injection
+ 
       (request.headers[HEADER_X_FILE_HASH]?.toString().trim()) ||
       (await prefixHash(
         forkSource(this.cls),
@@ -78,7 +78,10 @@ export class FileParserInterceptor implements NestInterceptor {
     this.cls.cacheKey().set(
       generateCacheKey({
         ...base,
-        contentLength: Math.trunc(Number(request.headers['content-length'] ?? '0')),
+        contentLength: Number.parseInt(
+          request.headers['content-length'] ?? '0',
+          10,
+        ),
         fileHash,
       }),
     );

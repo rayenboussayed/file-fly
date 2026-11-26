@@ -438,7 +438,7 @@ describe('MetricsService record', () => {
     expect(snapshot.totals.requests).toBe(2);
     expect(snapshot.totals.bytesIn).toBe(30);
     expect(snapshot.totals.bytesOut).toBe(300);
-    expect(snapshot.perIp.map((entry) => entry.ip).toSorted((a, b) => a.localeCompare(b))).toEqual(['127.0.0.1', '127.0.0.2']);
+    expect(snapshot.perIp.map((entry) => entry.ip).toSorted()).toEqual(['127.0.0.1', '127.0.0.2']);
     expect(snapshot.perRoute[0]?.route).toBe('/image');
     vi.useRealTimers();
     first.onApplicationShutdown();

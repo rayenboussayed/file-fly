@@ -7,9 +7,8 @@
 export function exitWorker(code: number): void {
   process.exitCode = code;
   process.stdin.destroy();
-  const exit = process.exit;
-  // native media handles can keep the worker alive; this is the bounded backstop.
-  setTimeout(() => exit(code), 250).unref();
+  // eslint-disable-next-line n/no-process-exit -- native media handles can keep the worker alive; this is the bounded backstop.
+  setTimeout(() => process.exit(code), 250).unref();
 }
 
 /**

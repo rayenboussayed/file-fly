@@ -88,7 +88,7 @@ describe('CacheJanitorService', () => {
     await service.sweep({ maxBytes: 0, ttlMs: 1000 });
     service.onModuleDestroy();
 
-    expect((await fs.readdir(dir)).toSorted((a, b) => a.localeCompare(b))).toEqual([
+    expect((await fs.readdir(dir)).toSorted()).toEqual([
       'undici-cache.db',
       'undici-cache.db-shm',
       'undici-cache.db-wal',

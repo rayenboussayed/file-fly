@@ -354,7 +354,7 @@ component filenames.
 
 Generated docs, test results, and the generated router file
 (`packages/dashboard/src/routeTree.gen.ts`) stay ignored, alongside the package defaults
-(`node_modules`, `dist`, `cache`, lockfiles). The gate runs
+(`node_modules`, `dist`, `build`, `coverage`, `cache`, dotfiles and `package-lock.json`). The gate runs
 `eslint . --fix --cache --max-warnings=0` with zero warnings.
 
 ## Documentation

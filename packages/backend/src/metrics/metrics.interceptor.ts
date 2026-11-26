@@ -23,7 +23,7 @@ const EXCLUDED_ROUTES = new Set(['/health', '/metrics']);
  */
 const headerNumber = (value: number | string | string[] | undefined): number => {
   if (Array.isArray(value)) [value] = value;
-  const parsed = Math.trunc(Number(String(value ?? '0')));
+  const parsed = Number.parseInt(String(value ?? '0'), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 

@@ -69,7 +69,7 @@ export class TesseractService implements OnModuleDestroy, OnModuleInit {
         this.logger.warn(`Ignoring invalid TESSERACT_PRELOAD language code: ${value}`);
       }
       return valid;
-    }))].toSorted((a, b) => a.localeCompare(b));
+    }))].toSorted();
     if (langs.length > 0) {
       void this.warm(langs);
     }

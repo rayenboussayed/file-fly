@@ -2,7 +2,7 @@
 
 All notable changes to file-fly are documented here. The project has **no
 tagged releases yet** (`package.json` version `0.0.1`); dates are UTC and taken
-from the commit history (2026-10-31 .. 2026-11-21).
+from the commit history (2026-10-31 .. 2026-11-25).
 
 ## Unreleased
 

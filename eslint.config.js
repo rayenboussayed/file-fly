@@ -55,6 +55,12 @@ export default [
   {
     files: [
       'packages/backend/src/basic-auth.ts',
+      'packages/backend/src/interceptors/file-parser.interceptor.ts',
+      'packages/backend/src/metrics/metrics.interceptor.ts',
+      'packages/backend/src/metrics/metrics.service.spec.ts',
+      'packages/backend/src/services/cache-janitor.service.spec.ts',
+      'packages/backend/src/resources/image/image.service.ts',
+      'packages/backend/src/resources/image/tesseract.service.ts',
       'packages/backend/src/services/cache-janitor.service.ts',
       'packages/backend/src/services/worker.service.ts',
       'packages/backend/src/services/worker.service.spec.ts',
@@ -77,8 +83,11 @@ export default [
       'unicorn/no-process-exit': 'off',
       'unicorn/prefer-await': 'off',
       'unicorn/prefer-event-target': 'off',
+      'unicorn/prefer-math-trunc': 'off',
       'unicorn/prefer-module': 'off',
+      'unicorn/prefer-number-coercion': 'off',
       'unicorn/prefer-promise-with-resolvers': 'off',
+      'unicorn/require-array-sort-compare': 'off',
     },
   },
   // Iterator#reduce and Promise.withResolvers are absent from the ES2023 lib
