@@ -37,7 +37,7 @@ const captureStdout = () => {
       callback();
     },
   });
-  stdout.on('error', () => undefined);
+  stdout.on('error', () => {});
   Object.defineProperty(process, 'stdout', { configurable: true, value: stdout, writable: true });
   return { writes, written };
 };
@@ -96,8 +96,7 @@ describe('docx worker', () => {
     hoisted.workerData = { operation: 'build', payload: smallDoc };
     vi.resetModules();
     const writes: Buffer[] = [];
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
+    const stdout = new Writable({
       write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
         writes.push(Buffer.from(chunk as Buffer));
         callback();
@@ -106,7 +105,7 @@ describe('docx worker', () => {
         callback();
       },
     });
-    stdout.on('error', () => undefined);
+    stdout.on('error', () => {});
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
 
     const { unzipSync } = await import('fflate');
@@ -137,7 +136,7 @@ describe('docx worker', () => {
     expect(headerPart).toBeTruthy();
     expect(Buffer.from(headerPart ?? new Uint8Array()).toString('utf8')).toContain('Fixture Header');
     expect(document).toContain('<w:titlePg');
-  }, 30000);
+  }, 30_000);
 
   it('builds notes, comments, numbering alignment and every header/footer variant', async () => {
     const para = { runs: [{ text: 'x' }], type: 'paragraph' as const };
@@ -173,7 +172,7 @@ describe('docx worker', () => {
     expect(Object.keys(parts).some((name) => /^word\/header\d+\.xml$/.test(name))).toBe(true);
     expect(Object.keys(parts).some((name) => /^word\/footer\d+\.xml$/.test(name))).toBe(true);
     expect(hoisted.error).not.toHaveBeenCalled();
-  }, 30000);
+  }, 30_000);
 
   it('builds a minimal payload without metadata, numbering or header/footer specs', async () => {
     hoisted.workerData = {
@@ -189,7 +188,7 @@ describe('docx worker', () => {
     expect(document).toContain('Plain');
     expect(document).toContain('<w:titlePg w:val="false"/>');
     expect(hoisted.error).not.toHaveBeenCalled();
-  }, 30000);
+  }, 30_000);
 
   it('logs an error and emits no document for an unsupported operation', async () => {
     let signal!: (args: unknown[]) => void;

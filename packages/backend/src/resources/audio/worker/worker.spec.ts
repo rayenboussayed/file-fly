@@ -48,8 +48,10 @@ describe('audio worker', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -66,8 +68,8 @@ describe('audio worker', () => {
     };
     // Via a non-seekable stdin pipe ffmpeg cannot compute the duration; it reports 0.
     expect(typeof parsed.duration).toBe('number');
-    expect(parsed.streams[0]?.sampleRate).toBe(16000);
-  }, 30000);
+    expect(parsed.streams[0]?.sampleRate).toBe(16_000);
+  }, 30_000);
 
   it('stats emits a parseable stats result', async () => {
     const chunks = stubStdout();
@@ -77,14 +79,14 @@ describe('audio worker', () => {
     expect(lines.length).toBeGreaterThan(0);
     const parsed = JSON.parse(lines[0] as string) as { streams: Array<{ codec: number }> };
     expect(parsed.streams.length).toBeGreaterThan(0);
-  }, 30000);
+  }, 30_000);
 
   it('ignores unknown operations without writing bytes', async () => {
     const chunks = stubStdout();
     await importWorker({ inputFormat: 'mp3', operation: 'not-a-thing' });
     await waitForWorker(500);
     expect(Buffer.concat(chunks)).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 });
 
 describe('audio worker passthrough', () => {
@@ -94,8 +96,10 @@ describe('audio worker passthrough', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -105,7 +109,7 @@ describe('audio worker passthrough', () => {
     await waitForWorker(10_000);
     const out = Buffer.concat(chunks);
     expect(out.length).toBeGreaterThan(0);
-  }, 30000);
+  }, 30_000);
 
   it('transcodes to ogg with opus', async () => {
     const chunks = stubStdout();
@@ -114,5 +118,5 @@ describe('audio worker passthrough', () => {
     const out = Buffer.concat(chunks);
     expect(out.length).toBeGreaterThan(0);
     expect(out.subarray(0, 4).toString('latin1')).toBe('OggS');
-  }, 30000);
+  }, 30_000);
 });

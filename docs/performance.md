@@ -15,7 +15,7 @@ before/after delta under an identical workload is the signal.
 | Gate | Command | Baseline (before) | After metrics+dashboard | documents + /model pass |
 |---|---|---|---|---|
 | `npm run build` | builds both workspaces | green | green | green |
-| `npm run lint` | `--max-warnings=0` | 0 warnings | 0 warnings | 0 warnings |
+| `npm run lint` | `eslint . --fix --cache --max-warnings=0` | 0 warnings | 0 warnings | 0 warnings |
 | `npm run typecheck` (after build) | `tsc --noEmit` | green | green | green |
 | unit tests | `npm run test -w file-fly-backend` | 36 files, 104 tests | 41 files, 158 tests | 80 files, 641 tests |
 | dashboard unit tests | `npm run test -w file-fly-dashboard` | — | 6 files, 30 tests |

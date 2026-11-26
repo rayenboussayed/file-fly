@@ -16,7 +16,7 @@ export function parseBitrate(value: string): number {
   const amount = match?.[1];
   const unit = match?.[2];
   if (amount === undefined || unit === undefined) return 2_000_000;
-  return Number(amount) * (unit.toLowerCase() === 'k' ? 1_000 : 1_000_000);
+  return Number(amount) * (unit.toLowerCase() === 'k' ? 1000 : 1_000_000);
 }
 
 /**

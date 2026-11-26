@@ -87,8 +87,8 @@ const primitiveStats = (primitive: Primitive): PrimitiveStats => {
  */
 const boundsOf = (document: Document) => {
   const root = document.getRoot();
-  const min: [number, number, number] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-  const max: [number, number, number] = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
   let found = false;
   for (const mesh of root.listMeshes()) {
     for (const primitive of mesh.listPrimitives()) {
@@ -110,8 +110,7 @@ const boundsOf = (document: Document) => {
       max[2] = Math.max(max[2], maxZ);
     }
   }
-  if (!found) return undefined;
-  return { max, min };
+  return found ? { max, min } : undefined;
 };
 
 /**
@@ -314,8 +313,9 @@ export class ModelService {
     const bytes = await bufferStream(stream, environment.CLAMAV_MAX_BYTES);
     if (bytes.length === 0 || bytes.subarray(0, 4).toString('latin1') !== 'glTF') {
       // The worker already validated the document by re-reading it; the magic check is the cheap belt-and-braces.
-      const wrapped = new Error('model optimize produced an invalid document');
-      (wrapped as Error & { cause?: unknown }).cause = new Error('optimizer output failed the GLB magic check');
+      const wrapped = new Error('model optimize produced an invalid document', {
+        cause: new Error('optimizer output failed the GLB magic check'),
+      });
       throw wrapped;
     }
     return bytes;

@@ -32,7 +32,7 @@ describe('Xlsx (e2e)', () => {
 
     expect(response.status).toBe(201);
     expect(response.headers['content-type']).toContain('spreadsheetml.sheet');
-    expect((response.body as Buffer).subarray(0, 4).toString('latin1')).toBe('PK\x03\x04');
+    expect((response.body as Buffer).subarray(0, 4).toString('latin1')).toBe('PK\u{3}\u{4}');
   });
 
   it('POST /xlsx/metadata reads the generated fixture', async () => {

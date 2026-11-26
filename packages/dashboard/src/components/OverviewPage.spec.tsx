@@ -52,7 +52,7 @@ describe('OverviewPage', () => {
   });
 
   it('shows a loading card while the query is pending', () => {
-    mocks.fetchMetrics.mockReturnValue(new Promise(() => undefined));
+    mocks.fetchMetrics.mockReturnValue(new Promise(() => {}));
     renderPage();
     expect(screen.getByText('Loading metrics…')).toBeDefined();
   });

@@ -140,7 +140,6 @@ const buildRun = (
 const buildUnderline = (underline: RunType['underline']) => {
   if (underline === true) return { type: UnderlineType.SINGLE };
   if (underline) return { color: underline.color, type: UNDERLINE[underline.type] };
-  return undefined;
 };
 
 const LINE_RULE: Record<string, (typeof LineRuleType)[keyof typeof LineRuleType]> = {

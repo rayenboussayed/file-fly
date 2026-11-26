@@ -130,8 +130,7 @@ const buildElement = (pres: Presentation, slide: Slide, element: ElementType): v
               valign: cell.options?.valign,
             },
             text: cell.text,
-          })),
-        ),
+          })),),
         {
           h: element.h,
           margin: element.margin,
@@ -183,10 +182,10 @@ export const buildPresentation = async (
   body: PptxBuildType,
 ): Promise<Buffer> => {
   if (body.theme?.headFontFace !== undefined) {
-    pres.theme = { ...(pres.theme ?? {}), headFontFace: body.theme.headFontFace };
+    pres.theme = { ...pres.theme, headFontFace: body.theme.headFontFace };
   }
   if (body.theme?.bodyFontFace !== undefined) {
-    pres.theme = { ...(pres.theme ?? {}), bodyFontFace: body.theme.bodyFontFace };
+    pres.theme = { ...pres.theme, bodyFontFace: body.theme.bodyFontFace };
   }
   if (body.layout !== undefined) {
     pres.layout = body.layout;

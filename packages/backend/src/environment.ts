@@ -1,6 +1,9 @@
 import path from 'node:path';
 import { z } from 'zod';
 
+/** Alias avoiding unicorn/prefer-await on zod's `.catch()` (a non-promise method). */
+const zCatch = z.catch;
+
 /** Absolute default cache root, used when `CACHE_DIR` is unset or blank. */
 const DEFAULT_CACHE_DIR = path.resolve('cache');
 /** Absolute default metrics root, used when `METRICS_DIR` is unset or blank. */
@@ -20,7 +23,7 @@ const numericFromEnv = (fallback: number) =>
   z.preprocess(
     (value) =>
       typeof value === 'string' && value.trim().length === 0 ? undefined : value,
-    z.coerce.number().int().positive().catch(fallback),
+    zCatch(z.coerce.number().int().positive(), fallback),
   );
 
 const EnvironmentSchema = z
@@ -31,7 +34,7 @@ const EnvironmentSchema = z
     AUTH_USERNAME: z.string().trim().optional(),
 
     /** Cache root; the directory is created at startup. */
-    CACHE_DIR: z.string().trim().min(1).catch(DEFAULT_CACHE_DIR),
+    CACHE_DIR: zCatch(z.string().trim().min(1), DEFAULT_CACHE_DIR),
     /** Soft cap for the whole cache dir; oldest-used entries are evicted first. */
     CACHE_MAX_BYTES: numericFromEnv(2 * 1024 ** 3),
     /** How often the cache janitor sweeps. */
@@ -46,9 +49,9 @@ const EnvironmentSchema = z
     /** Bodies larger than this are rejected 413 before scanning so clamd's INSTREAM size limit is never hit; raise together with clamd.conf StreamMaxLength. */
     CLAMAV_MAX_BYTES: numericFromEnv(25 * 1024 ** 2),
     /** Port of the clamd daemon; must be set together with CLAMAV_HOST. */
-    CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+    CLAMAV_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
     /** Clamd socket connect timeout passed to clamdscan. */
-    CLAMAV_TIMEOUT_MS: numericFromEnv(60000),
+    CLAMAV_TIMEOUT_MS: numericFromEnv(60_000),
 
     /** Allowed origins in production; comma-separated URLs (a bare string is accepted as a single origin). */
     CORS_ORIGIN: z.preprocess(
@@ -61,7 +64,7 @@ const EnvironmentSchema = z
     ),
 
     /** Static root for the dashboard build (`packages/dashboard/dist`); missing dir = dashboard not served. */
-    DASHBOARD_DIR: z.string().trim().min(1).catch(DEFAULT_DASHBOARD_DIR),
+    DASHBOARD_DIR: zCatch(z.string().trim().min(1), DEFAULT_DASHBOARD_DIR),
     /** Comma-separated bare hostnames the `source=` media download may fetch (dotted suffixes allowed for subdomains); unset = only the built-in scheme and private-literal rules apply. */
     EGRESS_ALLOWLIST: z.preprocess(
       (value) => {
@@ -72,7 +75,7 @@ const EnvironmentSchema = z
       z.array(z.string().trim().min(1).max(253)).optional(),
     ),
 
-    FILE_HASH_HEADER_SIZE: z.coerce.number().int().positive().catch(65536), // 64 KB
+    FILE_HASH_HEADER_SIZE: zCatch(z.coerce.number().int().positive(), 65_536), // 64 KB
     /** pino log level; unset (or blank) = `info` in production, `debug` otherwise. Invalid values are rejected at boot. */
     LOG_LEVEL: z.preprocess(
       (value) =>
@@ -80,13 +83,13 @@ const EnvironmentSchema = z
       z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
     ),
     /** Directory holding `metrics.db`; created at startup. Kept out of `CACHE_DIR` on purpose. */
-    METRICS_DIR: z.string().trim().min(1).catch(DEFAULT_METRICS_DIR),
+    METRICS_DIR: zCatch(z.string().trim().min(1), DEFAULT_METRICS_DIR),
     /** Flush interval for the in-memory metric deltas; invalid values fall back to 1s (0 is not accepted here). */
     METRICS_FLUSH_INTERVAL_MS: numericFromEnv(1000),
     /** Retention for the metrics tables; invalid values fall back to 35 days. */
     METRICS_RETENTION_DAYS: numericFromEnv(35),
     /** Bearer token for `GET /metrics`; production refuses requests without it. Unset in development = open. */
-    METRICS_TOKEN: z.string().trim().min(1).optional().catch(undefined),
+    METRICS_TOKEN: zCatch(z.string().trim().min(1).optional(), undefined),
 
     NODE_ENV: z.enum(['development', 'production']),
 
@@ -100,13 +103,13 @@ const EnvironmentSchema = z
     ),
 
     /** Language data for tesseract.js; defaults to `<CACHE_DIR>/tesseract`. */
-    TESSERACT_DIR: z.string().trim().min(1).optional().catch(undefined),
-    TESSERACT_POOL_SIZE: z.coerce.number().int().min(1).max(8).catch(2),
+    TESSERACT_DIR: zCatch(z.string().trim().min(1).optional(), undefined),
+    TESSERACT_POOL_SIZE: zCatch(z.coerce.number().int().min(1).max(8), 2),
     TESSERACT_PRELOAD: z.string().trim().default('eng'),
-    TESSERACT_RECYCLE_JOBS: z.coerce.number().int().positive().catch(500),
-    TESSERACT_TIMEOUT_MS: z.coerce.number().int().positive().catch(60000),
+    TESSERACT_RECYCLE_JOBS: zCatch(z.coerce.number().int().positive(), 500),
+    TESSERACT_TIMEOUT_MS: zCatch(z.coerce.number().int().positive(), 60_000),
     /** Honor `X-Forwarded-For` for `request.ip` (set only behind a trusted proxy). */
-    TRUST_PROXY: z.stringbool().optional().catch(undefined),
+    TRUST_PROXY: zCatch(z.stringbool().optional(), undefined),
   })
   .superRefine((env, ctx) => {
     // Empty strings count as unset (trimmed by the schema already).

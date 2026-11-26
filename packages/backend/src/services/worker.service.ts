@@ -50,7 +50,6 @@ const workerEnv = (): Record<string, string> => {
   const allowlist = new Set<string>(WORKER_ENV_KEYS);
   for (const [key, value] of Object.entries(process.env)) {
     if (value === undefined || !allowlist.has(key)) continue;
-    // eslint-disable-next-line security/detect-object-injection -- keys are matched against a hardcoded allowlist; user input never reaches this access
     env[key] = value;
   }
   env.FILE_FLY_WORKER = '1';
@@ -109,7 +108,7 @@ export class WorkerService {
         const cached = await this.cache.read({ key });
         if (cached) {
           // mtime drives LRU eviction; refresh it on every hit.
-          void this.touch(key).catch(() => undefined);
+          void this.touch(key).catch(() => {});
           source?.destroy(); // nobody will read it: free socket / request body
           this.cls.cacheOutcome().set('hit');
           return cached;
@@ -163,10 +162,10 @@ export class WorkerService {
   private persist(key: string, branch: Readable, succeeded: Promise<boolean>): void {
     // Assigned synchronously by the Promise executor below, before any await.
     let release!: () => void;
-    this.inflight.set(
-      key,
-      new Promise<void>((resolve) => { release = resolve; }),
-    );
+    const promise = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.inflight.set(key, promise);
 
     // Hand the branch to the cache immediately: a backpressured tee branch
     // nobody drains until the worker exits would stall `worker.stdout` and
@@ -180,7 +179,11 @@ export class WorkerService {
         // The worker failed mid-stream: make sure its (possibly partial)
         // output is never served from the cache. flush() resolved only after
         // the fill finished, so this cannot delete an entry still being written.
-        await this.cache.unlink(key).catch(() => undefined);
+        try {
+          await this.cache.unlink(key);
+        } catch {
+          void 0;
+        }
       }
     };
 
@@ -237,8 +240,8 @@ export class WorkerService {
     const stderrChunks: Buffer[] = [];
     let stderrSize = 0;
     worker.stderr.on('data', (chunk: Buffer | string) => {
-      const buffer = toBuffer(chunk);
       if (stderrSize >= MAX_STDERR_BYTES) return;
+      const buffer = toBuffer(chunk);
       stderrChunks.push(buffer);
       stderrSize += buffer.length;
     });

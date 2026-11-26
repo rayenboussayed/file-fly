@@ -45,11 +45,11 @@ export function telemetryEnabled(env: Record<string, unknown>): boolean {
 /* v8 ignore start -- browser-only OTel boot; telemetryEnabled is unit-tested, the SDK wiring is exercised by the production build */
 export const telemetry = clientFn(() => {
   if (started || !telemetryEnabled(import.meta.env)) {
-    return undefined;
+    return;
   }
   const rawEndpoint = import.meta.env.VITE_OTEL_OTLP_ENDPOINT;
   if (typeof rawEndpoint !== 'string') {
-    return undefined;
+    return;
   }
   started = true;
   let endpoint = rawEndpoint.trim();

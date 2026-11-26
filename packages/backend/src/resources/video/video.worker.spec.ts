@@ -11,11 +11,12 @@ describe('video worker metadata', () => {
       hoisted.workerData = { inputFormat: 'mp4', operation };
       vi.resetModules();
       const stream = fs.createReadStream('assets/videos/video-0.mp4');
-      stream.on('error', () => undefined);
+      stream.on('error', () => {});
       Object.defineProperty(process, 'stdin', { value: stream, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
-      const stdout = new (require('node:stream').Writable)({ write(_c: any, _e: any, cb: any) { cb(); } });
-      stdout.on('error', () => undefined);
+      const { Writable } = await import('node:stream');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stdout = new Writable({ write(_c: any, _e: any, cb: any) { cb(); } });
+      stdout.on('error', () => {});
       Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
       await import('./worker/index.js');
       await new Promise<void>((resolve) => {
@@ -24,5 +25,5 @@ describe('video worker metadata', () => {
     }
 // eslint-disable-next-line sonarjs/no-trivial-assertions
     expect(true).toBe(true);
-  }, 15000);
+  }, 15_000);
 });

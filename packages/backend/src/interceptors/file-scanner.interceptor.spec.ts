@@ -23,7 +23,7 @@ describe('FileScannerInterceptor', () => {
   it('passes method-less requests through without scanning', async () => {
     const handled = Symbol('handled');
     const cls = {
-      request: () => undefined,
+      request: () => {},
       response: () => ({}),
     };
     const { FileScannerInterceptor } = await import('./file-scanner.interceptor.js');
@@ -129,8 +129,8 @@ describe('FileScannerInterceptor', () => {
     antiVirusMock.enabled.mockReturnValue(true);
     const cls = {
       request: () => ({ headers: {}, method: 'POST', url: '/font/metadata' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const { FileScannerInterceptor } = await import('./file-scanner.interceptor.js');
     const interceptor = new FileScannerInterceptor(cls as never, antiVirusMock as never);

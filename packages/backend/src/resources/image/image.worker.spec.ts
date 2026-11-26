@@ -1,4 +1,4 @@
-import { Readable } from 'node:stream';
+import { Readable, Writable } from 'node:stream';
 import sharp from 'sharp';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -34,19 +34,16 @@ beforeAll(async () => {
  */
 const capturingStdout = () => {
   const writes: Buffer[] = [];
-  let resolveFinished!: () => void;
-  const finished = new Promise<void>((resolve) => {
-    resolveFinished = resolve;
-  });
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const stdout = new (require('node:stream').Writable)({
+  const stdout = new Writable({
     write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
       writes.push(Buffer.from(chunk as Buffer));
       callback();
     },
   });
-  stdout.on('finish', () => resolveFinished());
-  stdout.on('error', () => resolveFinished());
+  const finished = new Promise<void>((resolve) => {
+    stdout.on('finish', resolve);
+    stdout.on('error', resolve);
+  });
   return { finished, stdout, writes };
 };
 
@@ -60,7 +57,7 @@ const run = async (data: Record<string, unknown>) => {
   const cap = capturingStdout();
   Object.defineProperty(process, 'stdout', { value: cap.stdout, writable: true });
   await runImageWorker(data as never);
-  await Promise.race([cap.finished, new Promise<void>((resolve) => { setTimeout(resolve, 30000); })]);
+  await Promise.race([cap.finished, new Promise<void>((resolve) => { setTimeout(resolve, 30_000); })]);
   return cap.writes;
 };
 
@@ -75,7 +72,7 @@ describe('image worker', () => {
     expect(parsed.width).toBe(64);
     expect(parsed.height).toBe(48);
     expect(parsed.format).toBe('jpeg');
-  }, 30000);
+  }, 30_000);
 
   it('covers stats operation', async () => {
     const writes = await run({ operation: 'stats' });
@@ -86,13 +83,13 @@ describe('image worker', () => {
     expect(parsed.channels.length).toBeGreaterThan(0);
     expect(typeof parsed.channels[0]?.mean).toBe('number');
     expect(typeof parsed.entropy).toBe('number');
-  }, 30000);
+  }, 30_000);
 
   it('covers processor operation and emits a jpeg', async () => {
     const writes = await run({ operation: 'processor', payload: { format: 'jpeg', height: 24, width: 32 } });
     expect(writes.length).toBeGreaterThan(0);
     expect(Buffer.concat(writes).subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]));
-  }, 30000);
+  }, 30_000);
 
   it('covers the worker runner and every processor option', async () => {
     const processorWrites = await run({
@@ -130,5 +127,5 @@ describe('image worker', () => {
       channels: unknown[];
     };
     expect(parsed.channels.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 60_000);
 });

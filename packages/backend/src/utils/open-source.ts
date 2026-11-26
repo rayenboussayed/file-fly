@@ -92,8 +92,7 @@ const isPrivateIpv6 = (host: string): boolean => {
 
 /** Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive. */
 const EGRESS_ALLOWLIST = (environment.EGRESS_ALLOWLIST ?? []).map((entry) =>
-  entry.toLowerCase(),
-);
+  entry.toLowerCase(),);
 
 /**
  * Enforces the egress rules for a user-supplied source URL:

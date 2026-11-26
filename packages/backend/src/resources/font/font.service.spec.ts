@@ -13,8 +13,8 @@ const makeService = (body: Buffer, contentType = 'font/ttf') => {
   const stream = Readable.from([body]);
   const cls = {
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   return new FontService(cls as never);
 };
@@ -63,8 +63,8 @@ describe('FontService.metadata', () => {
   it('maps a missing source stream to a client error, not a 500', async () => {
     const cls = {
       request: () => ({ headers: { 'content-type': 'font/ttf' }, method: 'POST' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new FontService(cls as never);
     await expect(service.metadata({})).rejects.toMatchObject({
@@ -224,8 +224,8 @@ describe('FontService readBody fallbacks', () => {
     const stream = Readable.from([Buffer.from('x')]);
     const cls = {
       request: () => ({ method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new FontService(cls as never);
     await expect(service.metadata({})).rejects.toMatchObject({ status: 415 });

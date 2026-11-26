@@ -78,10 +78,7 @@ export class FileParserInterceptor implements NestInterceptor {
     this.cls.cacheKey().set(
       generateCacheKey({
         ...base,
-        contentLength: Number.parseInt(
-          request.headers['content-length'] ?? '0',
-          10,
-        ),
+        contentLength: Math.trunc(Number(request.headers['content-length'] ?? '0')),
         fileHash,
       }),
     );

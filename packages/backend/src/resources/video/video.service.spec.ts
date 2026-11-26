@@ -51,7 +51,7 @@ describe('VideoService uncovered paths', () => {
     const workerService = { createWorker: vi.fn() };
     const service = new VideoService(
       workerService as never,
-      { fileSignature: () => ({ get: () => undefined }) } as never,
+      { fileSignature: () => ({ get: () => {} }) } as never,
       { isVideo: () => true } as never,
     );
     await expect(service.dna()).rejects.toMatchObject({ status: 415 });

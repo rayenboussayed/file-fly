@@ -20,7 +20,7 @@ const stubFetch = (response: () => Response) => {
 };
 
 const snapshotResponse = () =>
-  new Response(JSON.stringify(fixture), {
+  Response.json(fixture, {
     headers: { 'content-type': 'application/json' },
     status: 200,
   });
@@ -42,7 +42,7 @@ describe('token storage', () => {
   it('trims and clears blank tokens', () => {
     setMetricsToken('  padded  ');
     expect(metricsToken()).toBe('padded');
-    setMetricsToken('   ');
+    setMetricsToken(' '.repeat(3));
     expect(metricsToken()).toBeUndefined();
   });
 });
@@ -84,37 +84,47 @@ describe('fetchMetrics', () => {
 
   it('throws ApiError for any non-2xx response', async () => {
     stubFetch(() => new Response('broken', { status: 500 }));
-    const error = await fetchMetrics().catch((caught: unknown) => caught);
+    let error: unknown;
+    try {
+      await fetchMetrics();
+    } catch (caught) {
+      error = caught;
+    }
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).status).toBe(500);
   });
 
   it('keeps extra row fields at runtime', async () => {
-    stubFetch(() => new Response(JSON.stringify({
+    stubFetch(() => Response.json({
       ...fixture,
       perIp: fixture.perIp.map((row) => ({ ...row, extra: 'kept' })),
-    }), { headers: { 'content-type': 'application/json' }, status: 200 }));
+    }, { headers: { 'content-type': 'application/json' }, status: 200 }));
     const snapshot = await fetchMetrics();
     expect(snapshot.perIp[0]?.ip).toBe(fixture.perIp[0]?.ip);
     expect(snapshot.perIp[0]?.extra).toBe('kept');
   });
 
   it('rejects a payload that violates the contract without echoing it', async () => {
-    stubFetch(() => new Response(JSON.stringify({
+    stubFetch(() => Response.json({
       ...fixture,
       perIp: [{ ...fixture.perIp[0], ip: '203.0.113.7' }],
       totals: { requests: 'many' },
-    }), {
+    }, {
       headers: { 'content-type': 'application/json' },
       status: 200,
     }));
-    const error = await fetchMetrics().catch((caught: unknown) => caught);
+    let error: unknown;
+    try {
+      await fetchMetrics();
+    } catch (caught) {
+      error = caught;
+    }
     expect(error).toBeInstanceOf(MetricsContractError);
     expect((error as Error).message).not.toContain('203.0.113.7');
   });
 
   it('rejects a payload with missing top-level fields', async () => {
-    stubFetch(() => new Response(JSON.stringify({ requests: 1 }), {
+    stubFetch(() => Response.json({ requests: 1 }, {
       headers: { 'content-type': 'application/json' },
       status: 200,
     }));

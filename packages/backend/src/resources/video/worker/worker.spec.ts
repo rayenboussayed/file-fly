@@ -60,8 +60,10 @@ describe('video worker', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -79,7 +81,7 @@ describe('video worker', () => {
     expect(parsed.format).toContain('mov');
     expect(parsed.duration).toBeGreaterThan(0);
     expect(parsed.streams.length).toBeGreaterThan(0);
-  }, 30000);
+  }, 30_000);
 
   it('stats emits a parseable stats result', async () => {
     const chunks = stubStdout();
@@ -91,7 +93,7 @@ describe('video worker', () => {
       streams: Array<{ codec: number; height: number; width: number; }>;
     };
     expect(parsed.streams.some((stream) => stream.height === 120)).toBe(true);
-  }, 30000);
+  }, 30_000);
 
   it('dna emits a PDQ hash sequence', async () => {
     const chunks = stubStdout();
@@ -103,7 +105,7 @@ describe('video worker', () => {
     expect(parsed.algorithm).toBe('vid-pdq');
     expect(parsed.fps).toBe(2);
     expect(parsed.frames.length).toBeGreaterThan(0);
-  }, 30000);
+  }, 30_000);
 
   it('screenshot emits a multipart stream containing a JPEG frame', async () => {
     const chunks = stubStdout();
@@ -113,7 +115,7 @@ describe('video worker', () => {
     expect(out.length).toBeGreaterThan(100);
     // JPEG SOI marker must appear somewhere in the multipart stream.
     expect(out.includes(Buffer.from([0xff, 0xd8]))).toBe(true);
-  }, 30000);
+  }, 30_000);
 
   it('processor transcodes to fragmented mp4', async () => {
     const chunks = stubStdout();
@@ -126,7 +128,7 @@ describe('video worker', () => {
     const out = Buffer.concat(chunks);
     expect(out.length).toBeGreaterThan(0);
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
-  }, 30000);
+  }, 30_000);
 
   it('audio extracts an mp3 stream from a video', async () => {
     const chunks = stubStdout();
@@ -143,14 +145,14 @@ describe('video worker', () => {
     const second = out.at(1) ?? 0;
     const frameSync = out.at(0) === 0xff && (second & 0xe0) === 0xe0;
     expect(magic === 'ID3' || frameSync).toBe(true);
-  }, 30000);
+  }, 30_000);
 
   it('ignores unknown operations without writing bytes', async () => {
     const chunks = stubStdout();
     await importWorker({ inputFormat: 'mp4', operation: 'not-a-thing' });
     await waitForWorker(500);
     expect(Buffer.concat(chunks)).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 });
 
 describe('video worker processMedia matrix', () => {
@@ -167,8 +169,10 @@ describe('video worker processMedia matrix', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -176,7 +180,7 @@ describe('video worker processMedia matrix', () => {
     const out = await runProcessor({ codec: 'vp9', format: 'webm' });
     // EBML magic
     expect(out.subarray(0, 4).toString('hex')).toBe('1a45dfa3');
-  }, 30000);
+  }, 30_000);
 
   it('transcodes both video and audio tracks (opus encoder path)', async () => {
     const out = await runProcessor({
@@ -187,12 +191,12 @@ describe('video worker processMedia matrix', () => {
     });
     // EBML magic
     expect(out.subarray(0, 4).toString('hex')).toBe('1a45dfa3');
-  }, 30000);
+  }, 30_000);
 
   it('transcodes only audio when video passes through', async () => {
     const out = await runProcessor({ audioBitrate: '128k', format: 'mp4' });
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
-  }, 30000);
+  }, 30_000);
 
   it('applies trim and fps filters through the full pipeline', async () => {
     const out = await runProcessor({
@@ -202,7 +206,7 @@ describe('video worker processMedia matrix', () => {
       trimStart: 0.2,
     });
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
-  }, 30000);
+  }, 30_000);
 
   it('encodes with the vp9 encoder constant', async () => {
     const out = await runProcessor({
@@ -210,7 +214,7 @@ describe('video worker processMedia matrix', () => {
       format: 'mp4',
     });
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
-  }, 30000);
+  }, 30_000);
 });
 
 describe('dna edge cases', () => {
@@ -227,7 +231,7 @@ describe('dna edge cases', () => {
     // In in-process mode the worker swallows the error; the parent only sees
     // it through a non-zero exit code (standalone) or no bytes here.
     expect(Buffer.concat(chunks)).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 });
 
 describe('dna trim fallback', () => {
@@ -246,7 +250,7 @@ describe('dna trim fallback', () => {
     const parsed = JSON.parse(lines[0] as string) as { algorithm: string; frames: unknown[] };
     expect(parsed.algorithm).toBe('vid-pdq');
     expect(parsed.frames.length).toBeGreaterThan(0);
-  }, 30000);
+  }, 30_000);
 });
 
 describe('video worker processMedia passthrough', () => {
@@ -256,8 +260,10 @@ describe('video worker processMedia passthrough', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -267,7 +273,7 @@ describe('video worker processMedia passthrough', () => {
     await waitForWorker(10_000);
     const out = Buffer.concat(chunks);
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
-  }, 30000);
+  }, 30_000);
 });
 
 describe('processMedia direct calls', () => {
@@ -276,8 +282,10 @@ describe('processMedia direct calls', () => {
     stubStdout();
     const { processMedia } = await import('./processor.js');
     await expect(processMedia({ format: 'bogus' } as never)).rejects.toThrow('Streaming output does not support format: bogus');
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
   });
 
   it('defaults to fragmented mp4 when format is omitted', async () => {
@@ -287,9 +295,11 @@ describe('processMedia direct calls', () => {
     await waitForWorker(10_000);
     const out = Buffer.concat(chunks);
     expect(out.subarray(0, 8).toString('latin1')).toContain('ftyp');
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
-  }, 30000);
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
+  }, 30_000);
 });
 
 describe('video worker screenshot edge cases', () => {
@@ -299,8 +309,10 @@ describe('video worker screenshot edge cases', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -310,7 +322,7 @@ describe('video worker screenshot edge cases', () => {
     await importWorker({ inputFormat: 'mp4', operation: 'screenshot', payload: { frames: [] } });
     await waitForWorker(4000);
     expect(Buffer.concat(chunks)).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 
   it('fails cleanly on an audio-only input (no video stream to decode)', async () => {
     const chunks = stubStdout();
@@ -318,5 +330,5 @@ describe('video worker screenshot edge cases', () => {
     await importWorker({ inputFormat: 'mp3', operation: 'screenshot', payload: { frames: [0] } });
     await waitForWorker(4000);
     expect(Buffer.concat(chunks)).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 });

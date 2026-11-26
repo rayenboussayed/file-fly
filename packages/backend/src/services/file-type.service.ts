@@ -128,7 +128,7 @@ function nonDestructiveWebStream(node: Readable): ReadableStream<Uint8Array> {
       // Keep pulling from the Node stream with the same iterator and drop
       // everything, so the probe branch of the tee is not left backed up.
       cancelled = true;
-      void drainIterator().catch(() => undefined);
+      void drainIterator().catch(() => {});
     },
     async pull(controller) {
       if (cancelled) return;

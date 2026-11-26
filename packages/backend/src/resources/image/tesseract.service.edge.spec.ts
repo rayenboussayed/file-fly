@@ -37,7 +37,6 @@ vi.mock('tesseract.js', () => ({
       }),
       reinitialize: vi.fn(async () => {
         if (hoisted.reinitFails) throw new Error('reinitialize exploded');
-        return undefined;
       }),
       terminate: vi.fn(async () => {
         if (hoisted.terminateFails) throw new Error('terminate exploded');
@@ -159,8 +158,8 @@ describe('TesseractService line coverage', () => {
       recognize: vi.fn(async () => ({
         data: { blocks: [{ paragraphs: null }, {}], confidence: 90, text: 'x\n' },
       })) as never,
-      reinitialize: vi.fn(async () => undefined),
-      terminate: vi.fn(async () => undefined),
+      reinitialize: vi.fn(async () => {}),
+      terminate: vi.fn(async () => {}),
     }) as never);
     const service = new TesseractService();
     const result = await service.recognize(Buffer.from('img'), ['eng']);
@@ -197,8 +196,8 @@ describe('TesseractService line coverage', () => {
     await expect(pending).rejects.toThrow();
     resolveWorker?.({
       recognize: vi.fn(),
-      reinitialize: vi.fn(async () => undefined),
-      terminate: vi.fn(async () => undefined),
+      reinitialize: vi.fn(async () => {}),
+      terminate: vi.fn(async () => {}),
     });
     // Give the cleanup .then() a chance to run.
     await new Promise((resolve) => setImmediate(resolve));

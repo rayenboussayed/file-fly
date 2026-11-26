@@ -22,8 +22,8 @@ describe('formatBytes', () => {
   });
 
   it('handles invalid input', () => {
-    expect(formatBytes(Number.NaN)).toBe('0 B');
-    expect(formatBytes(Number.POSITIVE_INFINITY)).toBe('0 B');
+    expect(formatBytes(NaN)).toBe('0 B');
+    expect(formatBytes(Infinity)).toBe('0 B');
     expect(formatBytes(-5)).toBe('0 B');
   });
 });
@@ -48,7 +48,7 @@ describe('formatPercent', () => {
   it('clamps and handles invalid input', () => {
     expect(formatPercent(1.5)).toBe('100.0%');
     expect(formatPercent(-0.5)).toBe('0.0%');
-    expect(formatPercent(Number.NaN)).toBe('0%');
+    expect(formatPercent(NaN)).toBe('0%');
   });
 });
 
@@ -57,7 +57,7 @@ describe('formatMs', () => {
     expect(formatMs(50)).toBe('50.0 ms');
     expect(formatMs(999.9)).toBe('999.9 ms');
     expect(formatMs(1234.56)).toBe('1.23 s');
-    expect(formatMs(Number.NaN)).toBe('0 ms');
+    expect(formatMs(NaN)).toBe('0 ms');
     expect(formatMs(-1)).toBe('0 ms');
   });
 });

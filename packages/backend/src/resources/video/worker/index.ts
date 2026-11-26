@@ -44,18 +44,24 @@ async function run() {
  * Runs the worker job and, only inside a spawned worker thread, finishes the process.
  * @returns The job (with exit-code handling attached when running as a worker thread).
  */
-function startVideoWorker() {
+async function startVideoWorker() {
   const job = run();
   if (process.env.FILE_FLY_WORKER !== '1') {
-    return job.catch(() => undefined);
+    try {
+      await job;
+    } catch {
+      // ignore worker errors in non-worker mode
+      void 0;
+    }
+    return;
   }
-  return job.then(
-    () => finishWorker(0),
-    (error: unknown) => {
-      logger.error({ err: error }, 'worker failed');
-      finishWorker(1);
-    },
-  );
+  try {
+    await job;
+    finishWorker(0);
+  } catch (error: unknown) {
+    logger.error({ err: error }, 'worker failed');
+    finishWorker(1);
+  }
 }
 
-void startVideoWorker().catch(() => undefined);
+void startVideoWorker().catch(() => {});

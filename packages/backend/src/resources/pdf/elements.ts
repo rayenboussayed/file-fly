@@ -216,20 +216,20 @@ const drawTextAligned = (
   if (w === undefined || align === 'left') {
     // Uniform leading with the wrapped path (pdf-lib's default is 24 pt, always).
     const lines = w === undefined ? text.split('\n') : wrapLines(text, font, size, w);
-    lines.forEach((line, index) => {
+    for (const [index, line] of lines.entries()) {
       if (line !== '') {
         page.drawText(line, { color, font, size, x, y: baseline - index * lineHeight });
       }
-    });
+    }
     return;
   }
   const lines = wrapLines(text, font, size, w);
-  lines.forEach((line, index) => {
-    if (line === '') return;
+  for (const [index, line] of lines.entries()) {
+    if (line === '') continue;
     const lineWidth = font.widthOfTextAtSize(line, size);
     const offset = textOffset(align, lineWidth, w);
     page.drawText(line, { color, font, size, x: x + offset, y: baseline - index * lineHeight });
-  });
+  }
 };
 
 /**

@@ -22,7 +22,7 @@ function rawSink(): Writable & { setHeader: ReturnType<typeof vi.fn> } {
 describe('XlsxController', () => {
   it('streams the build output as an xlsx with a content disposition', async () => {
     const xlsxService = {
-      build: vi.fn(async () => Buffer.from('PK\x03\x04xlsx-bytes')),
+      build: vi.fn(async () => Buffer.from('PK\u{3}\u{4}xlsx-bytes')),
       extract: vi.fn(async () => ({ records: [{ a: 1 }], sheet: 'Sheet1' })),
       metadata: vi.fn(async () => ({ rows: 1 })),
     };

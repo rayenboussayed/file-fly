@@ -115,7 +115,7 @@ export class ImageService {
         .map((value) => value.trim().toLowerCase())
         .filter((value) => value.length > 0),
     )]
-      .sort()
+      .toSorted((a, b) => a.localeCompare(b))
       .slice(0, 4);
     return langs.length === 0 ? ['eng'] : langs;
   }

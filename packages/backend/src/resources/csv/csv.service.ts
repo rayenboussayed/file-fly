@@ -139,11 +139,11 @@ export class CsvService {
         const values = Array.isArray(record) ? record : Object.values(record as Record<string, unknown>);
         columns = Math.max(columns, values.length);
         if (rows > maxRows) continue;
-        values.forEach((value, index) => {
+        for (const [index, value] of values.entries()) {
           const entry = census.get(index) ?? { boolean: 0, date: 0, empty: 0, number: 0, string: 0 };
           entry[kindOf(value)] += 1;
           census.set(index, entry);
-        });
+        }
       }
     } catch (error) {
       throw toBadRequest(error);
@@ -153,8 +153,8 @@ export class CsvService {
       columns,
       delimiter: options.delimiter ?? 'auto',
       maxRows,
-      perColumn: [...census.entries()]
-        .sort(([a], [b]) => a - b)
+      perColumn: [...census]
+        .toSorted(([a], [b]) => a - b)
         .map(([index, types]) => ({ index, types })),
       recordDelimiter: options.record_delimiter ?? 'auto',
       rows,

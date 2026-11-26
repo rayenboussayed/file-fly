@@ -5,8 +5,8 @@
  */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
-  const fixed = (value: number) => value.toFixed(value >= 10 ? 0 : 1);
   if (bytes < 1024) return `${bytes} B`;
+  const fixed = (value: number) => value.toFixed(value >= 10 ? 0 : 1);
   if (bytes < 1024 ** 2) return `${fixed(bytes / 1024)} KB`;
   if (bytes < 1024 ** 3) return `${fixed(bytes / 1024 ** 2)} MB`;
   if (bytes < 1024 ** 4) return `${fixed(bytes / 1024 ** 3)} GB`;
@@ -29,8 +29,7 @@ export function formatCount(value: number): string {
  */
 export function formatHourBucket(bucket: string): string {
   const match = /^\d{4}-(\d{2})-(\d{2})T(\d{2})/.exec(bucket);
-  if (!match) return '00:00';
-  return `${match[1]}-${match[2]} ${match[3]}:00`;
+  return match ? `${match[1]}-${match[2]} ${match[3]}:00` : '00:00';
 }
 
 /**
@@ -51,6 +50,5 @@ export function formatMs(ms: number): string {
  * @returns Percent string such as `87.5%`, or `0%` for non-finite input.
  */
 export function formatPercent(ratio: number, digits = 1): string {
-  if (!Number.isFinite(ratio)) return '0%';
-  return `${(Math.min(1, Math.max(0, ratio)) * 100).toFixed(digits)}%`;
+  return Number.isFinite(ratio) ? `${(Math.min(1, Math.max(0, ratio)) * 100).toFixed(digits)}%` : '0%';
 }

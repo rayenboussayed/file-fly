@@ -81,7 +81,7 @@ describe('guardSignature', () => {
 
   it('passes through when no signature was probed', () => {
     const cls = {
-      fileSignature: () => ({ get: () => undefined }),
+      fileSignature: () => ({ get: () => {} }),
       request: () => ({ url: '/audio' }),
     };
     const next = { handle: () => 'next' };

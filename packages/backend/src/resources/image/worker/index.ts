@@ -33,18 +33,23 @@ export async function runImageWorker(inputData: ImageWorkerData = data) {
  * Runs the worker job and, only inside a spawned worker thread, finishes the process.
  * @returns The job (with exit-code handling attached when running as a worker thread).
  */
-export function startImageWorker() {
+export async function startImageWorker() {
   const job = runImageWorker(data);
   if (process.env.FILE_FLY_WORKER !== '1') {
-    return job.catch(() => undefined);
+    try {
+      await job;
+    } catch (error) {
+      logger.debug({ err: error }, 'worker job failed');
+    }
+    return;
   }
-  return job.then(
-    () => finishWorker(0),
-    (error: unknown) => {
-      logger.error({ err: error }, 'worker failed');
-      finishWorker(1);
-    },
-  );
+  try {
+    await job;
+    finishWorker(0);
+  } catch (error: unknown) {
+    logger.error({ err: error }, 'worker failed');
+    finishWorker(1);
+  }
 }
 
-void startImageWorker().catch(() => undefined);
+void startImageWorker().catch(() => {});

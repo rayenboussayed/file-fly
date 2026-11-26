@@ -100,7 +100,7 @@ export function parseMultipart(
   return segments
     .map((segment) => {
       const splitAt = segment.indexOf('\r\n\r\n');
-      if (splitAt === -1) return undefined;
+      if (splitAt === -1) return;
       const rawHeaders = segment.subarray(0, splitAt).toString('utf8');
       const headers: Record<string, string> = {};
       for (const line of rawHeaders.split('\r\n')) {

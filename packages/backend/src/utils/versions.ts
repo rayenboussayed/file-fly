@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
+import path from 'node:path';
 
 const require_ = createRequire(import.meta.url);
 
@@ -16,14 +16,14 @@ const require_ = createRequire(import.meta.url);
  * @returns The package version string.
  */
 export function packageVersion(name: string, fromDir?: string): string {
-  let dir = fromDir ?? dirname(require_.resolve(name));
+  let dir = fromDir ?? path.dirname(require_.resolve(name));
   for (let depth = 0; depth < 6; depth += 1) {
     let raw: string;
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename -- path is built from the resolved package entry walking to its own package.json, not user input
-      raw = readFileSync(join(dir, 'package.json'), 'utf8');
+      raw = readFileSync(path.join(dir, 'package.json'), 'utf8');
     } catch {
-      dir = dirname(dir);
+      dir = path.dirname(dir);
       continue;
     }
     const parsed: unknown = JSON.parse(raw);
@@ -37,7 +37,7 @@ export function packageVersion(name: string, fromDir?: string): string {
     ) {
       return parsed.version;
     }
-    dir = dirname(dir);
+    dir = path.dirname(dir);
   }
   throw new Error(`Cannot resolve version for package "${name}"`);
 }

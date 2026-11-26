@@ -1,5 +1,7 @@
 /* eslint-disable security/detect-non-literal-fs-filename */
 
+import type { Stats } from 'node:fs';
+
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -35,11 +37,20 @@ export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
 
   async onModuleInit() {
     await fs.promises.mkdir(CACHE_DIR, { recursive: true });
-    await this.sweep().catch((e) => this.logger.error(e));
-    this.timer = setInterval(
-      () => void this.sweep().catch((e) => this.logger.error(e)),
-      CACHE_SWEEP_INTERVAL_MS,
-    );
+    try {
+      await this.sweep();
+    } catch (e) {
+      this.logger.error(e);
+    }
+    this.timer = setInterval(() => {
+      void (async () => {
+        try {
+          await this.sweep();
+        } catch (e) {
+          this.logger.error(e);
+        }
+      })();
+    }, CACHE_SWEEP_INTERVAL_MS);
     this.timer.unref();
   }
 
@@ -58,7 +69,7 @@ export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
       );
       for (const name of names) {
         const file = path.join(CACHE_DIR, name);
-        const stat = await fs.promises.stat(file).catch(() => undefined);
+        const stat = await safeStat(file);
         if (!stat?.isFile()) continue;
         const age = now - stat.mtimeMs;
 
@@ -92,5 +103,19 @@ export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
       this.logger.warn(`cannot remove ${file}: ${String(error)}`);
       return false;
     }
+  }
+}
+
+/**
+ * Stats a file without throwing when it is missing.
+ * @param file - Absolute path to stat.
+ * @returns The stat result, or undefined when the file cannot be read.
+ */
+async function safeStat(file: string): Promise<Stats | undefined> {
+  try {
+    return await fs.promises.stat(file);
+  } catch {
+    void 0;
+    return undefined;
   }
 }

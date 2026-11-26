@@ -7,11 +7,11 @@ import { settleHeap } from './helpers.js';
 const ITERATIONS = 6;
 
 const makeCls = (): unknown => ({
-  cacheKey: () => ({ get: () => undefined, set: () => undefined }),
-  cacheOutcome: () => ({ get: () => undefined, set: () => undefined }),
-  request: () => undefined,
-  sourceDirection: () => ({ set: () => undefined }),
-  sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+  cacheKey: () => ({ get: () => {}, set: () => {} }),
+  cacheOutcome: () => ({ get: () => {}, set: () => {} }),
+  request: () => {},
+  sourceDirection: () => ({ set: () => {} }),
+  sourceStream: () => ({ get: () => {}, set: () => {} }),
 });
 
 const makePayload = (): XlsxBuildType => ({
@@ -39,5 +39,5 @@ describe('xlsx build memory', () => {
     const after = process.memoryUsage();
     expect(after.heapUsed - before.heapUsed).toBeLessThan(8 * 1024 * 1024);
     expect(after.arrayBuffers - before.arrayBuffers).toBeLessThan(8 * 1024 * 1024);
-  }, 120000);
+  }, 120_000);
 });

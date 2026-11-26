@@ -50,8 +50,10 @@ describe('image worker', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -64,7 +66,7 @@ describe('image worker', () => {
     expect(parsed.width).toBe(24);
     expect(parsed.height).toBe(16);
     expect(parsed.format).toBe('jpeg');
-  }, 30000);
+  }, 30_000);
 
   it('stats emits the sharp stats JSON', async () => {
     const chunks = stubStdout();
@@ -73,12 +75,12 @@ describe('image worker', () => {
     const out = Buffer.concat(chunks).toString('utf8');
     const parsed = JSON.parse(out) as { channels: Array<{ mean: number }> };
     expect(parsed.channels.length).toBeGreaterThan(0);
-  }, 30000);
+  }, 30_000);
 
   it('ignores unknown operations without writing bytes', async () => {
     const chunks = stubStdout();
     await importWorker({ inputFormat: 'jpeg', operation: 'not-a-thing' });
     await waitForWorker(500);
     expect(Buffer.concat(chunks)).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 });

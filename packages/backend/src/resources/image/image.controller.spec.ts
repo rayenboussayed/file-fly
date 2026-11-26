@@ -79,7 +79,7 @@ describe('ImageController', () => {
     };
     const cls = {
       bytesOut: () => ({ set: vi.fn() }),
-      fileSignature: () => ({ get: () => undefined }),
+      fileSignature: () => ({ get: () => {} }),
     };
     const controller = new ImageController(imageService as never, cls as never);
     const response = { raw: rawSink(), type: vi.fn() };

@@ -49,7 +49,8 @@ sources (`package.json`, configs, `src/`) when in doubt.
 
 ## Conventions and gotchas
 
-- Lint: `eslint . --fix --max-warnings=0` — zero errors, zero warnings. Never disable a rule globally; inline disables need an exact line and a reason comment.
+- Lint: `eslint . --fix --cache --max-warnings=0` — zero errors, zero warnings. Never disable a rule globally; inline disables need an exact line and a reason comment.
+- ESLint: the root flat config delegates to the pinned `@stackrb/eslint-config@0.1.0` with targets `node` and `react`. Playwright rules are scoped to `packages/dashboard/test/e2e`, so Vitest specs use Vitest rules only. `eslint-plugin-unicorn`'s `unopinionated` preset is layered on for all code files. The dashboard keeps two scoped exceptions: `n/no-unsupported-features/node-builtins` is off (browser APIs allowed) and `unicorn/filename-case` allows both kebab-case and PascalCase. Generated docs, test results and `packages/dashboard/src/routeTree.gen.ts` stay ignored.
 - The dashboard must import `@astryxdesign/core/astryx.css` (alongside `reset.css` and the theme css) — without it every page renders with no component styles (only the reset and CSS variables apply). The screenshot e2e caught this; keep the import in `packages/dashboard/src/main.tsx`.
 - Commits: conventional commits; body lines ≤ 100 chars (commitlint). The pre-commit hook runs the full check — budget time for it.
 - Markdown is linted too: `[bracket-shaped]` text in headings or prose is parsed as a label reference and fails `markdown/no-missing-label-refs` — avoid bracketed pseudo-labels in `.md` files (headings like `## Unreleased`, not `## [Unreleased]`).

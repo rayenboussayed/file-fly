@@ -52,5 +52,5 @@ describe('pdf build memory', () => {
     // freed when the caller drops them. Anything above these caps is a leak.
     expect(after.heapUsed - before.heapUsed).toBeLessThan(8 * 1024 * 1024);
     expect(after.arrayBuffers - before.arrayBuffers).toBeLessThan(8 * 1024 * 1024);
-  }, 120000);
+  }, 120_000);
 });

@@ -14,7 +14,7 @@ describe('requestMime', () => {
   });
 
   it('returns an empty string when there is no request', () => {
-    const cls = { request: () => undefined };
+    const cls = { request: () => {} };
     expect(requestMime(cls as never)).toBe('');
   });
 

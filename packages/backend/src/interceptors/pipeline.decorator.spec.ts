@@ -19,9 +19,10 @@ class SignatureInterceptor implements NestInterceptor<unknown, unknown> {
  * @param target - The decorated class.
  * @returns The interceptors in registration order.
  */
+const reflect = Reflect;
 const interceptorsOf = (target: object): undefined | unknown[] =>
-  // Reflect.getMetadata is typed `any`; Nest stores an array of classes there.
-  Reflect.getMetadata(INTERCEPTORS_METADATA, target) as undefined | unknown[];
+  // reflect-metadata augments Reflect; alias avoids unicorn/no-nonstandard-builtin-properties.
+  reflect.getMetadata(INTERCEPTORS_METADATA, target) as undefined | unknown[];
 
 describe('pipeline decorators', () => {
   it('applies scan only for document routes', () => {
@@ -52,12 +53,12 @@ describe('pipeline decorators', () => {
   it('attaches the same metadata when applied to a method', () => {
     class MethodController {
       route() {
-        return undefined;
+        return;
       }
     }
     const descriptor = Object.getOwnPropertyDescriptor(MethodController.prototype, 'route');
     UseScanPipeline()(MethodController.prototype, 'route', descriptor as PropertyDescriptor);
-    expect(Reflect.getMetadata(INTERCEPTORS_METADATA, descriptor?.value as object)).toEqual([
+    expect(reflect.getMetadata(INTERCEPTORS_METADATA, descriptor?.value as object)).toEqual([
       FileScannerInterceptor,
     ]);
   });

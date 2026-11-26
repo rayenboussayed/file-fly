@@ -37,18 +37,23 @@ export async function runAudioWorker(inputData: AudioWorkerData = data) {
  * Runs the worker job and, only inside a spawned worker thread, finishes the process.
  * @returns The worker job promise (resolved when the job has been dispatched).
  */
-export function startAudioWorker() {
+export async function startAudioWorker() {
   const job = runAudioWorker(data);
   if (process.env.FILE_FLY_WORKER !== '1') {
-    return job.catch(() => undefined);
+    try {
+      await job;
+    } catch (error) {
+      logger.debug({ err: error }, 'worker job failed');
+    }
+    return;
   }
-  return job.then(
-    () => finishWorker(0),
-    (error: unknown) => {
-      logger.error({ err: error }, 'worker failed');
-      finishWorker(1);
-    },
-  );
+  try {
+    await job;
+    finishWorker(0);
+  } catch (error: unknown) {
+    logger.error({ err: error }, 'worker failed');
+    finishWorker(1);
+  }
 }
 
-void startAudioWorker().catch(() => undefined);
+void startAudioWorker().catch(() => {});

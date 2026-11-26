@@ -150,7 +150,7 @@ describe('openMediaSource', () => {
     const state: { bytesIn?: number; direction?: string; source?: unknown } = {};
     const cls = {
       bytesIn: () => ({ get: () => state.bytesIn, set: (value: number) => { state.bytesIn = value; } }),
-      request: () => undefined,
+      request: () => {},
       sourceDirection: () => ({
         get: () => state.direction,
         set: (value: string) => { state.direction = value; },
@@ -181,34 +181,26 @@ describe('openMediaSource', () => {
 
   it('rejects non-http(s) source URLs with 400', async () => {
     const { cls } = makeGetHarnessWith('file:///etc/passwd');
-    const error: unknown = await openMediaSource(cls).catch((value: unknown) => value);
+    let error: unknown;
+    try {
+      await openMediaSource(cls);
+    } catch (value) {
+      error = value;
+    }
     expect(error).toMatchObject({ response: { code: 'SOURCE_SCHEME_NOT_ALLOWED' } });
   });
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- the plaintext literals on this line are the egress guard's test subjects; they are never fetched
-  it.each(['http://127.0.0.1/internal.jpg', 'http://10.0.0.8/x.jpg', 'http://192.168.1.9/x.jpg', 'http://169.254.169.254/latest/meta-data', 'http://[::1]/x.jpg', 'http://localhost/x.jpg', 'https://printer.internal/x.jpg',
-    'https://[::ffff:127.0.0.1]/internal.jpg',
-    'https://[::ffff:10.0.0.8]/x.jpg',
-    'https://[::ffff:169.254.169.254]/latest/meta-data',
-    'https://[::ffff:172.16.0.1]/x.jpg',
-    'https://[::ffff:192.168.1.9]/x.jpg',
-    'https://[::ffff:198.18.0.1]/x.jpg',
-    'https://[::ffff:100.64.0.1]/x.jpg',
-    'https://[::ffff:0.0.0.0]/x.jpg',
-    'https://[::127.0.0.1]/x.jpg',
-    'https://[::a00:8]/x.jpg',
-    'https://[64:ff9b::7f00:1]/x.jpg',
-    'https://[64:ff9b::a9fe:a9fe]/x.jpg',
-    'https://[64:ff9b:1::7f00:1]/x.jpg',
-    'https://[::ffff:0:127.0.0.1]/x.jpg',
-    'https://[::ffff:0:0:127.0.0.1]/x.jpg',
-    'https://[2002:7f00:1::]/x.jpg',
-    'https://[2002:c0a8:101::]/x.jpg',
-  ])(
+  it.each(['http://127.0.0.1/internal.jpg', 'http://10.0.0.8/x.jpg', 'http://192.168.1.9/x.jpg', 'http://169.254.169.254/latest/meta-data', 'http://[::1]/x.jpg', 'http://localhost/x.jpg', 'https://printer.internal/x.jpg','https://[::ffff:127.0.0.1]/internal.jpg','https://[::ffff:10.0.0.8]/x.jpg','https://[::ffff:169.254.169.254]/latest/meta-data','https://[::ffff:172.16.0.1]/x.jpg','https://[::ffff:192.168.1.9]/x.jpg','https://[::ffff:198.18.0.1]/x.jpg','https://[::ffff:100.64.0.1]/x.jpg','https://[::ffff:0.0.0.0]/x.jpg','https://[::127.0.0.1]/x.jpg','https://[::a00:8]/x.jpg','https://[64:ff9b::7f00:1]/x.jpg','https://[64:ff9b::a9fe:a9fe]/x.jpg','https://[64:ff9b:1::7f00:1]/x.jpg','https://[::ffff:0:127.0.0.1]/x.jpg','https://[::ffff:0:0:127.0.0.1]/x.jpg','https://[2002:7f00:1::]/x.jpg','https://[2002:c0a8:101::]/x.jpg',])(
     'refuses the private or internal literal %s',
     async (source) => {
       const { cls } = makeGetHarnessWith(source);
-      const error: unknown = await openMediaSource(cls).catch((value: unknown) => value);
+      let error: unknown;
+    try {
+      await openMediaSource(cls);
+    } catch (value) {
+      error = value;
+    }
       expect(error).toMatchObject({ response: { code: 'SOURCE_HOST_NOT_ALLOWED' } });
     },
   );
@@ -230,7 +222,12 @@ describe('openMediaSource', () => {
     mockResponseHeaders = { 'content-length': '99999999999' };
     try {
       const { cls } = makeGetHarnessWith('https://fixture.local/huge.bin');
-      const error: unknown = await openMediaSource(cls).catch((value: unknown) => value);
+      let error: unknown;
+    try {
+      await openMediaSource(cls);
+    } catch (value) {
+      error = value;
+    }
       expect(error).toMatchObject({ message: expect.stringContaining('exceeds') as string });
       expect(lastBody?.destroyed).toBe(true);
     } finally {
@@ -241,12 +238,17 @@ describe('openMediaSource', () => {
   it('rejects an upload whose declared content-length exceeds the cap', async () => {
     const state: { direction?: string; source?: unknown } = {};
     const cls = {
-      bytesIn: () => ({ get: () => undefined, set: () => undefined }),
+      bytesIn: () => ({ get: () => {}, set: () => {} }),
       request: () => ({ headers: { 'content-length': String(25 * 1024 * 1024 + 1) }, method: 'POST', raw: new Readable({ read() { this.push(null); } }) }),
       sourceDirection: () => ({ get: () => state.direction, set: (value: string) => { state.direction = value; } }),
       sourceStream: () => ({ get: () => state.source, set: (value: unknown) => { state.source = value; } }),
     } as never;
-    const error: unknown = await openMediaSource(cls).catch((value: unknown) => value);
+    let error: unknown;
+    try {
+      await openMediaSource(cls);
+    } catch (value) {
+      error = value;
+    }
     expect(error).toMatchObject({ message: expect.stringContaining('exceeds') as string });
     expect(state.source).toBeUndefined();
   });
@@ -260,7 +262,12 @@ describe('openMediaSource', () => {
       await open(harness.cls);
       expect(harness.state.direction).toBe('download');
       const offList = makeGetHarnessWith('http://127.0.0.2/local.jpg');
-      const error: unknown = await open(offList.cls).catch((value: unknown) => value);
+      let error: unknown;
+      try {
+        await open(offList.cls);
+      } catch (value) {
+        error = value;
+      }
       expect(error).toMatchObject({ response: { code: 'SOURCE_HOST_NOT_ALLOWED' } });
     } finally {
       vi.unstubAllEnvs();
@@ -280,7 +287,12 @@ describe('openMediaSource', () => {
       await open(subHarness.cls);
       expect(subHarness.state.direction).toBe('download');
       const badHarness = makeGetHarnessWith('https://elsewhere.org/a.jpg');
-      const error: unknown = await open(badHarness.cls).catch((value: unknown) => value);
+      let error: unknown;
+      try {
+        await open(badHarness.cls);
+      } catch (value) {
+        error = value;
+      }
       expect(error).toMatchObject({ response: { code: 'SOURCE_HOST_NOT_ALLOWED' } });
     } finally {
       vi.unstubAllEnvs();
@@ -296,14 +308,19 @@ describe('openMediaSource', () => {
       const raw = Readable.from([Buffer.alloc(2048, 1)]);
       const state: { source?: unknown } = {};
       const cls = {
-        bytesIn: () => ({ get: () => undefined, set: () => undefined }),
+        bytesIn: () => ({ get: () => {}, set: () => {} }),
         request: () => ({ headers: {}, method: 'POST', raw }),
-        sourceDirection: () => ({ get: () => undefined, set: () => undefined }),
+        sourceDirection: () => ({ get: () => {}, set: () => {} }),
         sourceStream: () => ({ get: () => state.source, set: (value: unknown) => { state.source = value; } }),
       } as never;
       await open(cls);
       const capped = state.source as Readable;
-      const error: unknown = await collect(capped).catch((value: unknown) => value);
+      let error: unknown;
+      try {
+        await collect(capped);
+      } catch (value) {
+        error = value;
+      }
       expect(error).toMatchObject({ message: expect.stringContaining('exceeds') as string });
     } finally {
       vi.unstubAllEnvs();

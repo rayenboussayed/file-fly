@@ -43,7 +43,15 @@ export async function dna(): Promise<void> {
         let bytes: Buffer = rgb;
         let width = w;
         let height = h;
-        const trimmed = await sharp(rgb, { raw: { channels: 3, height: h, width: w } }).trim({ threshold: 12 }).raw().toBuffer({ resolveWithObject: true }).catch(() => null);
+        let trimmed: null | { data: Buffer; info: { height: number; width: number } } = null;
+        try {
+          trimmed = await sharp(rgb, { raw: { channels: 3, height: h, width: w } })
+            .trim({ threshold: 12 })
+            .raw()
+            .toBuffer({ resolveWithObject: true });
+        } catch {
+          trimmed = null;
+        }
         if (trimmed && trimmed.info.width >= 64 && trimmed.info.height >= 64) {
           bytes = trimmed.data;
           width = trimmed.info.width;

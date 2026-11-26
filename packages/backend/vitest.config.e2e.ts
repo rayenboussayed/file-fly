@@ -8,7 +8,7 @@ export default defineConfig({
     fileParallelism: false,
     globals: true,
     globalSetup: './test/global-setup.ts',
-    hookTimeout: 60000,
+    hookTimeout: 60_000,
     include: ['**/*.e2e-spec.ts'],
     // The app drains HTTP download bodies at FFmpeg's pace; undici (Node-internal)
     // can assert on its paused parser when the fixture server closes the socket
@@ -18,12 +18,9 @@ export default defineConfig({
         typeof error === 'object' && error !== null && 'stack' in error
           ? String((error as { stack?: unknown }).stack)
           : '';
-      if (stack.includes('Parser.finish') && stack.includes('undici')) {
-        return false;
-      }
-      return undefined;
+      return stack.includes('Parser.finish') && stack.includes('undici') ? false : undefined;
     },
     root: './',
-    testTimeout: 60000,
+    testTimeout: 60_000,
   },
 });

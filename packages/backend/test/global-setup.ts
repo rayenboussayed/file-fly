@@ -13,7 +13,7 @@ const XLSX = createRequire(import.meta.url)('xlsx') as typeof import('xlsx');
 export const FIXTURES_DIR = path.join('test', 'results', 'fixtures');
 /** Scratch cache dir e2e runs use instead of the repo cache. */
 export const CACHE_DIR = path.join('test', 'results', 'cache');
-const FAKE_CLAMD_PORT = 33331;
+const FAKE_CLAMD_PORT = 33_331;
 
 const TEXT_SVG = `<svg width="640" height="160" xmlns="http://www.w3.org/2000/svg">
   <rect width="640" height="160" fill="white"/>

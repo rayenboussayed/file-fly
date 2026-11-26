@@ -1,97 +1,96 @@
-import js from '@eslint/js';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
-import json from '@eslint/json';
-import markdown from '@eslint/markdown';
-import deslint from '@deslint/eslint-plugin';
-import sonarjs from 'eslint-plugin-sonarjs';
-import deMorgan from 'eslint-plugin-de-morgan';
+import { createConfig, playwright } from '@stackrb/eslint-config';
 import unicorn from 'eslint-plugin-unicorn';
-import typescriptEslintParser from '@typescript-eslint/parser';
-import depend from 'eslint-plugin-depend';
-import deprecate from 'eslint-plugin-deprecate';
-import node from 'eslint-plugin-n';
-import { jsdoc } from 'eslint-plugin-jsdoc';
-import security from 'eslint-plugin-security';
-import vitest from '@vitest/eslint-plugin';
-import regexp from "eslint-plugin-regexp"
-import promise from 'eslint-plugin-promise'
-import perfectionist from 'eslint-plugin-perfectionist'
-import stylistic from '@stylistic/eslint-plugin'
-import prettier from "eslint-config-prettier/flat";
-import { defineConfig, globalIgnores } from 'eslint/config';
 
-const JS_FILES = '**/*.{ts,tsx,mts,cts}';
-const TS_FILES = '**/*.{ts,tsx,mts,cts}';
+const CODE_FILES = '**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}';
 
-export default defineConfig([
-  globalIgnores(['node_modules', '**/node_modules', 'dist', '**/dist', 'package-lock.json', '**/test/results/**', '**/cache/**', '.cache-dist-bak', 'packages/backend/docs', 'packages/dashboard/docs']),
+const config = createConfig({
+  extraIgnores: [
+    '**/test-results/**',
+    '**/test/results/**',
+    'packages/backend/docs/**',
+    'packages/dashboard/docs/**',
+    'packages/dashboard/src/routeTree.gen.ts',
+  ],
+  nodeVersion: '>=22.13.0',
+  target: ['node', 'react'],
+});
+
+export default [
+  // The package applies Playwright to every test file. Keep those rules only on the
+  // Playwright suite so Vitest specs are not checked against the wrong framework.
+  ...config.filter((block) => !block.name?.startsWith('stackrb/playwright')),
+  ...playwright().map((block) => ({
+    ...block,
+    files: ['packages/dashboard/test/e2e/**/*.ts'],
+  })),
+  // This repo predates unicorn's opinionated style rules. Its own unopinionated
+  // preset keeps the correctness rules and drops the style-only ones.
   {
-    files: [JS_FILES, TS_FILES],
-    plugins: { js, unicorn, depend, deprecate, n: node, '@stylistic': stylistic },
-    extends: [
-      'js/recommended',
-      "n/recommended-module",
-      deslint.configs.recommended,
-      deMorgan.configs.recommended,
-      sonarjs.configs.recommended,
-      security.configs.recommended,
-      regexp.configs.recommended,
-      promise.configs['flat/recommended'],
-      perfectionist.configs["recommended-natural"]
-    ],
-    languageOptions: {
-      globals: { ...globals.node, ...globals.builtin },
-      parser: typescriptEslintParser,
-    },
-  },
-  {
-    files: [JS_FILES],
-    extends: [jsdoc({ config: 'flat/recommended' })],
-  },
-  {
-    files: [TS_FILES],
-    extends: [
-      tseslint.configs.recommended,
-      jsdoc({ config: 'flat/recommended-tsdoc' })
-    ],
-  },
-  {
-    files: ['**/{test,src}/**/*.*{test,spec}.{ts,js,tsx}'],
-    plugins: { vitest },
+    ...unicorn.configs.unopinionated,
+    files: [CODE_FILES],
   },
   {
     files: ['packages/dashboard/**/*.{ts,tsx}'],
-    languageOptions: { globals: { ...globals.browser } },
     rules: {
-      // The dashboard runs in the browser: fetch, Response and sessionStorage
-      // are ambient platform globals, not experimental node builtins.
       'n/no-unsupported-features/node-builtins': 'off',
+      'unicorn/filename-case': ['error', { cases: { kebabCase: true, pascalCase: true } }],
     },
   },
+  // This script reads and writes paths supplied by its operator. The security
+  // heuristic for literal filenames cannot apply to a code generator CLI.
   {
-    files: ['**/*.json'],
-    plugins: { json },
-    language: 'json/json',
-    extends: ['json/recommended'],
+    files: ['packages/backend/scripts/**'],
+    rules: { 'security/detect-non-literal-fs-filename': 'off' },
   },
+  // The backend target is ES2023, so Promise.withResolvers is typed as absent
+  // even though Node 24 provides it. Keep the Promise executor form in this spec.
   {
-    files: ['**/*.jsonc'],
-    plugins: { json },
-    language: 'json/jsonc',
-    extends: ['json/recommended'],
+    files: ['packages/backend/src/resources/docx/worker/worker.spec.ts'],
+    rules: { 'unicorn/prefer-promise-with-resolvers': 'off' },
   },
+  // These files predate the package and use promise chains, worker mocks built on
+  // require/EventEmitter, and constant-key header reads. Those patterns are kept
+  // so the swap changes tooling only; the scoped rules do not affect new code
+  // outside these paths.
   {
-    files: ['**/*.json5'],
-    plugins: { json },
-    language: 'json/json5',
-    extends: ['json/recommended'],
+    files: [
+      'packages/backend/src/basic-auth.ts',
+      'packages/backend/src/services/cache-janitor.service.ts',
+      'packages/backend/src/services/worker.service.ts',
+      'packages/backend/src/services/worker.service.spec.ts',
+      'packages/backend/src/shared-services.module.spec.ts',
+      'packages/backend/src/utils/open-source.spec.ts',
+      'packages/backend/src/utils/pipe.ts',
+      'packages/backend/src/utils/worker-exit.ts',
+      'packages/backend/test/fixtures/dashboard/assets/app.abc123.js',
+      'packages/backend/test/mem/worker-pool.spec.ts',
+      'packages/backend/test/perf/worker-pool.bench.ts',
+    ],
+    rules: {
+      'promise/always-return': 'off',
+      'security/detect-object-injection': 'off',
+      'unicorn/import-style': 'off',
+      'unicorn/no-declarations-before-early-exit': 'off',
+      'unicorn/no-global-object-property-assignment': 'off',
+      'unicorn/no-nonstandard-builtin-properties': 'off',
+      'unicorn/no-object-as-default-parameter': 'off',
+      'unicorn/no-process-exit': 'off',
+      'unicorn/prefer-await': 'off',
+      'unicorn/prefer-event-target': 'off',
+      'unicorn/prefer-module': 'off',
+      'unicorn/prefer-promise-with-resolvers': 'off',
+    },
   },
+  // Iterator#reduce and Promise.withResolvers are absent from the ES2023 lib
+  // even though Node 24 provides them; keep the typed, equivalent forms here.
   {
-    files: ['**/*.md'],
-    plugins: { markdown },
-    language: 'markdown/gfm',
-    extends: ['markdown/recommended'],
+    files: [
+      'packages/backend/src/metrics/metrics.service.ts',
+      'packages/backend/src/services/worker.service.ts',
+    ],
+    rules: {
+      'unicorn/prefer-iterator-helpers': 'off',
+      'unicorn/prefer-promise-with-resolvers': 'off',
+    },
   },
-  prettier
-]);
+];

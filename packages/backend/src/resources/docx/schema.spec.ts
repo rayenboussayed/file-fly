@@ -40,7 +40,7 @@ describe('DocxBuildSchema', () => {
     });
     const cells = (parsed.sections[0]?.children[0] as { rows: Array<Array<{ children: Array<{ type: string }> }>> })
       .rows[0];
-    expect(cells?.map((cell) => cell.children[0]?.type)).toEqual([
+    expect(cells?.map((cell) => cell.children.at(0)?.type)).toEqual([
       'paragraph',
       'image',
       'hyperlink',

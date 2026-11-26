@@ -117,7 +117,7 @@ describe('ImageService signature gate', () => {
   it('rejects with 415 when the signature is missing or not an image', async () => {
     const workerService = { createWorker: vi.fn() };
     const missing = new ImageService(
-      { fileSignature: () => ({ get: () => undefined }) } as never,
+      { fileSignature: () => ({ get: () => {} }) } as never,
       { isImage: () => true } as never,
       {} as never,
       workerService as never,

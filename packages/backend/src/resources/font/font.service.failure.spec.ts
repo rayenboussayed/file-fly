@@ -84,8 +84,8 @@ const makeService = (body: Buffer) => {
   const stream = Readable.from([body]);
   const cls = {
     request: () => ({ headers: { 'content-type': 'font/ttf' }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   return new FontService(cls as never);
 };

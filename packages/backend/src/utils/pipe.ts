@@ -58,9 +58,14 @@ export async function pipeToReply(
       }
       // `pipeline()` would destroy the source here; drop the remainder to
       // /dev/null so the sibling tee branch (cache persist) still sees EOF.
-      drainStream(source)
-        .then(() => resolve())
-        .catch(() => resolve());
+      void (async () => {
+        try {
+          await drainStream(source);
+        } catch {
+          void 0;
+        }
+        resolve();
+      })();
     };
     source.once('error', (error: Error) => finish(true, error));
     outMeter?.once('error', (error: Error) => finish(true, error));

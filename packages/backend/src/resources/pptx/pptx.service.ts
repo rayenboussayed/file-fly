@@ -71,18 +71,17 @@ const assertBuildPayload = (body: PptxBuildType): void => {
       for (const item of value) visit(item);
       return;
     }
-    if (value && typeof value === 'object') {
-      elements += 1;
-      if (elements > 50_000) {
-        throw new PayloadTooLargeException('presentation exceeds the element cap');
-      }
-      const record = value as Record<string, unknown>;
-      assertHyperlinkScheme(record);
-      if (record['type'] === 'table') {
-        validateTableSpans(record);
-      }
-      for (const child of Object.values(record)) visit(child);
+    if (!value || typeof value !== 'object') return;
+    elements += 1;
+    if (elements > 50_000) {
+      throw new PayloadTooLargeException('presentation exceeds the element cap');
     }
+    const record = value as Record<string, unknown>;
+    assertHyperlinkScheme(record);
+    if (record['type'] === 'table') {
+      validateTableSpans(record);
+    }
+    for (const child of Object.values(record)) visit(child);
   };
   visit(body);
 };
@@ -91,7 +90,7 @@ const validateTableSpans = (table: Record<string, unknown>): void => {
   const rows = Array.isArray(table['rows']) ? (table['rows'] as unknown[]) : [];
   // pptxgenjs derives <a:tblGrid> from row 0's effective width; wider later rows break the grid.
   const gridWidth = rows.length > 0 ? rowWidth(rows[0]) : 0;
-  rows.forEach((row, rowIndex) => {
+  for (const [rowIndex, row] of rows.entries()) {
     const width = rowWidth(row);
     if (width > gridWidth) {
       throw new BadRequestException({
@@ -99,7 +98,7 @@ const validateTableSpans = (table: Record<string, unknown>): void => {
         message: `row ${rowIndex + 1} (width ${width}) exceeds the table grid width ${gridWidth}`,
       });
     }
-    if (!Array.isArray(row)) return;
+    if (!Array.isArray(row)) continue;
     for (const cell of row) {
       if (!cell || typeof cell !== 'object') continue;
       const record = cell as Record<string, unknown>;
@@ -111,7 +110,7 @@ const validateTableSpans = (table: Record<string, unknown>): void => {
         });
       }
     }
-  });
+  }
 };
 
 const rowWidth = (row: unknown): number => {
@@ -181,7 +180,7 @@ const slideOrder = (parts: Map<string, Buffer>): string[] => {
         message: `slide relationship ${relId} is missing or unresolvable`,
       });
     }
-    const cleaned = target.replace(/\\/g, '/').replace(/^\/+/, '');
+    const cleaned = target.replaceAll('\\', '/').replace(/^\/+/, '');
     return path.posix.normalize(cleaned.startsWith('ppt/') ? cleaned : `ppt/${cleaned}`);
   });
 };
@@ -212,7 +211,7 @@ const extractPptx = (parts: Map<string, Buffer>) => {
   return { slides };
 };
 
-const notesNumber = (name: string): number => Number(name.replace(/\D/g, '')) || 0;
+const notesNumber = (name: string): number => Number(name.replaceAll(/\D/g, '')) || 0;
 
 /**
  * Notes text per notes slide, sorted by the numeric suffix. The slide-number
@@ -239,7 +238,7 @@ const collectNotes = (parts: Map<string, Buffer>): string[] => {
     if (texts.length > 0) entries.push({ name: match[1], text: texts.join('\n') });
   }
   return entries
-    .sort((a, b) => notesNumber(a.name) - notesNumber(b.name))
+    .toSorted((a, b) => notesNumber(a.name) - notesNumber(b.name))
     .map((entry) => entry.text);
 };
 
@@ -271,8 +270,7 @@ export class PptxService {
         throw new Error('missing ppt/presentation.xml');
       }
     } catch (error) {
-      const wrapped = new Error('pptx builder produced an invalid document');
-      (wrapped as Error & { cause?: unknown }).cause = error;
+      const wrapped = new Error('pptx builder produced an invalid document', { cause: error });
       throw wrapped;
     }
     return bytes;

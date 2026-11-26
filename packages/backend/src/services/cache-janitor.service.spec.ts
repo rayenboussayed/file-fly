@@ -12,7 +12,11 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await fs.rm(dir, { force: true, recursive: true }).catch(() => undefined);
+  try {
+    await fs.rm(dir, { force: true, recursive: true });
+  } catch (error) {
+    console.warn('test cleanup failed', error);
+  }
   vi.unstubAllEnvs();
 });
 
@@ -30,7 +34,7 @@ describe('CacheJanitorService', () => {
 
     const service = new CacheJanitorService();
     await service.onModuleInit();
-    await service.sweep({ maxBytes: Number.MAX_SAFE_INTEGER, ttlMs: 1_000 });
+    await service.sweep({ maxBytes: Number.MAX_SAFE_INTEGER, ttlMs: 1000 });
     service.onModuleDestroy();
 
     expect(await fs.readdir(dir)).toEqual(['fresh.cache']);
@@ -48,9 +52,9 @@ describe('CacheJanitorService', () => {
     await fs.writeFile(b, 'b'.repeat(20));
     await fs.writeFile(c, 'c'.repeat(30));
     const now = Date.now();
-    await fs.utimes(a, new Date(now - 3_000), new Date(now - 3_000));
-    await fs.utimes(b, new Date(now - 2_000), new Date(now - 2_000));
-    await fs.utimes(c, new Date(now - 1_000), new Date(now - 1_000));
+    await fs.utimes(a, new Date(now - 3000), new Date(now - 3000));
+    await fs.utimes(b, new Date(now - 2000), new Date(now - 2000));
+    await fs.utimes(c, new Date(now - 1000), new Date(now - 1000));
 
     const service = new CacheJanitorService();
     await service.onModuleInit();
@@ -81,10 +85,10 @@ describe('CacheJanitorService', () => {
 
     const service = new CacheJanitorService();
     await service.onModuleInit();
-    await service.sweep({ maxBytes: 0, ttlMs: 1_000 });
+    await service.sweep({ maxBytes: 0, ttlMs: 1000 });
     service.onModuleDestroy();
 
-    expect((await fs.readdir(dir)).sort()).toEqual([
+    expect((await fs.readdir(dir)).toSorted((a, b) => a.localeCompare(b))).toEqual([
       'undici-cache.db',
       'undici-cache.db-shm',
       'undici-cache.db-wal',

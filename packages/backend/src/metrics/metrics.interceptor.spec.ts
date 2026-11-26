@@ -1,4 +1,6 @@
 import { EventEmitter } from 'node:events';
+
+const Emitter = EventEmitter;
 import { describe, expect, it, vi } from 'vitest';
 
 import { MetricsInterceptor } from './metrics.interceptor.js';
@@ -50,7 +52,7 @@ const makeStub = (options: {
   routeUrl?: string;
   statusCode?: number;
 } = {}): Stub => {
-  const raw = new EventEmitter() as Stub['raw'];
+  const raw = new Emitter() as Stub['raw'];
   raw.statusCode = options.statusCode ?? 200;
   raw.getHeader = () => options.responseContentLength;
 

@@ -5,7 +5,7 @@ import { TokenGate } from './TokenGate.js';
 
 describe('TokenGate', () => {
   it('renders the 503 explanation without a form', () => {
-    render(<TokenGate onSubmit={() => undefined} reason={503} />);
+    render(<TokenGate onSubmit={() => {}} reason={503} />);
     expect(screen.getByText('Metrics are disabled')).toBeDefined();
     expect(screen.queryByPlaceholderText('METRICS_TOKEN')).toBeNull();
   });
@@ -26,13 +26,13 @@ describe('TokenGate', () => {
     const onSubmit = vi.fn();
     render(<TokenGate onSubmit={onSubmit} reason={401} />);
     const input = screen.getByPlaceholderText('METRICS_TOKEN');
-    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.change(input, { target: { value: ' '.repeat(3) } });
     fireEvent.submit(input.closest('form') as HTMLFormElement);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('disables the submit button while the token is blank', () => {
-    render(<TokenGate onSubmit={() => undefined} reason={401} />);
+    render(<TokenGate onSubmit={() => {}} reason={401} />);
     const input = screen.getByPlaceholderText('METRICS_TOKEN');
     const unlock = screen.getByRole('button', { name: 'Unlock' });
     expect(unlock.getAttribute('aria-disabled')).toBe('true');

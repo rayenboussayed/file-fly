@@ -68,10 +68,9 @@ export function parseFrames(raw: string): number[] {
     .split(',')
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
-  if (parts.length === 0) return [];
-  return [...new Set(parts.map(Number))]
-    .filter((value) => Number.isFinite(value) && value >= 0 && value <= 86400)
-    .sort((a, b) => a - b)
+  return parts.length === 0 ? [] : [...new Set(parts.map(Number))]
+    .filter((value) => Number.isFinite(value) && value >= 0 && value <= 86_400)
+    .toSorted((a, b) => a - b)
     .slice(0, 50);
 } /**
    * Query parameters for `/video/audio` (audio extraction from a video upload).

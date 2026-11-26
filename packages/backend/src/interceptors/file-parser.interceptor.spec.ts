@@ -95,7 +95,7 @@ describe('FileParserInterceptor cache keys', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fileSignature: () => ({ get: () => store.get(CLS_FILE_SIGNATURE), set: (v: any) => store.set(CLS_FILE_SIGNATURE, v) }),
       request: () => request,
-      response: () => ({ header: () => undefined }),
+      response: () => ({ header: () => {} }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sourceDirection: () => ({ get: () => store.get(CLS_SOURCE_DIRECTION), set: (v: any) => store.set(CLS_SOURCE_DIRECTION, v) }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -166,19 +166,19 @@ describe('FileParserInterceptor prefix hash with a small cap', () => {
     store.set(CLS_SOURCE_STREAM, source);
     const cls = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      cacheKey: () => ({ get: () => undefined, set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
+      cacheKey: () => ({ get: () => {}, set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fileHash: () => ({ get: () => store.get(CLS_FILE_HASH), set: (v: any) => store.set(CLS_FILE_HASH, v) }),
        
-      fileSignature: () => ({ get: () => undefined, set: () => undefined }),
+      fileSignature: () => ({ get: () => {}, set: () => {} }),
       request: () => request,
-      response: () => ({ header: () => undefined }),
+      response: () => ({ header: () => {} }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sourceDirection: () => ({ get: () => store.get(CLS_SOURCE_DIRECTION), set: (v: any) => store.set(CLS_SOURCE_DIRECTION, v) }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sourceStream: () => ({ get: () => store.get(CLS_SOURCE_STREAM), set: (v: any) => store.set(CLS_SOURCE_STREAM, v) }),
     };
-    const fileTypeService = { signature: vi.fn(async () => undefined) };
+    const fileTypeService = { signature: vi.fn(async () => {}) };
     const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
     const { of } = await import('rxjs');
     const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
@@ -195,11 +195,11 @@ describe('FileParserInterceptor prefix hash failure path', () => {
     const source = new PassThrough();
     // Discard the source-level error so vitest does not flag an unhandled
     // stream error; the interceptor under test rejects on its own listener.
-    source.on('error', () => undefined);
+    source.on('error', () => {});
     const chunks = [Buffer.from('hello'), null] as const;
     // feed one chunk then error the stream
     source.write(chunks[0]);
-    process.nextTick(() => source.destroy(new Error('connection reset')));
+    queueMicrotask(() => source.destroy(new Error('connection reset')));
 
     const request = {
       headers: { 'content-length': '100' },
@@ -210,13 +210,13 @@ describe('FileParserInterceptor prefix hash failure path', () => {
       url: '/upload',
     };
     const cls = {
-      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheKey: () => ({ get: () => {}, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       fileHash: () => ({ set: (v: unknown) => v }),
-      fileSignature: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      fileSignature: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => request,
-      response: () => ({ header: () => undefined }),
-      sourceDirection: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      response: () => ({ header: () => {} }),
+      sourceDirection: () => ({ get: () => {}, set: (v: unknown) => v }),
       sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
     };
     const clsWithStore = {
@@ -228,7 +228,7 @@ describe('FileParserInterceptor prefix hash failure path', () => {
         // no unhandled 'error' leaks past the test.
         set: (v: { on(event: string, cb: () => void): void }) => {
           store2.current = v as never;
-          v.on('error', () => undefined);
+          v.on('error', () => {});
           return v;
         },
       }),
@@ -237,7 +237,7 @@ describe('FileParserInterceptor prefix hash failure path', () => {
     const fileTypeService = {
       signature: vi.fn(async ({ stream }: { stream: { on(event: string, cb: () => void): void } }) => {
         // Real signature pump attaches error handlers; do the same here.
-        stream.on('error', () => undefined);
+        stream.on('error', () => {});
         return { ext: 'png', mime: 'image/png' };
       }),
     };
@@ -264,16 +264,16 @@ describe('FileParserInterceptor missing headers', () => {
       url: '/upload',
     };
     const cls = {
-      cacheKey: () => ({ get: () => undefined, set: () => undefined }),
-      cacheOutcome: () => ({ get: () => undefined, set: () => undefined }),
-      fileHash: () => ({ set: () => undefined }),
-      fileSignature: () => ({ get: () => undefined, set: () => undefined }),
+      cacheKey: () => ({ get: () => {}, set: () => {} }),
+      cacheOutcome: () => ({ get: () => {}, set: () => {} }),
+      fileHash: () => ({ set: () => {} }),
+      fileSignature: () => ({ get: () => {}, set: () => {} }),
       request: () => request,
-      response: () => ({ header: () => undefined }),
-      sourceDirection: () => ({ get: () => undefined, set: () => undefined }),
-      sourceStream: () => ({ get: () => source, set: () => undefined }),
+      response: () => ({ header: () => {} }),
+      sourceDirection: () => ({ get: () => {}, set: () => {} }),
+      sourceStream: () => ({ get: () => source, set: () => {} }),
     };
-    const fileTypeService = { signature: vi.fn(async () => undefined) };
+    const fileTypeService = { signature: vi.fn(async () => {}) };
     const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
     const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
     const handled = Symbol('handled');

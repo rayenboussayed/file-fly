@@ -22,7 +22,8 @@ export async function metadata() {
   const pipePromise = pipeline(process.stdin, transformer, new Discard());
   transformer.resume();
 
-  const metadata = await pipePromise.then(() => metadataPromise);
+  await pipePromise;
+  const metadata = await metadataPromise;
   process.stdout.end(JSON.stringify(metadata));
 }
 
@@ -36,6 +37,7 @@ export async function stats() {
   const pipePromise = pipeline(process.stdin, transformer, new Discard());
   transformer.resume();
 
-  const stats = await pipePromise.then(() => statsPromise);
+  await pipePromise;
+  const stats = await statsPromise;
   process.stdout.end(JSON.stringify(stats));
 }

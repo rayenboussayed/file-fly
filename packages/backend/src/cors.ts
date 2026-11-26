@@ -28,6 +28,6 @@ export function buildCorsOptions(origins: string[] | undefined) {
     allowedHeaders: [...allowedCorsHeaders],
     credentials: true,
     exposedHeaders: [AppHeaders.HEADER_X_FILE_HASH, AppHeaders.HEADER_X_FONT_SUBSET],
-    origin: origins ?? false,
+    origin: origins === undefined ? false : origins,
   };
 }

@@ -45,7 +45,7 @@ describe('Audio (e2e)', () => {
     expect(response.status).toBe(200);
     const body = response.body as { streams: Array<{ codec: number; index: number; sampleRate: number; }> };
     expect(body.streams).toHaveLength(1);
-    expect(body.streams[0]!.sampleRate).toBe(44100);
+    expect(body.streams[0]!.sampleRate).toBe(44_100);
   });
 
   it('GET /audio/stats returns stream details as JSON', async () => {
@@ -70,7 +70,7 @@ describe('Audio (e2e)', () => {
 
     expect(response.status).toBe(201);
     const body = response.body as { streams: Array<{ sampleRate: number }> };
-    expect(body.streams[0]!.sampleRate).toBe(44100);
+    expect(body.streams[0]!.sampleRate).toBe(44_100);
   });
 
   it('POST /audio/stats accepts an upload', async () => {

@@ -125,7 +125,7 @@ describe('Model (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post(route)
       .set('content-type', 'model/gltf-binary')
-      .send(Buffer.from('glTF\u0002\u0000\u0000\u0000garbagebytes'));
+      .send(Buffer.from('glTF\u{2}\0\0\0garbagebytes'));
 
     expect(response.status).toBe(400);
   });

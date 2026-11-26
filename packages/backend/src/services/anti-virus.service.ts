@@ -131,7 +131,7 @@ export class AntiVirusService {
     const declared = this.normalizedCls.request()?.headers['content-length']
       ?.toString()
       .trim();
-    const declaredLength = declared ? Number(declared) : Number.NaN;
+    const declaredLength = declared ? Number(declared) : NaN;
     if (
       Number.isFinite(declaredLength) &&
       declaredLength > environment.CLAMAV_MAX_BYTES

@@ -30,16 +30,16 @@ export class OoxmlError extends Error {}
  *
  * In-memory only by design; entries are never written to disk.
  */
-export class OoxmlReader {
+export const OoxmlReader = {
   /**
    * Reads the parts as utf-8 strings.
    * @param parts - The parts returned by {@link OoxmlReader.readParts}.
    * @param name - Zip path of the part to read.
    * @returns The utf-8 text, or `undefined` when the part is absent.
    */
-  static partText(parts: Map<string, Buffer>, name: string): string | undefined {
-    return parts.get(name)?.toString('utf-8');
-  }
+  partText(parts: Map<string, Buffer>, name: string): string | undefined {
+    return parts.get(name)?.toString('utf8');
+  },
 
   /**
    * Reads every entry of the package into memory.
@@ -52,7 +52,7 @@ export class OoxmlReader {
    * @returns The parts, keyed by zip path (e.g. `docProps/core.xml`).
    * @throws {OoxmlError} On structural problems: invalid zip, entry count, or uncompressed size caps.
    */
-  static readParts(buffer: Buffer, limits?: OoxmlReadLimits): Map<string, Buffer> {
+  readParts(buffer: Buffer, limits?: OoxmlReadLimits): Map<string, Buffer> {
     const maxEntries = limits?.maxEntries ?? OOXML_LIMITS.maxEntries;
     const maxEntry = limits?.maxEntryUncompressed ?? OOXML_LIMITS.maxEntryUncompressed;
     const maxTotal = limits?.maxTotalUncompressed ?? OOXML_LIMITS.maxTotalUncompressed;
@@ -95,5 +95,5 @@ export class OoxmlReader {
       throw new OoxmlError('package has no readable entries');
     }
     return parts;
-  }
-}
+  },
+};

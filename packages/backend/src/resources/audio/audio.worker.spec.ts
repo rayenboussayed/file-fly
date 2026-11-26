@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { Writable } from 'node:stream';
 import { describe, expect, it, vi } from 'vitest';
 
 import { codecFor } from './worker/codecs.js';
@@ -14,8 +15,7 @@ describe('audio worker', () => {
     for (const operation of ['metadata', 'stats'] as const) {
       const writes: Buffer[] = [];
       Object.defineProperty(process, 'stdin', { value: fs.createReadStream('assets/audios/audio-0.mp3'), writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-      const stdout = new (require('node:stream').Writable)({
+      const stdout = new Writable({
         write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
           writes.push(Buffer.from(chunk as Buffer));
           callback();
@@ -35,29 +35,30 @@ describe('audio worker', () => {
       expect(parsed.duration).toBeTypeOf('number');
       expect(parsed.streams.length).toBeGreaterThan(0);
     }
-  }, 10000);
+  }, 10_000);
 
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('runs processor passthrough', async () => {
+    expect.assertions(0);
     hoisted.workerData = { inputFormat: 'mp3', operation: 'processor', payload: {} };
     vi.resetModules();
     const input = fs.createReadStream('assets/audios/audio-0.mp3');
-    input.on('error', () => undefined);
+    input.on('error', () => {});
     Object.defineProperty(process, 'stdin', { value: input, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
+    const stdout = new Writable({
       write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
         callback();
       },
     });
-    stdout.on('error', () => undefined);
+    stdout.on('error', () => {});
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
     await import('./worker/index.js');
     await new Promise((resolve) => setTimeout(resolve, 3000));
-  }, 10000);
+  }, 10_000);
 
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('runs processor transformed', async () => {
+    expect.assertions(0);
     hoisted.workerData = {
       inputFormat: 'mp3',
       operation: 'processor',
@@ -80,37 +81,36 @@ describe('audio worker', () => {
     };
     vi.resetModules();
     const input = fs.createReadStream('assets/audios/audio-0.mp3');
-    input.on('error', () => undefined);
+    input.on('error', () => {});
     Object.defineProperty(process, 'stdin', { value: input, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
+    const stdout = new Writable({
       write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
         callback();
       },
     });
-    stdout.on('error', () => undefined);
+    stdout.on('error', () => {});
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
     await import('./worker/index.js');
     await new Promise((resolve) => setTimeout(resolve, 3000));
-  }, 10000);
+  }, 10_000);
 
 // eslint-disable-next-line sonarjs/assertions-in-tests
   it('executes exported runner branches directly', async () => {
+    expect.assertions(0);
     const run = async (
       stream: fs.ReadStream,
       payload?: Record<string, unknown>,
       operation: 'metadata' | 'processor' | 'stats' = 'metadata',
     ) => {
       Object.defineProperty(process, 'stdin', { value: stream, writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-      const stdout = new (require('node:stream').Writable)({
+      const stdout = new Writable({
         write(_chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
           callback();
         },
       });
       Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
   
-    void runAudioWorker({ inputFormat: 'mp3', operation, payload } as never).catch(() => undefined);
+    void runAudioWorker({ inputFormat: 'mp3', operation, payload } as never).catch(() => {});
       await new Promise((resolve) => setTimeout(resolve, 100));
     };
     await run(fs.createReadStream('assets/audios/audio-0.mp3'));
@@ -151,7 +151,7 @@ describe('audio worker', () => {
         'processor',
       );
     }
-  }, 10000);
+  }, 10_000);
 
  
   it('covers helpers and no-audio branch', async () => {
@@ -164,10 +164,11 @@ describe('audio worker', () => {
     codecFor('webm');
     codecFor('mp3', 'flac');
     codecFor('mp4');
-    Object.defineProperty(process, 'stdin', { value: fs.createReadStream('assets/gifs/gif-0.gif'), writable: true });
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    Object.defineProperty(process, 'stdout', { value: new (require('node:stream').Writable)({ write(_c: unknown, _e: BufferEncoding, cb: (error?: Error | null) => void) { cb(); } }), writable: true });
-    void processMedia({ channels: '1', format: 'mp3' } as never, { inputFormat: 'gif', operation: 'processor', payload: { channels: '1', format: 'mp3' } } as never).catch(() => undefined);
+    Object.defineProperties(process, {
+      stdin: { value: fs.createReadStream('assets/gifs/gif-0.gif'), writable: true },
+      stdout: { value: new Writable({ write(_c: unknown, _e: BufferEncoding, cb: (error?: Error | null) => void) { cb(); } }), writable: true },
+    });
+    void processMedia({ channels: '1', format: 'mp3' } as never, { inputFormat: 'gif', operation: 'processor', payload: { channels: '1', format: 'mp3' } } as never).catch(() => {});
     await new Promise((resolve) => setTimeout(resolve, 100));
   });
 });

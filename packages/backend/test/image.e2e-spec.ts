@@ -179,7 +179,7 @@ describe('Image (e2e)', () => {
     // A real uncompressed TIFF > 20 MiB so file-type detects it as an image reliably.
     const side = 2700;
     const raw = Buffer.alloc(side * side * 3);
-    let seed = 0x9e3779b9;
+    let seed = 0x9e_37_79_b9;
     for (let i = 0; i < raw.length; i++) {
       seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0;
       // eslint-disable-next-line security/detect-object-injection -- index is bounded by the loop
@@ -194,7 +194,7 @@ describe('Image (e2e)', () => {
       .send(tiff);
 
     expect(response.status).toBe(413);
-  }, 60000);
+  }, 60_000);
 
   it('GET /image/ocr rejects an invalid language with 400', async () => {
     const response = await request(app.getHttpServer())

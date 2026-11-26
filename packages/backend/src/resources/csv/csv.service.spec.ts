@@ -8,8 +8,8 @@ const makeService = (body?: Buffer, contentType = 'text/csv') => {
   const stream = Readable.from([body ?? Buffer.from('a,b\n1,2\n3,4\n')]);
   const cls = {
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   return new CsvService(cls as never);
 };
@@ -128,7 +128,7 @@ describe('CsvService.extract', () => {
     let stored: Readable | undefined;
     const cls = {
       request: () => ({ headers: { 'content-type': 'text/csv' }, method: 'POST', raw }),
-      sourceDirection: () => ({ set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
       sourceStream: () => ({
         get: () => stored,
         set: (stream: Readable) => {
@@ -147,8 +147,8 @@ describe('CsvService.extract', () => {
   it('maps a missing source stream to a client error, not a 500', async () => {
     const cls = {
       request: () => ({ headers: { 'content-type': 'text/csv' }, method: 'POST' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new CsvService(cls as never);
     await expect(service.extract({})).rejects.toMatchObject({
@@ -226,8 +226,8 @@ describe('CsvService readBody fallbacks', () => {
     const stream = Readable.from([Buffer.from('name\nx\n')]);
     const cls = {
       request: () => ({ method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new CsvService(cls as never);
     await expect(service.metadata({ maxRows: 10 })).rejects.toMatchObject({ status: 415 });

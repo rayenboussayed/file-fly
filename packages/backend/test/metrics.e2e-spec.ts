@@ -102,8 +102,7 @@ describe('Metrics (e2e)', () => {
         request(app.getHttpServer())
           .post('/image?format=webp&quality=80')
           .set('content-type', 'image/jpeg')
-          .send(image),
-      ),
+          .send(image),),
     );
     expect(results.every((response) => response.status === 201)).toBe(true);
     const after = await request(app.getHttpServer()).get('/metrics');

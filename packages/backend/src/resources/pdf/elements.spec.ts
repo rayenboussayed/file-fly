@@ -96,17 +96,17 @@ describe('buildPdfDocument elements', () => {
     const doc = await PDFDocument.load(new Uint8Array(bytes));
     const fields = doc.getForm().getFields();
     const textField = fields.find((field) => field.getName() === 'form.name');
-    const checkBox = fields.find((field) => field.getName() === 'form.flag');
+    const checkbox = fields.find((field) => field.getName() === 'form.flag');
     expect(textField?.constructor.name).toBe('PDFTextField');
     expect((textField as unknown as { getText: () => string }).getText()).toBe('prefilled');
-    expect(checkBox?.constructor.name).toBe('PDFCheckBox');
-    expect((checkBox as unknown as { isChecked: () => boolean }).isChecked()).toBe(true);
+    expect(checkbox?.constructor.name).toBe('PDFCheckBox');
+    expect((checkbox as unknown as { isChecked: () => boolean }).isChecked()).toBe(true);
   });
 
   it('renders Symbol and ZapfDingbats standard fonts', async () => {
     const bytes = await pack([
-      { font: 'Symbol', text: '\u0391\u0392', type: 'text', x: 72, y: 72 },
-      { font: 'ZapfDingbats', text: '\u2726', type: 'text', x: 72, y: 100 },
+      { font: 'Symbol', text: '\u{391}\u{392}', type: 'text', x: 72, y: 72 },
+      { font: 'ZapfDingbats', text: '\u{2726}', type: 'text', x: 72, y: 100 },
       { font: 'Courier', text: 'mono', type: 'text', x: 72, y: 128 },
       { font: 'Times-Roman', text: 'serif', type: 'text', x: 72, y: 156 },
     ]);

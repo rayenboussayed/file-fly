@@ -109,8 +109,7 @@ const extractDocumentXml = (
   const tables = collectByKey(parsed, 'tbl').map((table) => {
     const rows = collectByKey(table, 'tr');
     const cells = rows.map((row) =>
-      collectByKey(row, 'tc').map((cell) => cellTextOf(cell)),
-    );
+      collectByKey(row, 'tc').map((cell) => cellTextOf(cell)),);
     return {
       cells,
       columns: rows.reduce<number>((max, row) => Math.max(max, collectByKey(row, 'tc').length), 0),
@@ -131,10 +130,9 @@ const extractDocumentXml = (
   const alts: string[] = [];
   walkXml(parsed, (key, value) => {
     if (key === 'drawing' || key === 'pict') imageCount += 1;
-    if (key === 'docPr') {
-      const descr = attr(value, 'descr');
-      if (descr !== '') alts.push(descr);
-    }
+    if (key !== 'docPr') return;
+    const descr = attr(value, 'descr');
+    if (descr !== '') alts.push(descr);
   });
 
   return {
@@ -197,22 +195,21 @@ const assertBuildPayload = (body: DocxBuildType): void => {
       for (const item of value) visit(item);
       return;
     }
-    if (value && typeof value === 'object') {
-      elements += 1;
-      if (elements > 50_000) {
-        throw new PayloadTooLargeException('document exceeds the element cap');
-      }
-      const record = value as Record<string, unknown>;
-      assertImageFallback(record);
-      assertHyperlinkTarget(record);
-      for (const child of Object.values(record)) visit(child);
+    if (!value || typeof value !== 'object') return;
+    elements += 1;
+    if (elements > 50_000) {
+      throw new PayloadTooLargeException('document exceeds the element cap');
     }
+    const record = value as Record<string, unknown>;
+    assertImageFallback(record);
+    assertHyperlinkTarget(record);
+    for (const child of Object.values(record)) visit(child);
   };
   visit(body);
 
   // Note/comment cross-reference validation, one clean pass after shape checks.
   reportNoteRefs(body, noteIds, endnoteIds, commentIds);
-  tables(body).forEach(validateRowSpan);
+  for (const table of tables(body)) validateRowSpan(table);
 };
 
 const assertImageFallback = (record: Record<string, unknown>): void => {
@@ -256,11 +253,10 @@ const tables = (body: DocxBuildType): Array<Record<string, unknown>> => {
       for (const item of value) visit(item);
       return;
     }
-    if (value && typeof value === 'object') {
-      const record = value as Record<string, unknown>;
-      if (record['type'] === 'table') found.push(record);
-      for (const child of Object.values(record)) visit(child);
-    }
+    if (!value || typeof value !== 'object') return;
+    const record = value as Record<string, unknown>;
+    if (record['type'] === 'table') found.push(record);
+    for (const child of Object.values(record)) visit(child);
   };
   visit(body);
   return found;
@@ -272,7 +268,7 @@ const tables = (body: DocxBuildType): Array<Record<string, unknown>> => {
  */
 const validateRowSpan = (table: Record<string, unknown>): void => {
   const rows = Array.isArray(table['rows']) ? (table['rows'] as unknown[]) : [];
-  rows.forEach((row, rowIndex) => validateCellSpan(row, rowIndex, rows.length));
+  for (const [rowIndex, row] of rows.entries()) validateCellSpan(row, rowIndex, rows.length);
 };
 
 const validateCellSpan = (row: unknown, rowIndex: number, rowCount: number): void => {
@@ -307,10 +303,12 @@ const reportNoteRefs = (
       for (const item of value) visit(item);
       return;
     }
-    if (value && typeof value === 'object') {
-      checkNoteRef(value as Record<string, unknown>, noteIds, endnoteIds, commentIds);
-      for (const child of Object.values(value as Record<string, unknown>)) visit(child);
+    if (!value || typeof value !== 'object') {
+      return;
     }
+
+    checkNoteRef(value as Record<string, unknown>, noteIds, endnoteIds, commentIds);
+    for (const child of Object.values(value as Record<string, unknown>)) visit(child);
   };
   visit(body);
 };
@@ -368,8 +366,7 @@ export class DocxService {
         throw new Error('missing word/document.xml');
       }
     } catch (error) {
-      const wrapped = new Error('docx builder produced an invalid document');
-      (wrapped as Error & { cause?: unknown }).cause = error;
+      const wrapped = new Error('docx builder produced an invalid document', { cause: error });
       throw wrapped;
     }
     return bytes;

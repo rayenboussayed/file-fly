@@ -72,8 +72,8 @@ describe('pptx worker', () => {
       },
     }));
     const writes: Buffer[] = [];
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
+    const { Writable } = await import('node:stream');
+    const stdout = new Writable({
       write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
         writes.push(Buffer.from(chunk as Buffer));
         callback();
@@ -82,7 +82,7 @@ describe('pptx worker', () => {
         callback();
       },
     });
-    stdout.on('error', () => undefined);
+    stdout.on('error', () => {});
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
 
     await import('./index.js');
@@ -90,7 +90,7 @@ describe('pptx worker', () => {
       setTimeout(resolve, 500);
     });
     expect(writes).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 
   it('ignores unsupported operations without writing bytes', async () => {
     vi.resetModules();
@@ -98,8 +98,8 @@ describe('pptx worker', () => {
       workerData: { operation: 'not-a-thing', payload: {} },
     }));
     const writes: Buffer[] = [];
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
+    const { Writable } = await import('node:stream');
+    const stdout = new Writable({
       write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
         writes.push(Buffer.from(chunk as Buffer));
         callback();
@@ -108,7 +108,7 @@ describe('pptx worker', () => {
         callback();
       },
     });
-    stdout.on('error', () => undefined);
+    stdout.on('error', () => {});
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
 
     await import('./index.js');
@@ -116,7 +116,7 @@ describe('pptx worker', () => {
       setTimeout(resolve, 200);
     });
     expect(writes).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 
   it('builds a valid pptx with text, shape, table and notes', async () => {
     vi.resetModules();
@@ -124,8 +124,8 @@ describe('pptx worker', () => {
       workerData: { operation: 'build', payload: smallDeck },
     }));
     const writes: Buffer[] = [];
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
+    const { Writable } = await import('node:stream');
+    const stdout = new Writable({
       write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
         writes.push(Buffer.from(chunk as Buffer));
         callback();
@@ -134,7 +134,7 @@ describe('pptx worker', () => {
         callback();
       },
     });
-    stdout.on('error', () => undefined);
+    stdout.on('error', () => {});
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
 
     const { strFromU8, unzipSync } = await import('fflate');
@@ -158,5 +158,5 @@ describe('pptx worker', () => {
     const core = Object.entries(parts).find(([name]) => name === 'docProps/core.xml')?.[1];
     expect(core).toBeTruthy();
     expect(strFromU8(core ?? new Uint8Array())).toContain('Worker Fixture');
-  }, 30000);
+  }, 30_000);
 });

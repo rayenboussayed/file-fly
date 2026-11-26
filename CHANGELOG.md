@@ -69,6 +69,7 @@ from the commit history (2026-10-31 .. 2026-11-21).
 
 ### Changed
 
+- Linting now delegates to the pinned `@stackrb/eslint-config@0.1.0` (targets `node` and `react`): Playwright rules are scoped to the dashboard e2e suite so Vitest specs use Vitest rules only; `eslint-plugin-unicorn`'s `unopinionated` preset is layered on for correctness rules; the dashboard keeps two scoped exceptions (`n/no-unsupported-features/node-builtins` off for browser APIs, and `unicorn/filename-case` accepting both kebab-case and PascalCase). The gate stays `eslint . --fix --cache --max-warnings=0` with zero warnings; generated docs, test results and the generated router file stay ignored.
 - Second deep refactoring pass: document-family worker entries share one
   standalone-exit guard
   (`ee38781`, `30ca6bc`); the auth header pair has one constant source shared by

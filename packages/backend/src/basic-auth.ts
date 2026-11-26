@@ -145,10 +145,8 @@ async function createGuard(credentials: { name: string; pass: string }) {
  * @returns True when both header values are non-empty strings.
  */
 function hasCredentialPair(request: FastifyRequest): boolean {
-  const {
-    [HEADER_X_AUTH_PASSWORD]: passwordValue,
-    [HEADER_X_AUTH_USERNAME]: usernameValue,
-  } = request.headers;
+  const usernameValue = request.headers[HEADER_X_AUTH_USERNAME];
+  const passwordValue = request.headers[HEADER_X_AUTH_PASSWORD];
   const username = readHeader(usernameValue);
   const password = readHeader(passwordValue);
   return (

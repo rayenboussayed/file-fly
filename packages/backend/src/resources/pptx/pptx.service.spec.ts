@@ -51,8 +51,8 @@ const makeService = (
   const stream = Readable.from([body]);
   const cls = {
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   const workerService = {
     createWorker: vi.fn(async () => Readable.from([Buffer.from('worker-bytes')])),
@@ -67,8 +67,8 @@ describe('PptxService.build', () => {
     const cls = {
       cacheKey: () => ({ set: setCacheKey }),
       request: () => ({ headers: {}, method: 'POST', raw: Readable.from([Buffer.from('PK')]) }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => Readable.from([Buffer.from('PK')]), set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => Readable.from([Buffer.from('PK')]), set: () => {} }),
     };
     const workerService = {
       createWorker: vi.fn(async () => Readable.from([valid])),
@@ -85,8 +85,8 @@ describe('PptxService.build', () => {
     const cls = {
       cacheKey: () => ({ set: setCacheKey }),
       request: () => ({ headers: {}, method: 'POST', raw: Readable.from([Buffer.from('PK')]) }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => Readable.from([Buffer.from('PK')]), set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => Readable.from([Buffer.from('PK')]), set: () => {} }),
     };
     const workerService = {
       createWorker: vi.fn(async () => Readable.from([valid])),
@@ -119,7 +119,7 @@ describe('PptxService.metadata', () => {
   });
 
   it('maps a truncated zip to 415', async () => {
-    const service = makeService(Buffer.from('PK\x03\x04\x01\x02')).service;
+    const service = makeService(Buffer.from('PK\u{3}\u{4}\u{1}\u{2}')).service;
     await expect(service.metadata()).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
   });
 });
@@ -141,8 +141,8 @@ describe('PptxService.extract', () => {
   it('maps a missing source stream to a client error, not a 500', async () => {
     const cls = {
       request: () => ({ headers: { 'content-type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }, method: 'POST' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new PptxService(cls as never, { createWorker: vi.fn() } as never);
     await expect(service.extract()).rejects.toMatchObject({
@@ -197,7 +197,7 @@ describe('PptxService.extract', () => {
   });
 
   it('maps a truncated zip to 415', async () => {
-    const service = makeService(Buffer.from('PK\x03\x04\x01\x02')).service;
+    const service = makeService(Buffer.from('PK\u{3}\u{4}\u{1}\u{2}')).service;
     await expect(service.extract()).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
   });
 
@@ -443,7 +443,7 @@ describe('PptxService validation branches', () => {
           ),
         }),
       );
-    for (const target of ['/ppt/slides/slide1.xml', 'slides\\slide1.xml', 'slides/slide1.xml']) {
+    for (const target of ['/ppt/slides/slide1.xml', String.raw`slides\slide1.xml`, 'slides/slide1.xml']) {
       const service = makeService(await build(target)).service;
       const result = await service.extract();
       expect(result.structure.slides[0]?.texts).toContain('hello');
@@ -694,8 +694,8 @@ describe('PptxService content-type and relationship edges', () => {
     const stream = Readable.from([Buffer.from('x')]);
     const cls = {
       request: () => ({ method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new PptxService(cls as never, { createWorker: vi.fn() } as never);
     await expect(service.metadata()).rejects.toMatchObject({ status: 415 });

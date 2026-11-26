@@ -341,6 +341,22 @@ npm run check       # typecheck + lint + build + unit & e2e tests + knip
 
 Unit specs match `**/*.spec.ts` (dashboard: `**/*.spec.tsx`); e2e specs match `**/*.e2e-spec.ts`. Test files run serially (`fileParallelism: false`); real-worker smoke tests use fixtures under `packages/backend/assets/`; generated output goes under `packages/backend/test/results/`. The dashboard also has a Playwright screenshot e2e (`packages/dashboard/test/e2e/`) — it runs via `npm run test:e2e -w file-fly-dashboard`, rebuilds the backend and SPA, and refreshes `docs/screenshots/`. It is not part of `npm run check`.
 
+## Linting
+
+The root flat config delegates to the pinned `@stackrb/eslint-config@0.1.0`, targeting
+`node` and `react`. Playwright rules are scoped to `packages/dashboard/test/e2e`, so
+Vitest specs are checked with Vitest rules only. On top of the shared config, the repo
+applies `eslint-plugin-unicorn`'s `unopinionated` preset to all code files, keeping
+correctness rules and dropping style-only rules that predate this repo. The dashboard
+keeps two scoped exceptions: `n/no-unsupported-features/node-builtins` is off (browser
+APIs are allowed), and `unicorn/filename-case` accepts both kebab-case and PascalCase
+component filenames.
+
+Generated docs, test results, and the generated router file
+(`packages/dashboard/src/routeTree.gen.ts`) stay ignored, alongside the package defaults
+(`node_modules`, `dist`, `cache`, lockfiles). The gate runs
+`eslint . --fix --cache --max-warnings=0` with zero warnings.
+
 ## Documentation
 
 Deep-dives live in `docs/`:

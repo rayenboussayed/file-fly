@@ -12,8 +12,9 @@ import { SharedServicesModule } from './shared-services.module.js';
  * @param key - Metadata key to read from the module class.
  * @returns The stored value, or undefined when the key is absent.
  */
+const reflect = Reflect;
 const metadata = (key: string): unknown =>
-  Reflect.getMetadata(key, SharedServicesModule) as unknown;
+  reflect.getMetadata(key, SharedServicesModule) as unknown;
 
 describe('SharedServicesModule', () => {
   it('is global', () => {

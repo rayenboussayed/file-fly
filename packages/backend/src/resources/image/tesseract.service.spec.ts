@@ -28,16 +28,12 @@ vi.mock('tesseract.js', () => {
   const worker = {
     recognize: vi.fn(async () => {
       if (hoisted.mode === 'recognize-fail') throw new Error('native recognize exploded');
-      if (hoisted.mode === 'blocks-null') {
-        return { data: { blocks: null, confidence: 12.5, text: 'nothing\n' } };
-      }
-      return BLOCKS_PAGE;
+      return hoisted.mode === 'blocks-null' ? { data: { blocks: null, confidence: 12.5, text: 'nothing\n' } } : BLOCKS_PAGE;
     }),
     reinitialize: vi.fn(async () => {
       if (hoisted.mode === 'reinit-fail') throw new Error('reinitialize exploded');
-      return undefined;
     }),
-    terminate: vi.fn(async () => undefined),
+    terminate: vi.fn(async () => {}),
   };
   return {
     createWorker: vi.fn(async () => worker),

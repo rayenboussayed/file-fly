@@ -12,8 +12,14 @@ const fitKeys = Object.keys(sharp.fit) as Array<keyof FitEnum>;
 const kernelKeys = Object.keys(sharp.kernel) as Array<keyof KernelEnum>;
 /** resize position accepts sharp's corner/edge names plus everything in sharp.gravity. */
 const positionKeys = [
-  'top', 'right', 'bottom', 'left',
-  'left top', 'right top', 'left bottom', 'right bottom',
+  'top', 
+'right', 
+'bottom', 
+'left',
+  'left top', 
+'right top', 
+'left bottom', 
+'right bottom',
   ...Object.keys(sharp.gravity),
 ] as const;
 

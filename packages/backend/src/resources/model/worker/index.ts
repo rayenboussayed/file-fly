@@ -15,27 +15,25 @@ type WorkerInput = { operation?: string; payload: { buffer: Buffer; query: Model
 const data = workerData as WorkerInput;
 
 if (data.operation === 'optimize') {
-  readModel(data.payload.buffer)
-    .then(async (document) => {
-      await optimizeDocument(document, data.payload.query);
-      const out = await writeGlb(document);
-      // Refuse to emit a corrupt document: a readable GLB is the only acceptable output.
-      const checked = await readModel(Buffer.from(out));
-      const required = new Set(checked.getRoot().listExtensionsRequired().map((extension) => extension.extensionName));
-      const used = new Set(checked.getRoot().listExtensionsUsed().map((extension) => extension.extensionName));
-      for (const name of required) {
-        if (!used.has(name)) {
-          throw new Error(`optimizer output is missing required extension: ${name}`);
-        }
+  try {
+    const document = await readModel(data.payload.buffer);
+    await optimizeDocument(document, data.payload.query);
+    const out = await writeGlb(document);
+    // Refuse to emit a corrupt document: a readable GLB is the only acceptable output.
+    const checked = await readModel(Buffer.from(out));
+    const required = new Set(checked.getRoot().listExtensionsRequired().map((extension) => extension.extensionName));
+    const used = new Set(checked.getRoot().listExtensionsUsed().map((extension) => extension.extensionName));
+    for (const name of required) {
+      if (!used.has(name)) {
+        throw new Error(`optimizer output is missing required extension: ${name}`);
       }
-      // Exit only once the bytes are flushed; an early exit(0) would truncate the output.
-      process.stdout.write(out, () => standaloneExit(0));
-      return out;
-    })
-    .catch((error: unknown) => {
-      logger.error({ err: error }, 'model optimize failed');
-      standaloneExit(1);
-    });
+    }
+    // Exit only once the bytes are flushed; an early exit(0) would truncate the output.
+    process.stdout.write(out, () => standaloneExit(0));
+  } catch (error: unknown) {
+    logger.error({ err: error }, 'model optimize failed');
+    standaloneExit(1);
+  }
 } else {
   logger.error({ operation: data.operation }, 'unknown worker operation');
   standaloneExit(1);

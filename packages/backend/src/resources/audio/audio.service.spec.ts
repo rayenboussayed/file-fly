@@ -42,7 +42,7 @@ describe('AudioService uncovered paths', () => {
   it('rejects with 415 when the file signature is missing entirely', async () => {
     const workerService = { createWorker: vi.fn() };
     const service = new AudioService(workerService as never, {
-      fileSignature: () => ({ get: () => undefined }),
+      fileSignature: () => ({ get: () => {} }),
     } as never);
     await expect(service.dna()).rejects.toMatchObject({ status: 415 });
     await expect(service.metadata()).rejects.toMatchObject({ status: 415 });

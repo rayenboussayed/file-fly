@@ -21,8 +21,8 @@ describe('model worker', () => {
     vi.resetModules();
     vi.doMock('node:worker_threads', () => ({ workerData }));
     const writes: Buffer[] = [];
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-    const stdout = new (require('node:stream').Writable)({
+    const { Writable } = await import('node:stream');
+    const stdout = new Writable({
       write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
         writes.push(Buffer.from(chunk as Buffer));
         callback();
@@ -31,7 +31,7 @@ describe('model worker', () => {
         callback();
       },
     });
-    stdout.on('error', () => undefined);
+    stdout.on('error', () => {});
     Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
 
     await import('./index.js');
@@ -49,7 +49,7 @@ describe('model worker', () => {
     const buffer = Buffer.concat(writes);
     expect(buffer.length).toBeGreaterThan(0);
     expect(buffer.subarray(0, 4).toString('latin1')).toBe('glTF');
-  }, 30000);
+  }, 30_000);
 
   it('builds a valid GLB with draco compression', async () => {
     const writes = await runWorker({
@@ -58,7 +58,7 @@ describe('model worker', () => {
     });
     const buffer = Buffer.concat(writes);
     expect(buffer.subarray(0, 4).toString('latin1')).toBe('glTF');
-  }, 30000);
+  }, 30_000);
 
   it('ignores unknown operations without writing bytes', async () => {
     const writes = await runWorker({
@@ -66,5 +66,5 @@ describe('model worker', () => {
       payload: { buffer: fixture(), query: { compress: 'meshopt', simplify: 1, weld: true } },
     });
     expect(writes).toHaveLength(0);
-  }, 30000);
+  }, 30_000);
 });

@@ -13,4 +13,4 @@ export const PORT = 4523;
 /** Origin the tests use for the booted backend. */
 export const BASE_URL = `http://127.0.0.1:${String(PORT)}`;
 /** TCP port fake clamd binds (the backend e2e owns 33331). */
-export const CLAMAV_PORT = 33332;
+export const CLAMAV_PORT = 33_332;

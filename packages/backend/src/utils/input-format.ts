@@ -113,6 +113,5 @@ export function toDemuxerFormat(
   }
   const mime = signature.mime?.toLowerCase();
   // eslint-disable-next-line security/detect-object-injection
-  if (mime in MIME_TO_DEMUXER) return MIME_TO_DEMUXER[mime];
-  return undefined;
+  return mime in MIME_TO_DEMUXER ? MIME_TO_DEMUXER[mime] : undefined;
 }

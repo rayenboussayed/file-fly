@@ -4,12 +4,12 @@ import { findUnencodableWinAnsi } from './cp1252.js';
 
 describe('findUnencodableWinAnsi', () => {
   it('accepts plain printable ASCII and typical latin text', () => {
-    expect(findUnencodableWinAnsi('Hello, World! 123 áéíóú ñ € … — \u2019')).toEqual([]);
+    expect(findUnencodableWinAnsi('Hello, World! 123 áéíóú ñ € … — \u{2019}')).toEqual([]);
   });
 
   it('rejects control characters', () => {
-    expect(findUnencodableWinAnsi('a\u0001b').map(({ codePoint }) => codePoint)).toEqual([1]);
-    expect(findUnencodableWinAnsi('a\u007fb').map(({ codePoint }) => codePoint)).toEqual([0x7f]);
+    expect(findUnencodableWinAnsi('a\u{1}b').map(({ codePoint }) => codePoint)).toEqual([1]);
+    expect(findUnencodableWinAnsi('a\u{7F}b').map(({ codePoint }) => codePoint)).toEqual([0x7f]);
     expect(findUnencodableWinAnsi('tab\tend').map(({ codePoint }) => codePoint)).toEqual([9]);
   });
 

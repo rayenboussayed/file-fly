@@ -33,7 +33,7 @@ describe('environment', () => {
   });
 
   it('falls back for blank and invalid numeric values', async () => {
-    vi.stubEnv('CACHE_TTL_MS', '   ');
+    vi.stubEnv('CACHE_TTL_MS', ' '.repeat(3));
     vi.stubEnv('CACHE_MAX_BYTES', 'lots');
     vi.stubEnv('CACHE_SWEEP_INTERVAL_MS', '-1');
     vi.stubEnv('CACHE_TMP_MAX_AGE_MS', '0');
@@ -87,8 +87,8 @@ describe('environment', () => {
     expect(environment.CLAMAV_HOST).toBeUndefined();
     expect(environment.CLAMAV_PORT).toBeUndefined();
     expect(environment.CLAMAV_MAX_BYTES).toBe(25 * 1024 ** 2);
-    expect(environment.CLAMAV_MAX_BYTES).toBe(26214400);
-    expect(environment.CLAMAV_TIMEOUT_MS).toBe(60000);
+    expect(environment.CLAMAV_MAX_BYTES).toBe(26_214_400);
+    expect(environment.CLAMAV_TIMEOUT_MS).toBe(60_000);
   });
 
   it('accepts valid CLAMAV_* values', async () => {
@@ -131,7 +131,7 @@ describe('environment', () => {
 
   it('falls back to the derived TESSERACT_DIR for a blank override', async () => {
     vi.stubEnv('CACHE_DIR', '.cache-test/env-cache');
-    vi.stubEnv('TESSERACT_DIR', '   ');
+    vi.stubEnv('TESSERACT_DIR', ' '.repeat(3));
     const { environment } = await importEnvironment();
 
     expect(environment.TESSERACT_DIR).toBe(
@@ -147,7 +147,7 @@ describe('environment CORS_ORIGIN', () => {
   });
 
   it('is unset when only whitespace is given', async () => {
-    vi.stubEnv('CORS_ORIGIN', '   ');
+    vi.stubEnv('CORS_ORIGIN', ' '.repeat(3));
     const { environment } = await importEnvironment();
     expect(environment.CORS_ORIGIN).toBeUndefined();
   });

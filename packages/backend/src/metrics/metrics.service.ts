@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import fs from 'node:fs';
 import path from 'node:path';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins -- node:sqlite is unflagged on Node >= 22.13 and targets Node 24/26
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- node:sqlite is experimental on Node 24/26, this repo targets both
 import { DatabaseSync } from 'node:sqlite';
 
 import { environment, isProduction } from '@/environment.js';
@@ -335,11 +335,13 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
       this.flushTimer = setInterval(() => { this.safeFlush(); }, this.flushIntervalMs);
       this.flushTimer.unref();
     }
-    if (this.retentionDays > 0) {
-      this.retentionTimer = setInterval(() => { this.safeSweep(); }, 3_600_000);
-      this.retentionTimer.unref();
-      this.safeSweep();
+    if (this.retentionDays <= 0) {
+      return;
     }
+
+    this.retentionTimer = setInterval(() => { this.safeSweep(); }, 3_600_000);
+    this.retentionTimer.unref();
+    this.safeSweep();
   }
 
   /**
@@ -544,7 +546,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     if (total === 0) return 0;
     const target = Math.ceil(total * quantile);
     let cumulative = 0;
-    for (const [le, count] of [...leCounts.entries()].sort((a, b) => a[0] - b[0])) {
+    for (const [le, count] of [...leCounts].toSorted((a, b) => a[0] - b[0])) {
       cumulative += count;
       if (cumulative >= target) return Math.round(Math.min(le, 10) * 1000);
     }
@@ -570,15 +572,33 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
       return current;
     };
     const assign = (name: string, row: { bytes: number; count: number; }, target: MetricsPerIp) => {
-      if (name === 'requests') target.requests += row.count;
-      else if (name === 'bytes_in') target.bytesIn += row.bytes;
-      else if (name === 'bytes_out') target.bytesOut += row.bytes;
-      else if (name === 'file_in') target.filesIn += row.count;
-      else if (name === 'file_out') target.filesOut += row.count;
+      switch (name) {
+      case 'bytes_in': {
+      target.bytesIn += row.bytes;
+      break;
+      }
+      case 'bytes_out': {
+      target.bytesOut += row.bytes;
+      break;
+      }
+      case 'file_in': {
+      target.filesIn += row.count;
+      break;
+      }
+      case 'file_out': {
+      target.filesOut += row.count;
+      break;
+      }
+      case 'requests': {
+      target.requests += row.count;
+      break;
+      }
+      // No default
+      }
     };
     for (const row of rows) assign(row.name, row, ensure(row.ip));
     for (const row of this.deltaIp.values()) assign(row.name, row, ensure(row.ip));
-    return [...byIp.values()].sort((a, b) => b.bytesOut - a.bytesOut).slice(0, 50);
+    return [...byIp.values()].toSorted((a, b) => b.bytesOut - a.bytesOut).slice(0, 50);
   }
 
   private perRoute(db: DatabaseSync): MetricsRouteStat[] {
@@ -593,12 +613,27 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
       return current;
     };
     const assign = (name: string, row: { bytes: number; count: number; }, target: MetricsRouteStat & { durationCount: number; durationMs: number; }) => {
-      if (name === 'requests') target.requests += row.count;
-      else if (name === 'bytes_out') target.bytesOut += row.bytes;
-      else if (name === 'client_errors' || name === 'server_errors') target.errors += row.count;
-      else if (name === 'duration') {
+      switch (name) {
+      case 'bytes_out': {
+      target.bytesOut += row.bytes;
+      break;
+      }
+      case 'client_errors':
+      case 'server_errors': {
+      target.errors += row.count;
+      break;
+      } 
+      case 'duration': {
         target.durationMs += row.bytes;
         target.durationCount += row.count;
+      
+      break;
+      }
+      case 'requests': {
+      target.requests += row.count;
+      break;
+      }
+      // No default
       }
     };
     for (const row of rows) assign(row.name, row, ensure(row.route));
@@ -606,7 +641,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     this.applyHistograms(db, byRoute);
     return [...byRoute.values()]
       .map(({ durationCount, durationMs, ...stat }) => ({ ...stat, avgMs: durationCount === 0 ? 0 : durationMs / durationCount }))
-      .sort((a, b) => b.requests - a.requests);
+      .toSorted((a, b) => b.requests - a.requests);
   }
 
   private safeFlush(): void {
@@ -640,10 +675,21 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
         point = { bucket, bytesIn: 0, bytesOut: 0, errors: 0, requests: 0 };
         groups.set(bucket, point);
       }
-      if (name === 'requests') point.requests += count;
-      else if (name === 'bytes_in') point.bytesIn += bytes;
-      else if (name === 'bytes_out') point.bytesOut += bytes;
-      else point.errors += count;
+      switch (name) {
+      case 'bytes_in': {
+      point.bytesIn += bytes;
+      break;
+      }
+      case 'bytes_out': {
+      point.bytesOut += bytes;
+      break;
+      }
+      case 'requests': {
+      point.requests += count;
+      break;
+      }
+      default: point.errors += count;
+      }
     };
     for (const row of rows) assign(row.bucket, row.name, row.count, row.bytes);
     for (const row of this.deltaRoute.values()) {
@@ -654,7 +700,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
       const bucket = hourAgo(offset);
       points.push(groups.get(bucket) ?? { bucket, bytesIn: 0, bytesOut: 0, errors: 0, requests: 0 });
     }
-    return points.sort((a, b) => a.bucket.localeCompare(b.bucket));
+    return points.toSorted((a, b) => a.bucket.localeCompare(b.bucket));
   }
 
   private totals(db: DatabaseSync, fromHour: string): MetricsTotals {

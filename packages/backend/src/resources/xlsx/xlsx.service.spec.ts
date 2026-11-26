@@ -49,10 +49,10 @@ const zipBytes = (sheetData: string) =>
  * @param sheets - The sheets to build.
  * @returns The workbook bytes.
  */
-const buildBytes = async (sheets: XlsxBuildType['sheets']) =>
-  roundTrip({ sheets }).then(
-    (workbook) => XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer,
-  );
+const buildBytes = async (sheets: XlsxBuildType['sheets']) => {
+  const workbook = await roundTrip({ sheets });
+  return XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+};
 
 /**
  * Query defaults with overrides, mirroring the schema's post-validation shape.
@@ -66,7 +66,7 @@ const q = (overrides: Partial<XlsxExtractType> = {}): XlsxExtractType => ({
 });
 
 const serviceFor = (body?: Buffer) => {
-  const stream = Readable.from([body ?? Buffer.from('PK\x03\x04not-a-workbook')]);
+  const stream = Readable.from([body ?? Buffer.from('PK\u{3}\u{4}not-a-workbook')]);
   const cls = {
     request: () => ({
       headers: {
@@ -76,19 +76,18 @@ const serviceFor = (body?: Buffer) => {
       method: 'POST',
       raw: stream,
     }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   return new XlsxService(cls as never);
 };
 
 
-const buildRows = (n: number) => {
+const buildRows = async (n: number) => {
   const rows: XlsxBuildType['sheets'][number]['rows'] = [];
   for (let index = 0; index < n; index += 1) rows.push([index, 'x', true]);
-  return roundTrip({ sheets: [{ rows }] }).then((workbook) =>
-    XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer,
-  );
+  const workbook = await roundTrip({ sheets: [{ rows }] });
+  return XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
 };
 
 const roundTrip = async (body: Parameters<XlsxService['build']>[0]) => {
@@ -150,7 +149,7 @@ describe('XlsxService.build', () => {
       roundTrip({ sheets: [{ rows: [[{ f: 'cmd|"/c calc"!A1', t: 'n', v: 0 }]] }] }),
     ).rejects.toMatchObject({ response: { code: 'XLSX_FORMULA_REJECTED' } });
     await expect(
-      roundTrip({ sheets: [{ rows: [[{ f: "MSEXCEL|'\\\\path\\to\\app'!A1", t: 'n', v: 0 }]] }] }),
+      roundTrip({ sheets: [{ rows: [[{ f: String.raw`MSEXCEL|'\\path\to\app'!A1`, t: 'n', v: 0 }]] }] }),
     ).rejects.toMatchObject({ response: { code: 'XLSX_FORMULA_REJECTED' } });
     const workbook = await roundTrip({
       sheets: [{ rows: [[{ f: 'SUM(A1:A2)', t: 'n', v: 3 }]] }],
@@ -212,10 +211,11 @@ describe('XlsxService.build', () => {
   });
 
   it('returns enriched defined names', async () => {
-    const bytes = await roundTrip({
+    const workbookForNames = await roundTrip({
       sheets: [{ rows: [['x']] }],
       workbook: { Names: [{ Name: 'total', Ref: 'A1', Sheet: 0 }] },
-    }).then((wb) => XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' }) as Buffer);
+    });
+    const bytes = XLSX.write(workbookForNames, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
     const meta = await serviceFor(bytes).metadata({ maxCells: 1000 });
     expect(meta.definedNames).toEqual([{ name: 'total', ref: 'A1', sheet: 0 }]);
   });
@@ -284,8 +284,8 @@ describe('XlsxService.build', () => {
     const stream = Readable.from([Buffer.from('a,b\n1,2\n')]);
     const cls = {
       request: () => ({ headers: { 'content-type': 'text/csv' }, method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new XlsxService(cls as never);
     await expect(service.metadata({ maxCells: 100 })).rejects.toBeInstanceOf(
@@ -296,8 +296,8 @@ describe('XlsxService.build', () => {
   it('maps a missing source stream to a client error, not a 500', async () => {
     const cls = {
       request: () => ({ headers: { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }, method: 'POST' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new XlsxService(cls as never);
     await expect(service.extract(q())).rejects.toMatchObject({
@@ -348,7 +348,7 @@ describe('XlsxService.build', () => {
   });
 
   it('maps a truncated zip to a 400', async () => {
-    const service = serviceFor(Buffer.from('PK\x03\x04\x01\x02'));
+    const service = serviceFor(Buffer.from('PK\u{3}\u{4}\u{1}\u{2}'));
     await expect(service.extract(q())).rejects.toMatchObject({
       response: { code: 'XLSX_INVALID_ZIP' },
     });
@@ -373,10 +373,10 @@ describe('XlsxService.build', () => {
 });
 
 describe('XlsxService.extract', () => {
-  const build = (rows: BuildRows) =>
-    roundTrip({ sheets: [{ rows }] }).then((workbook) =>
-      XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer,
-    );
+  const build = async (rows: BuildRows) => {
+    const workbook = await roundTrip({ sheets: [{ rows }] });
+    return XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+  };
 
   it('extracts object rows with first row as header by default', async () => {
     const bytes = await build([{ a: 1, b: 'x' }]);
@@ -413,16 +413,15 @@ describe('XlsxService.extract', () => {
       BadRequestException,
     );
     await expect(
-      serviceFor(Buffer.from('PK\x03\x04\x01\x02')).extract(q()),
+      serviceFor(Buffer.from('PK\u{3}\u{4}\u{1}\u{2}')).extract(q()),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
 
 describe('XlsxService.metadata', () => {
   const metaFor = async (rows: BuildRows) => {
-    const bytes = await roundTrip({ sheets: [{ rows }] }).then((workbook) =>
-      XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer,
-    );
+    const workbook = await roundTrip({ sheets: [{ rows }] });
+    const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
     return serviceFor(bytes).metadata({ maxCells: 1000 });
   };
 
@@ -441,9 +440,10 @@ describe('XlsxService.metadata', () => {
   });
 
   it('counts formula cells', async () => {
-    const bytes = await roundTrip({
+    const workbookForFormula = await roundTrip({
       sheets: [{ rows: [[1], [{ f: 'A1*2', t: 'n', v: 2 }]] }],
-    }).then((workbook) => XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer);
+    });
+    const bytes = XLSX.write(workbookForFormula, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
     const meta = await serviceFor(bytes).metadata({ maxCells: 1000 });
     expect(meta.sheets[0]?.formulas).toBe(1);
   });
@@ -462,8 +462,8 @@ describe('XlsxService readBody fallbacks and raw mode', () => {
     const stream = Readable.from([Buffer.from('x')]);
     const cls = {
       request: () => ({ method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new XlsxService(cls as never);
     await expect(service.metadata({ maxCells: 100_000 })).rejects.toMatchObject({ status: 415 });
@@ -542,8 +542,8 @@ describe('XlsxService unit edge coverage', () => {
     const stream = Readable.from([Buffer.from('not needed here')]);
     const cls = {
       request: () => ({ headers: { 'content-type': 'application/octet-stream' }, method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     // 415 comes before any parse work; octet-stream is allowed through to the OOXML gate.
     const service = new XlsxService(cls as never);
@@ -582,8 +582,8 @@ describe('XlsxService content-type fallbacks', () => {
     const stream = Readable.from([Buffer.from('x')]);
     const cls = {
       request: () => ({ method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new XlsxService(cls as never);
     await expect(service.metadata({ maxCells: 1000 })).rejects.toMatchObject({ status: 415 });

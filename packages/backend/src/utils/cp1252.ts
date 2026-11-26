@@ -12,33 +12,33 @@ for (let cp = 0x20; cp <= 0x7e; cp += 1) WINANSI.add(cp);
 for (let cp = 0xa0; cp <= 0xff; cp += 1) WINANSI.add(cp);
 // cp1252 higher range (0x80-0x9f), excluding the undefined slots 0x81/0x8d/0x8f/0x90/0x9d.
 for (const cp of [
-  0x20ac, // €
-  0x201a, // ‚
-  0x0192, // ƒ
-  0x201e, // „
-  0x2026, // …
-  0x2020, // †
-  0x2021, // ‡
-  0x02c6, // ˆ
-  0x2030, // ‰
-  0x0160, // Š
-  0x2039, // ‹
-  0x0152, // Œ
-  0x017d, // Ž
-  0x2018, // ‘
-  0x2019, // ’
-  0x201c, // “
-  0x201d, // ”
-  0x2022, // •
-  0x2013, // –
-  0x2014, // —
-  0x02dc, // ˜
-  0x2122, // ™
-  0x0161, // š
-  0x203a, // ›
-  0x0153, // œ
-  0x017e, // ž
-  0x0178, // Ÿ
+  0x20_ac, // €
+  0x20_1a, // ‚
+  0x01_92, // ƒ
+  0x20_1e, // „
+  0x20_26, // …
+  0x20_20, // †
+  0x20_21, // ‡
+  0x02_c6, // ˆ
+  0x20_30, // ‰
+  0x01_60, // Š
+  0x20_39, // ‹
+  0x01_52, // Œ
+  0x01_7d, // Ž
+  0x20_18, // ‘
+  0x20_19, // ’
+  0x20_1c, // “
+  0x20_1d, // ”
+  0x20_22, // •
+  0x20_13, // –
+  0x20_14, // —
+  0x02_dc, // ˜
+  0x21_22, // ™
+  0x01_61, // š
+  0x20_3a, // ›
+  0x01_53, // œ
+  0x01_7e, // ž
+  0x01_78, // Ÿ
 ]) {
   WINANSI.add(cp);
 }
@@ -61,5 +61,5 @@ export function findUnencodableWinAnsi(
       if (seen.size >= limit) break;
     }
   }
-  return [...seen.entries()].map(([codePoint, char]) => ({ char, codePoint }));
+  return [...seen].map(([codePoint, char]) => ({ char, codePoint }));
 }

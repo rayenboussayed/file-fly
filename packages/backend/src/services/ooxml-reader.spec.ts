@@ -22,8 +22,8 @@ describe('OoxmlReader.readParts', () => {
       'word/document.xml': '<w:document/>',
     });
     const parts = OoxmlReader.readParts(zip);
-    expect(parts.get('word/document.xml')?.toString('utf-8')).toBe('<w:document/>');
-    expect(parts.get('docProps/core.xml')?.toString('utf-8')).toBe('<cp:coreProperties/>');
+    expect(parts.get('word/document.xml')?.toString('utf8')).toBe('<w:document/>');
+    expect(parts.get('docProps/core.xml')?.toString('utf8')).toBe('<cp:coreProperties/>');
   });
 
   it('throws OoxmlError for non-zip input', () => {
@@ -68,10 +68,10 @@ describe('OoxmlReader edge containers', () => {
     // patch every local + central directory entry to compression method 9
     const original = Buffer.from(zipSync({ 'a.xml': Buffer.from('<a/>') }));
     const buffer = Buffer.from(original);
-    for (let offset = buffer.indexOf('PK\x03\x04'); offset !== -1; offset = buffer.indexOf('PK\x03\x04', offset + 4)) {
+    for (let offset = buffer.indexOf('PK\u{3}\u{4}'); offset !== -1; offset = buffer.indexOf('PK\u{3}\u{4}', offset + 4)) {
       buffer.writeUInt16LE(9, offset + 8); // method = bzip2 (unsupported)
     }
-    for (let offset = buffer.indexOf('PK\x01\x02'); offset !== -1; offset = buffer.indexOf('PK\x01\x02', offset + 4)) {
+    for (let offset = buffer.indexOf('PK\u{1}\u{2}'); offset !== -1; offset = buffer.indexOf('PK\u{1}\u{2}', offset + 4)) {
       buffer.writeUInt16LE(9, offset + 10); // central dir method
     }
     expect(() => OoxmlReader.readParts(buffer)).toThrow('unsupported compression method');

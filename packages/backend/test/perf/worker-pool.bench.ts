@@ -18,8 +18,9 @@ vi.mock('node:worker_threads', () => {
       this.stderr = new Readable({ read() { this.push(null); } });
       this.stdin = new Writable({ write(_c: unknown, _e: unknown, cb: () => void) { cb(); } });
       Worker.instances.push(this);
-      process.nextTick(() => this.emit('exit', 0));
+      queueMicrotask(() => this.emit('exit', 0));
     }
+
     terminate() {
       return Promise.resolve();
     }
@@ -30,10 +31,10 @@ vi.mock('node:worker_threads', () => {
 import { WorkerService } from '@/services/worker.service.js';
 
 const makeCls = (): unknown => ({
-  cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
-  cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+  cacheKey: () => ({ get: () => {}, set: (v: unknown) => v }),
+  cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
   request: () => ({ signal: new AbortController().signal }),
-  sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
+  sourceStream: () => ({ get: () => {}, set: (v: unknown) => v }),
 });
 
 const drainToString = async (stream: Readable): Promise<string> => {

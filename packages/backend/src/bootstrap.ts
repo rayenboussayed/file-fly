@@ -23,13 +23,13 @@ export async function configureFastify(instance: FastifyInstance): Promise<void>
       const contentLength = Number.parseInt(
         request.headers['content-length']?.trim() ?? '0',
       );
-      return contentLength > 0
-        ? done(null)
-        : done(
-            new BadRequestException(
+      return done(
+        contentLength > 0
+          ? null
+          : new BadRequestException(
               'content-length header must be set and be greater than 0',
             ),
-          );
+      );
     },
   );
   await registerBasicAuth(instance);

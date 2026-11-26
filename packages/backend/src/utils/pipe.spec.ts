@@ -84,7 +84,7 @@ describe('pipeToReply', () => {
 
   it('drains the meter when the raw response fails mid-stream', async () => {
     const cls = {
-      bytesOut: () => ({ set: () => undefined }),
+      bytesOut: () => ({ set: () => {} }),
     } as never;
     const source = Readable.from([Buffer.from('ab'), Buffer.from('cd')]);
     const raw = new Writable({

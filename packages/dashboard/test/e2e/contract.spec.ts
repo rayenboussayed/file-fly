@@ -11,8 +11,6 @@ test('the live /metrics payload satisfies the dashboard contract', async ({ requ
   const parsed = metricsSnapshotSchema.safeParse(payload);
   // Zod issues embed the rejected value, which can be a client IP. Report only
   // field paths and messages so a drift is diagnosable without echoing data.
-  const detail = parsed.success
-    ? undefined
-    : parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+  const detail = parsed.error?.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(', ');
   expect(parsed.success, detail).toBe(true);
 });

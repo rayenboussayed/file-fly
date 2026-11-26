@@ -20,8 +20,7 @@ import { MetricsService, type MetricsSnapshot } from './metrics.service.js';
  */
 const bearerMatches = (actual: string | undefined, expected: string): boolean => {
   const expectedHeader = `Bearer ${expected}`;
-  if (actual === undefined || actual.length !== expectedHeader.length) return false;
-  return timingSafeEqual(Buffer.from(actual), Buffer.from(expectedHeader));
+  return actual === undefined || actual.length !== expectedHeader.length ? false : timingSafeEqual(Buffer.from(actual), Buffer.from(expectedHeader));
 };
 
 /** Read-only metrics and liveness endpoints for the dashboard. */

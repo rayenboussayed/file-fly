@@ -18,8 +18,7 @@ describe('VideoAudioSchema', () => {
       VideoAudioSchema.parse({
         codec: 'aac',
         source: 'https://example.com/v.mp4',
-      }),
-    ).toThrow();
+      }),).toThrow();
   });
 
   it('coerces numeric and boolean query values', () => {
@@ -43,8 +42,7 @@ describe('VideoAudioSchema', () => {
       VideoAudioSchema.parse({
         bogus: 'x',
         source: 'https://example.com/v.mp4',
-      }),
-    ).toThrow();
+      }),).toThrow();
   });
 
   it('rejects trim keys because trim on video input breaks the audio filter', () => {

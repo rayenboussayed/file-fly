@@ -89,7 +89,7 @@ describe('FileTypeService signature download paths', () => {
     await service.signature({ stream: source });
 
     // The probe pump drains the rest of the stream in the background; wait for it.
-    const deadline = Date.now() + 3_000;
+    const deadline = Date.now() + 3000;
     while (pulled < chunks.length && Date.now() < deadline) {
       await new Promise((resolve) => setImmediate(resolve));
     }

@@ -45,8 +45,7 @@ const assertFontSignature = async (buffer: Buffer): Promise<void> => {
 
 // Fontkit 3.0.0 tags every opened font with `.type`; collections carry 'TTC'/'DFont'.
 const isCollection = (value: unknown): value is fontkit.FontCollection =>
-  typeof value === 'object' && value !== null && (value as fontkit.FontCollection).type === 'TTC'
-  || (typeof value === 'object' && value !== null && (value as fontkit.FontCollection).type === 'DFont');
+  typeof value === 'object' && (value !== null && ((value as fontkit.FontCollection).type === 'TTC' || (value as fontkit.FontCollection).type === 'DFont'));
 
 // A font is CFF-based when its directory carries a 'CFF ' table.
 const isCffFont = (font: fontkit.Font): boolean => {

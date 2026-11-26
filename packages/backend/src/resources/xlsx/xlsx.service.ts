@@ -166,8 +166,7 @@ const assertSafeCell = (cell: unknown): void => {
 const findSheet = (
   sheets: Record<string, XLSX.WorkSheet>,
 ): ((name: string) => undefined | XLSX.WorkSheet) => {
-  const map = new Map<string, XLSX.WorkSheet>();
-  for (const [key, value] of Object.entries(sheets)) map.set(key, value);
+  const map = new Map<string, XLSX.WorkSheet>(Object.entries(sheets));
   return (name) => map.get(name);
 };
 
@@ -230,7 +229,7 @@ export class XlsxService {
       }
       if (body.workbook?.WBProps) {
         workbook.Workbook = workbook.Workbook ?? {};
-        workbook.Workbook.WBProps = { ...(workbook.Workbook.WBProps ?? {}), ...body.workbook.WBProps };
+        workbook.Workbook.WBProps = { ...workbook.Workbook.WBProps, ...body.workbook.WBProps };
       }
       if (body.workbook?.Names) {
         for (const entry of body.workbook.Names) assertSafeFormula(entry.Ref);
@@ -301,10 +300,7 @@ export class XlsxService {
       const records: unknown[] = XLSX.utils.sheet_to_json(worksheet, options);
       // Truncate rather than serialize an unbounded result; the pre-parse census
       // already bounded cell count, but row records can still be very wide JSONs.
-      if (records.length > MAX_RECORDS) {
-        return { records: records.slice(0, MAX_RECORDS), sheet: sheetName, truncated: true };
-      }
-      return { records, sheet: sheetName };
+      return records.length > MAX_RECORDS ? { records: records.slice(0, MAX_RECORDS), sheet: sheetName, truncated: true } : { records, sheet: sheetName };
     } catch (error) {
       throw toBadRequest(error);
     }

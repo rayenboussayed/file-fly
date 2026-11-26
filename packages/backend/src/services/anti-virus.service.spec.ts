@@ -76,10 +76,15 @@ vi.mock('jutilities/lazy', () => {
           const result = fn(...args);
           store.set(key, result);
           if (result instanceof Promise) {
-            return result.catch((error: unknown) => {
-              store.delete(key);
-              throw error;
-            });
+            const cleanup = () => store.delete(key);
+            return (async () => {
+              try {
+                return await result;
+              } catch (error) {
+                cleanup();
+                throw error;
+              }
+            })();
           }
           return result;
         }) as T;
@@ -340,7 +345,7 @@ describe('AntiVirusService', () => {
     const destroySpy = vi.spyOn(branch, 'destroy');
 
     const scanPromise = service.scan({ stream: branch });
-    process.nextTick(() => branch.destroy(new Error('source exploded')));
+    queueMicrotask(() => branch.destroy(new Error('source exploded')));
     const error = await catchException(scanPromise);
 
     expect(error.getStatus()).toBe(503);

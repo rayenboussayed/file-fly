@@ -29,8 +29,8 @@ const makeService = (body: Buffer, contentType = 'application/pdf') => {
   const stream = Readable.from([body]);
   const cls = {
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   return new PdfService(cls as never);
 };
@@ -40,7 +40,7 @@ describe('PdfService.build', () => {
     const service = makeService(Buffer.from('x'));
     const bytes = await service.build(smallDoc);
     expect(bytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-    const meta = await service.build(smallDoc).then((b) => makeService(b).metadata());
+    const meta = await makeService(await service.build(smallDoc)).metadata();
     expect(meta).toMatchObject({
       author: 'Fixture Author',
       format: 'pdf',
@@ -88,8 +88,8 @@ describe('PdfService.build', () => {
     const textField = fields.find((field) => field.getName() === 'form.name');
     expect(textField?.constructor.name).toBe('PDFTextField');
     expect((textField as unknown as { getText: () => string }).getText()).toBe('prefilled');
-    const checkBox = fields.find((field) => field.getName() === 'form.flag');
-    expect((checkBox as unknown as { isChecked: () => boolean }).isChecked()).toBe(true);
+    const checkbox = fields.find((field) => field.getName() === 'form.flag');
+    expect((checkbox as unknown as { isChecked: () => boolean }).isChecked()).toBe(true);
   });
 
   it('rejects WinAnsi-unrepresentable text with 400 and names the offenders', async () => {
@@ -238,8 +238,8 @@ describe('PdfService.extract', () => {
   it('maps a missing source stream to a client error, not a 500', async () => {
     const cls = {
       request: () => ({ headers: { 'content-type': 'application/pdf' }, method: 'POST' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new PdfService(cls as never);
     await expect(service.extract()).rejects.toMatchObject({
@@ -270,10 +270,10 @@ const handCraftedPdf = (
   if (infoObject !== undefined) objects.push(infoObject);
   let pdf = '%PDF-1.4\n';
   const offsets: number[] = [];
-  objects.forEach((body, index) => {
+  for (const [index, body] of objects.entries()) {
     offsets.push(Buffer.byteLength(pdf, 'latin1'));
     pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
-  });
+  }
   const xrefStart = Buffer.byteLength(pdf, 'latin1');
   pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
   for (const offset of offsets) {
@@ -285,7 +285,7 @@ const handCraftedPdf = (
 
 const unreadablePdf = Buffer.from('%PDF-1.4\n@@@###$$$%%%^&*!!notrealpdfbody@@@', 'latin1');
 /** Passes the signature gate (%PDF magic) but pdf-lib cannot parse it at all. */
-const unparseablePdf = Buffer.from('%PDF-1.7\n%\xe2\xe3\xcf\xd3\n1 0 obj', 'latin1');
+const unparseablePdf = Buffer.from('%PDF-1.7\n%\u{E2}\u{E3}\u{CF}\u{D3}\n1 0 obj', 'latin1');
 
 describe('PdfService.build metadata handling', () => {
   it('splits comma-joined keywords, trims and drops empties; round-trips subject/creator/language/creationDate', async () => {
@@ -359,8 +359,8 @@ describe('PdfService.metadata edge cases', () => {
   it('rejects a missing content-type with 415', async () => {
     const cls = {
       request: () => ({ headers: {}, method: 'POST' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new PdfService(cls as never);
     await expect(service.extract()).rejects.toBeInstanceOf(UnsupportedMediaTypeException);

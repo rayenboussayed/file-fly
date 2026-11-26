@@ -16,9 +16,9 @@ describe('PptxBuildSchema scatter refinement', () => {
   it('rejects a scatter chart with fewer than two series', () => {
     const result = parse({ chartType: 'scatter', h: 3, series: scatterSeries(1), type: 'chart', w: 4, x: 0, y: 0 });
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe('scatter charts need at least two series (X and Y)');
-    }
+    expect(result.success ? 'unexpected-success' : result.error.issues[0]?.message).toBe(
+      'scatter charts need at least two series (X and Y)',
+    );
   });
 
   it('accepts a scatter chart with two series', () => {

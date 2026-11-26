@@ -27,7 +27,7 @@ function captureStdout(): Buffer[] {
       callback();
     },
   });
-  stdout.on('error', () => undefined);
+  stdout.on('error', () => {});
   Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
   return chunks;
 }
@@ -39,7 +39,7 @@ function captureStdout(): Buffer[] {
 async function runDna(): Promise<AudioDnaResult> {
   hoisted.workerData = { inputFormat: 'mp3', operation: 'dna' };
   const input = fs.createReadStream('assets/audios/audio-2.mp3');
-  input.on('error', () => undefined);
+  input.on('error', () => {});
   Object.defineProperty(process, 'stdin', { value: input, writable: true });
   const chunks = captureStdout();
   await runAudioWorker({ inputFormat: 'mp3', operation: 'dna' } as never);
@@ -47,7 +47,7 @@ async function runDna(): Promise<AudioDnaResult> {
 }
 
 describe('audio dna worker', () => {
-  it('emits a well-formed chromaprint fingerprint', { timeout: 30000 }, async () => {
+  it('emits a well-formed chromaprint fingerprint', { timeout: 30_000 }, async () => {
     const parsed = await runDna();
     expect(parsed.algorithm).toBe('chromaprint');
     expect(parsed.version).toBe('chromaprint@1');
@@ -60,7 +60,7 @@ describe('audio dna worker', () => {
     expect(parsed.env.nodeAv.length).toBeGreaterThan(0);
   });
 
-  it('produces an identical hash across runs', { timeout: 30000 }, async () => {
+  it('produces an identical hash across runs', { timeout: 30_000 }, async () => {
     const first = await runDna();
     const second = await runDna();
     expect(second.hash).toBe(first.hash);

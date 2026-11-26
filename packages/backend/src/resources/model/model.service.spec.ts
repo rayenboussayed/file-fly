@@ -13,15 +13,15 @@ const makeService = (body: Buffer, contentType = 'model/gltf-binary') => {
   const cacheKeys: string[] = [];
   const cls = {
     cacheKey: () => ({
-      get: () => cacheKeys[cacheKeys.length - 1],
+      get: () => cacheKeys.at(-1),
       set: (value: string) => {
         cacheKeys.push(value);
         return value;
       },
     }),
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   const workerService = {
     createWorker: vi.fn(async () => Readable.from([body])),
@@ -55,15 +55,15 @@ describe('ModelService.metadata', () => {
   });
 
   it('rejects a GLB with a corrupt directory with 400', async () => {
-    const { service } = makeService(Buffer.from('glTF\u0002\u0000\u0000\u0000garbagebytes'), 'model/gltf-binary');
+    const { service } = makeService(Buffer.from('glTF\u{2}\0\0\0garbagebytes'), 'model/gltf-binary');
     await expect(service.metadata()).rejects.toMatchObject({ response: { code: 'MODEL_UNREADABLE' } });
   });
 
   it('maps a missing source stream to a client error, not a 500', async () => {
     const cls = {
       request: () => ({ headers: { 'content-type': 'model/gltf-binary' }, method: 'POST' }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => undefined, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new ModelService(cls as never, { createWorker: vi.fn() } as never);
     await expect(service.metadata()).rejects.toMatchObject({
@@ -286,7 +286,7 @@ describe('ModelService metadata and mime coverage', () => {
     const doc = new Document();
     const buffer = doc.createBuffer();
     // Asymmetric quantized positions: dequantized min/max differ from raw ints.
-    const positions = new Uint16Array([32768, 16384, 0, 65535, 32768, 0]);
+    const positions = new Uint16Array([32_768, 16_384, 0, 65_535, 32_768, 0]);
     const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setNormalized(true).setBuffer(buffer);
     const mesh = doc.createMesh('mesh').addPrimitive(doc.createPrimitive().setAttribute('POSITION', accessor));
     doc.createNode('node').setMesh(mesh);
@@ -295,11 +295,11 @@ describe('ModelService metadata and mime coverage', () => {
 
     const { service } = makeService(Buffer.from(bytes));
     const meta = await service.metadata();
-    expect(meta.bounds?.min?.[0]).toBeCloseTo(32768 / 65535, 5);
-    expect(meta.bounds?.min?.[1]).toBeCloseTo(16384 / 65535, 5);
+    expect(meta.bounds?.min?.[0]).toBeCloseTo(32_768 / 65_535, 5);
+    expect(meta.bounds?.min?.[1]).toBeCloseTo(16_384 / 65_535, 5);
     expect(meta.bounds?.min?.[2]).toBe(0);
     expect(meta.bounds?.max?.[0]).toBeCloseTo(1, 5);
-    expect(meta.bounds?.max?.[1]).toBeCloseTo(32768 / 65535, 5);
+    expect(meta.bounds?.max?.[1]).toBeCloseTo(32_768 / 65_535, 5);
     expect(meta.bounds?.max?.[2]).toBe(0);
   });
 
@@ -394,8 +394,8 @@ describe('ModelService read-body and mime fallbacks', () => {
     const stream = Readable.from([fixture()]);
     const cls = {
       request: () => ({ method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new ModelService(cls as never, { createWorker: vi.fn() } as never);
     await expect(service.metadata()).rejects.toMatchObject({ status: 415 });

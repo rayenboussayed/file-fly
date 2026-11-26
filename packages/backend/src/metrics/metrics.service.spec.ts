@@ -54,9 +54,10 @@ const indexNames = (dbPath: string): string[] => {
   const db = new DatabaseSync(dbPath);
   try {
     // node:sqlite types query results as unknown; the selected column is a name string.
+    const backslash = String.fromCodePoint(92);
     const rows = db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx\\_%' ESCAPE '\\'")
-      .all() as Array<{ name: string }>;
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE ? ESCAPE ?")
+      .all(`idx${backslash}_%`, backslash) as Array<{ name: string }>;
     return rows.map((row) => row.name);
   } finally {
     db.close();
@@ -80,7 +81,8 @@ const queryPlan = (dbPath: string, sql: string): string[] => {
   const db = new DatabaseSync(dbPath);
   try {
     // node:sqlite types query results as unknown; EXPLAIN returns detail strings.
-    const rows = db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all() as Array<{ detail: string }>;
+    const statement = 'EXPLAIN QUERY PLAN ' + sql;
+    const rows = db.prepare(statement).all() as Array<{ detail: string }>;
     return rows.map((row) => row.detail);
   } finally {
     db.close();
@@ -436,7 +438,7 @@ describe('MetricsService record', () => {
     expect(snapshot.totals.requests).toBe(2);
     expect(snapshot.totals.bytesIn).toBe(30);
     expect(snapshot.totals.bytesOut).toBe(300);
-    expect(snapshot.perIp.map((entry) => entry.ip).sort()).toEqual(['127.0.0.1', '127.0.0.2']);
+    expect(snapshot.perIp.map((entry) => entry.ip).toSorted((a, b) => a.localeCompare(b))).toEqual(['127.0.0.1', '127.0.0.2']);
     expect(snapshot.perRoute[0]?.route).toBe('/image');
     vi.useRealTimers();
     first.onApplicationShutdown();

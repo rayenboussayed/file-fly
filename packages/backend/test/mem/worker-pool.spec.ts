@@ -20,8 +20,9 @@ vi.mock('node:worker_threads', () => {
       this.stderr = new Readable({ read() { this.push(null); } });
       this.stdin = new Writable({ write(_c: unknown, _e: unknown, cb: () => void) { cb(); } });
       Worker.instances.push(this);
-      process.nextTick(() => this.emit('exit', 0));
+      queueMicrotask(() => this.emit('exit', 0));
     }
+
     terminate() {
       return Promise.resolve();
     }
@@ -35,9 +36,9 @@ import { WorkerService } from '@/services/worker.service.js';
 
 const makeCls = (): unknown => ({
   cacheKey: () => ({ get: () => 'worker-pool-key', set: (v: unknown) => v }),
-  cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+  cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
   request: () => ({ signal: new AbortController().signal }),
-  sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
+  sourceStream: () => ({ get: () => {}, set: (v: unknown) => v }),
 });
 
 /**
@@ -46,11 +47,11 @@ const makeCls = (): unknown => ({
  */
 const cacheFake = {
   createCachePath: () => '/dev/null',
-  flush: async () => undefined,
+  flush: async () => {},
   getOriginalSize: async () => 0,
-  read: async () => undefined,
-  unlink: async () => undefined,
-  write: () => undefined,
+  read: async () => {},
+  unlink: async () => {},
+  write: () => {},
 };
 
 const drainToString = async (stream: Readable): Promise<string> => {
@@ -105,7 +106,6 @@ describe('worker pool memory', () => {
     let acquired = false;
     const waiting = state.acquireWorkerSlot().then(() => {
       acquired = true;
-      return undefined;
     });
     expect(state.workerWaiters).toHaveLength(1);
     state.releaseWorkerSlot();

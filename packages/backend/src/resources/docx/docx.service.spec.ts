@@ -47,8 +47,8 @@ const makeService = (body: Buffer, contentType = 'application/vnd.openxmlformats
   const cls = {
     cacheKey: () => ({ set: vi.fn() }),
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   const workerService = {
     createWorker: vi.fn(async () => Readable.from([Buffer.from('worker-bytes')])),
@@ -68,8 +68,8 @@ describe('DocxService.build', () => {
     const cls = {
       cacheKey: () => ({ set: setCacheKey }),
       request: () => ({ headers: {}, method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const valid = await buildPresentationSafe();
     const workerService = { createWorker: vi.fn(async () => Readable.from([valid])) };
@@ -84,8 +84,8 @@ describe('DocxService.build', () => {
     const cls = {
       cacheKey: () => ({ set: setCacheKey }),
       request: () => ({ headers: {}, method: 'POST', raw: Readable.from([Buffer.from('PK')]) }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => Readable.from([Buffer.from('PK')]), set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => Readable.from([Buffer.from('PK')]), set: () => {} }),
     };
     const valid = await buildPresentationSafe();
     const workerService = { createWorker: vi.fn(async () => Readable.from([valid])) };
@@ -189,8 +189,9 @@ describe('DocxService.build', () => {
     const setCacheKey = vi.fn();
     const cls = { cacheKey: () => ({ set: setCacheKey }) };
     const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
-    const error = await service
-      .build({
+    let error: unknown;
+    try {
+      await service.build({
         sections: [
           {
             children: [
@@ -198,8 +199,10 @@ describe('DocxService.build', () => {
             ],
           },
         ],
-      })
-      .catch((caught: unknown) => caught);
+      });
+    } catch (caught) {
+      error = caught;
+    }
     expect(error).toBeInstanceOf(BadRequestException);
     expect(setCacheKey).not.toHaveBeenCalled();
   });
@@ -220,7 +223,7 @@ describe('DocxService.metadata', () => {
   });
 
   it('maps a truncated zip to 415', async () => {
-    const service = makeService(Buffer.from('PK\x03\x04\x01\x02')).service;
+    const service = makeService(Buffer.from('PK\u{3}\u{4}\u{1}\u{2}')).service;
     await expect(service.extract()).rejects.toBeInstanceOf(UnsupportedMediaTypeException);
   });
 
@@ -352,9 +355,9 @@ describe('DocxService body and read caps', () => {
     const stream = Readable.from([Buffer.from('PK')]);
     const cls = {
       cacheKey: () => ({ set: vi.fn() }),
-      request: () => undefined,
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      request: () => {},
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
     await expect(service.extract()).rejects.toThrow('Unsupported media type "" for DOCX input');
@@ -364,8 +367,8 @@ describe('DocxService body and read caps', () => {
     const cls = {
       cacheKey: () => ({ set: vi.fn() }),
       request: () => ({ headers: { 'content-type': DOCX_MIME } }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => null, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => null, set: () => {} }),
     };
     const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
     await expect(service.extract()).rejects.toMatchObject({ response: { code: 'DOCX_NO_SOURCE' } });
@@ -385,7 +388,12 @@ describe('DocxService body and read caps', () => {
       throw new OoxmlError('package exceeds the total uncompressed size cap');
     });
     const service = makeService(buildDocx('<w:document/>')).service;
-    const error = await service.metadata().catch((caught: unknown) => caught);
+    let error: unknown;
+    try {
+      await service.metadata();
+    } catch (caught) {
+      error = caught;
+    }
     expect(error).toBeInstanceOf(PayloadTooLargeException);
     expect(error).toHaveProperty('message', 'package exceeds the total uncompressed size cap');
   });
@@ -395,7 +403,12 @@ describe('DocxService body and read caps', () => {
       throw new OoxmlError('not a valid zip package');
     });
     const service = makeService(buildDocx('<w:document/>')).service;
-    const error = await service.metadata().catch((caught: unknown) => caught);
+    let error: unknown;
+    try {
+      await service.metadata();
+    } catch (caught) {
+      error = caught;
+    }
     expect(error).toBeInstanceOf(BadRequestException);
     expect(error).toHaveProperty('response', {
       code: 'DOCX_INVALID_ZIP',
@@ -446,13 +459,16 @@ describe('DocxService.build cross-field validation', () => {
   it('rejects a payload over the 50,000 element cap', async () => {
     const cls = { cacheKey: () => ({ set: vi.fn() }) };
     const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
-    const error = await service
-      .build({
+    let error: unknown;
+    try {
+      await service.build({
         sections: [
           { children: [{ runs: Array.from({ length: 50_001 }, () => ({ text: '' })), type: 'paragraph' }] },
         ],
-      })
-      .catch((caught: unknown) => caught);
+      });
+    } catch (caught) {
+      error = caught;
+    }
     expect(error).toBeInstanceOf(PayloadTooLargeException);
     expect(error).toHaveProperty('message', 'document exceeds the element cap');
   });
@@ -463,8 +479,8 @@ describe('DocxService.build cross-field validation', () => {
     const cls = {
       cacheKey: () => ({ set: setCacheKey }),
       request: () => ({ headers: {}, method: 'POST', raw: stream }),
-      sourceDirection: () => ({ set: () => undefined }),
-      sourceStream: () => ({ get: () => stream, set: () => undefined }),
+      sourceDirection: () => ({ set: () => {} }),
+      sourceStream: () => ({ get: () => stream, set: () => {} }),
     };
     const valid = await buildPresentationSafe();
     const workerService = { createWorker: vi.fn(async () => Readable.from([valid])) };
@@ -512,7 +528,12 @@ describe('DocxService.build cross-field validation', () => {
     const cls = { cacheKey: () => ({ set: vi.fn() }) };
     const workerService = { createWorker: vi.fn(async () => Readable.from([invalid])) };
     const service = new DocxService(cls as never, workerService as never);
-    const error = await service.build({ sections: [{ children: [] }] }).catch((caught: unknown) => caught);
+    let error: unknown;
+    try {
+      await service.build({ sections: [{ children: [] }] });
+    } catch (caught) {
+      error = caught;
+    }
     expect(error).toBeInstanceOf(Error);
     expect(error).toHaveProperty('message', 'docx builder produced an invalid document');
     expect((error as Error & { cause?: unknown }).cause).toBeDefined();

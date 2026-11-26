@@ -123,7 +123,7 @@ describe('buildBlock', () => {
       { type: 'columnBreak' },
     ]);
     const xml = text(parts);
-    expect(xml).toContain('TOC \\h \\o &quot;1-2&quot;');
+    expect(xml).toContain(String.raw`TOC \h \o &quot;1-2&quot;`);
     expect(xml).toContain('w:pBdr');
     expect(xml).toContain('w:type="page"');
     expect(xml).toContain('w:type="column"');
@@ -265,7 +265,7 @@ describe('buildBlock', () => {
   it('uses the default table-of-contents title when none is given', async () => {
     const parts = await pack([{ levels: 3, title: undefined as never, type: 'toc' }]);
     expect(text(parts)).toContain('w:alias w:val="Table of contents"');
-    expect(text(parts)).toContain('TOC \\h \\o &quot;1-3&quot;');
+    expect(text(parts)).toContain(String.raw`TOC \h \o &quot;1-3&quot;`);
   });
 
   it('builds all table borders and shaded, aligned, sized or empty cells', async () => {

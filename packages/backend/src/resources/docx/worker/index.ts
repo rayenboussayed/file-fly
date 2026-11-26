@@ -24,7 +24,7 @@ const buildHeaderFooter = (
   spec: DocxBuildType['sections'][number]['headers'],
   kind: 'footer' | 'header',
 ) => {
-  if (spec === undefined) return undefined;
+  if (spec === undefined) return;
   const build = (value: NonNullable<typeof spec>['default']) =>
     Array.isArray(value)
       ? value.flatMap((element) => buildBlock(element) as Paragraph[])
@@ -39,14 +39,11 @@ const buildHeaderFooter = (
 
 const data = workerData as WorkerInput;
 
-if (data.operation !== 'build') {
-  logger.error({ operation: data.operation }, 'unsupported worker operation');
-  standaloneExit(1);
-} else {
+if (data.operation === 'build') {
   const { payload } = data;
 
   const document = new Document({
-    ...(payload.metadata ?? {}),
+    ...payload.metadata,
     comments: payload.comments?.length
       ? {
           children: payload.comments.map((comment) => ({
@@ -103,19 +100,20 @@ if (data.operation !== 'build') {
     })),
   });
 
-  Packer.toBuffer(document)
-    .then((buffer) => {
-      // Refuse to emit a corrupt document: a valid container is the only acceptable output.
-      const parts = OoxmlReader.readParts(buffer);
-      if (!parts.has('word/document.xml')) {
-        throw new Error('missing word/document.xml in output');
-      }
-      // Exit only once the bytes are flushed; an early exit(0) would truncate the output.
-      process.stdout.write(buffer, () => standaloneExit(0));
-      return buffer;
-    })
-    .catch((error: unknown) => {
-      logger.error({ err: error }, 'docx build failed');
-      standaloneExit(1);
-    });
+  try {
+    const buffer = await Packer.toBuffer(document);
+    // Refuse to emit a corrupt document: a valid container is the only acceptable output.
+    const parts = OoxmlReader.readParts(buffer);
+    if (!parts.has('word/document.xml')) {
+      throw new Error('missing word/document.xml in output');
+    }
+    // Exit only once the bytes are flushed; an early exit(0) would truncate the output.
+    process.stdout.write(buffer, () => standaloneExit(0));
+  } catch (error: unknown) {
+    logger.error({ err: error }, 'docx build failed');
+    standaloneExit(1);
+  }
+} else {
+  logger.error({ operation: data.operation }, 'unsupported worker operation');
+  standaloneExit(1);
 }

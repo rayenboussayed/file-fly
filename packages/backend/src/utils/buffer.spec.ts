@@ -51,7 +51,7 @@ describe('ByteCapTransform', () => {
 
 describe('parseJsonBuffer', () => {
   it('parses a UTF-8 JSON payload with surrounding whitespace', () => {
-    expect(parseJsonBuffer(Buffer.from('  {"word":"caf\u00e9"}  '))).toEqual({ word: 'café' });
+    expect(parseJsonBuffer(Buffer.from('  {"word":"caf\u{E9}"}  '))).toEqual({ word: 'café' });
   });
 
   it('rejects malformed JSON', () => {

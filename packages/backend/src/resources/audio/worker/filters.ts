@@ -13,8 +13,10 @@ export function buildFilters(payload: AudioProcessorType): FilterAPI[] {
   if (payload.trimStart !== undefined || payload.trimEnd !== undefined) {
     const start = payload.trimStart ?? 0;
     const end = payload.trimEnd;
-    filters.push(FilterAPI.create(end === undefined ? `atrim=start=${start}` : `atrim=start=${start}:end=${end}`));
-    filters.push(FilterAPI.create('asetpts=PTS-STARTPTS'));
+    filters.push(
+      FilterAPI.create(end === undefined ? `atrim=start=${start}` : `atrim=start=${start}:end=${end}`),
+      FilterAPI.create('asetpts=PTS-STARTPTS'),
+    );
   }
 
   if (payload.channels === '1') filters.push(FilterAPI.create('pan=mono|c0=.5*c0+.5*c1'));

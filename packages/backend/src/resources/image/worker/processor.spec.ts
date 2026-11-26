@@ -17,8 +17,10 @@ const stubStdio = async (input: Buffer): Promise<() => Promise<Buffer>> => {
       callback();
     },
   });
-  Object.defineProperty(process, 'stdin', { value: Readable.from([input]), writable: true });
-  Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
+  Object.defineProperties(process, {
+    stdin: { value: Readable.from([input]), writable: true },
+    stdout: { value: stdout, writable: true },
+  });
   return async () => {
     // drain: close stdout by ending the transformer pipeline
     stdout.emit('finish');
@@ -40,8 +42,10 @@ describe('Processor', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
-    Object.defineProperty(process, 'stdout', { value: originalStdout, writable: true });
+    Object.defineProperties(process, {
+      stdin: { value: originalStdin, writable: true },
+      stdout: { value: originalStdout, writable: true },
+    });
     vi.unstubAllEnvs();
   });
 
@@ -50,7 +54,7 @@ describe('Processor', () => {
     const drain = await stubStdio(input);
     await new Processor().process(payload({}));
     const out = await drain();
-    expect(out.subarray(0, 4).toString('latin1')).toContain('\x89PNG');
+    expect(out.subarray(0, 4).toString('latin1')).toContain('\u{89}PNG');
   });
 
   it('applies the full flag matrix without failing', async () => {
@@ -78,7 +82,7 @@ describe('Processor', () => {
       }),
     );
     const out = await drain();
-    expect(out.subarray(0, 4).toString('latin1')).toContain('\x89PNG');
+    expect(out.subarray(0, 4).toString('latin1')).toContain('\u{89}PNG');
   });
 
   it('encodes jpeg and webp outputs', async () => {

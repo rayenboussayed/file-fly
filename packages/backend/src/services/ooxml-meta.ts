@@ -55,10 +55,7 @@ const parsePart = (raw: string | undefined): Record<string, unknown> | undefined
   if (raw === undefined) return undefined;
   try {
     const parsed: unknown = xml.parse(raw);
-    if (parsed && typeof parsed === 'object') {
-      return parsed as Record<string, unknown>;
-    }
-    return undefined;
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : undefined;
   } catch {
     return undefined;
   }

@@ -10,11 +10,13 @@ describe('PdfBuildSchema', () => {
   it('applies defaults for size, orientation and margin', () => {
     const result = parse(base);
     expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.pages[0]?.size).toBe('a4');
-      expect(result.data.pages[0]?.orientation).toBe('portrait');
-      expect(result.data.pages[0]?.margin).toEqual({ bottom: 72, left: 72, right: 72, top: 72 });
+    if (!result.success) {
+      return;
     }
+
+    expect(result.data.pages[0]?.size).toBe('a4');
+    expect(result.data.pages[0]?.orientation).toBe('portrait');
+    expect(result.data.pages[0]?.margin).toEqual({ bottom: 72, left: 72, right: 72, top: 72 });
   });
 
   it('rejects align center without w', () => {

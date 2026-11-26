@@ -66,11 +66,12 @@ vi.mock('node:worker_threads', () => {
       this.stdin = new Writable({ write(_c: any, _e: any, cb: any) { cb(); } });
       Worker.instances.push(this);
       const exitCode = Worker.nextExitCodes.shift() ?? 0;
-      process.nextTick(() => {
+      queueMicrotask(() => {
         if (exitCode === -1) this.emit('error', new Error('worker failed to start'));
         else this.emit('exit', exitCode);
       });
     }
+
     terminate() {
       return Promise.resolve();
     }
@@ -94,7 +95,7 @@ describe('WorkerService', () => {
       fs.rm(binPath(['cache-key', './m.js', NULL_TAG]), { force: true }),
       fs.rm(binPath(['cache-key', './other.js', NULL_TAG]), { force: true }),
       fs.rm(binPath(['fail-key', './fail.js', NULL_TAG]), { force: true }),
-    ]).then(() => undefined);
+    ]).then(() => {});
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
     (Worker as unknown as { nextStderrChunks: Buffer[] }).nextStderrChunks.length = 0;
@@ -103,7 +104,7 @@ describe('WorkerService', () => {
   it('serves cached worker output without re-running the worker, and misses unknown keys', async () => {
     const makeCls = (cacheKey: string, source: Readable | undefined) => ({
       cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
     } as never);
@@ -133,9 +134,9 @@ describe('WorkerService', () => {
   it('does not deadlock on a failing worker, and caches nothing', async () => {
     const cls = {
       cacheKey: () => ({ get: () => 'fail-key', set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
-      sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      sourceStream: () => ({ get: () => {}, set: (v: unknown) => v }),
     } as never;
 
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.push(1);
@@ -146,7 +147,7 @@ describe('WorkerService', () => {
     // (The mid-stream backpressure deadlock that shaped the implementation is
     // covered by the video trim e2e test, which uses a multi-MB fixture.)
     const outcome = await new Promise<string>((resolve) => {
-      output.on('data', () => undefined);
+      output.on('data', () => {});
       output.once('end', () => resolve('end'));
       output.once('error', () => resolve('error'));
     });
@@ -158,7 +159,7 @@ describe('WorkerService', () => {
 });
 describe('WorkerService coverage branches', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => {});
      
     await fs.mkdir(CACHE_DIR, { recursive: true });
   });
@@ -166,35 +167,35 @@ describe('WorkerService coverage branches', () => {
   it('returns a worker without cache key, branch handling, and file branches', async () => {
     const source = new Readable({ read() { this.push(null); } });
     const cls = {
-      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheKey: () => ({ get: () => {}, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
     } as never;
     const service = new WorkerService(cls);
     const result = await service.createWorker('./m.js', { workerData: { a: 1 } });
     expect(result).toBeTruthy();
-    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => {});
     // trigger a cache hit using a real entry with deterministic path
     const cachePath = binPath(['base-key', './m.js', NULL_TAG]);
  
     await fs.writeFile(cachePath, 'cached');
     const cls2 = {
       cacheKey: () => ({ get: () => 'base-key', set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => new Readable({ read() { this.push(null); } }), set: (v: unknown) => v }),
     } as never;
     const service2 = new WorkerService(cls2);
     const cached = await service2.createWorker('./m.js');
     cached.destroy();
-    await fs.rm(cachePath, { force:true }).catch(()=>undefined);
-  }, 15000);
+    await fs.rm(cachePath, { force:true }).catch(()=> {});
+  }, 15_000);
 });
 
 describe('WorkerService cache hits and worker errors', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['hit-key', './hit.js', NULL_TAG]), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['hit-key', './hit.js', NULL_TAG]), { force: true }).catch(() => {});
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
   });
@@ -202,7 +203,7 @@ describe('WorkerService cache hits and worker errors', () => {
   const makeCls = (cacheKey: string | undefined, outcome = { hit: 0 }) => ({
     cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
     cacheOutcome: () => ({
-      get: () => undefined,
+      get: () => {},
       set: (v: unknown) => {
         if (v === 'hit') outcome.hit += 1;
       },
@@ -251,8 +252,8 @@ describe('WorkerService cache hits and worker errors', () => {
 
 describe('WorkerService onError and stderr cap branches', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true }).catch(() => undefined);
-    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true, recursive: true }).catch(() => undefined);
+    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true }).catch(() => {});
+    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true, recursive: true }).catch(() => {});
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
   });
@@ -263,7 +264,7 @@ describe('WorkerService onError and stderr cap branches', () => {
     await fs.mkdir(binPath(['onerror-key', './onerror.js', NULL_TAG]), { recursive: true });
     const cls = {
       cacheKey: () => ({ get: () => 'onerror-key', set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({
         get: () => new Readable({ read() { this.push(null); } }),
@@ -290,10 +291,10 @@ describe('WorkerService onError and stderr cap branches', () => {
     );
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.push(1);
     const cls = {
-      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheKey: () => ({ get: () => {}, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
-      sourceStream: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      sourceStream: () => ({ get: () => {}, set: (v: unknown) => v }),
     } as never;
     const service = new WorkerService(cls);
     const output = await service.createWorker('./fail.js');
@@ -316,8 +317,8 @@ describe('WorkerService debug-branch assertions', () => {
   beforeEach(async () => {
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
-    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true, recursive: true }).catch(() => undefined);
-    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true }).catch(() => undefined);
+    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true, recursive: true }).catch(() => {});
+    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true }).catch(() => {});
   });
 
   it('logs cache-write failures via the onError debug branch', async () => {
@@ -326,7 +327,7 @@ describe('WorkerService debug-branch assertions', () => {
 
     const cls = {
       cacheKey: () => ({ get: () => 'spy-key', set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({
         get: () => new Readable({ read() { this.push(null); } }),
@@ -336,7 +337,7 @@ describe('WorkerService debug-branch assertions', () => {
 
     const service = new WorkerService(cls);
     const logger = (service as unknown as { logger: { debug: (msg: string) => void } }).logger;
-    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => undefined);
+    const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
 
     const output = await service.createWorker('./spy.js');
     const text = await new Promise<string>((resolve, reject) => {
@@ -368,8 +369,8 @@ describe('WorkerService debug-branch assertions', () => {
     }
     const source = Readable.from(broken());
     const cls = {
-      cacheKey: () => ({ get: () => undefined, set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => undefined, set: (v: unknown) => v }),
+      cacheKey: () => ({ get: () => {}, set: (v: unknown) => v }),
+      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
     } as never;

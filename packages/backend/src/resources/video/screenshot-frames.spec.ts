@@ -12,7 +12,7 @@ describe('parseFrames', () => {
   });
 
   it('filters out-of-range and non-finite values', () => {
-    expect(parseFrames('0,1.5,86400,999999')).toEqual([0, 1.5, 86400]);
+    expect(parseFrames('0,1.5,86400,999999')).toEqual([0, 1.5, 86_400]);
   });
 
   it('returns empty for garbage', () => {

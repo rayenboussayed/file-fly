@@ -10,10 +10,10 @@ function diagonalGradient(): Uint8Array {
   const width = 64;
   const height = 64;
   const data = new Uint8Array(width * height * 3);
-  let seed = 0x12345678;
+  let seed = 0x12_34_56_78;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      seed = (seed * 1_103_515_245 + 12_345) & 0x7f_ff_ff_ff;
       const base = (x * 4 + y * 2) % 256;
       const value = x === y ? 255 - base : (base + (seed % 64)) % 256;
       const i = (y * width + x) * 3;

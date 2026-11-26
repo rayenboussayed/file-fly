@@ -15,11 +15,8 @@ vi.mock('xlsx', async () => {
   const actual = await vi.importActual<typeof import('xlsx')>('xlsx');
   const read = (buffer: Buffer, options: unknown) => {
     if (gate.readThrows !== undefined) throw gate.readThrows;
-    if (gate.pathological) {
-      // A workbook whose SheetNames list a sheet the Sheets map lacks.
-      return { SheetNames: ['Ghost'], Sheets: {} };
-    }
-    return actual.read(buffer, options as never);
+    // A workbook whose SheetNames list a sheet the Sheets map lacks.
+    return gate.pathological ? { SheetNames: ['Ghost'], Sheets: {} } : actual.read(buffer, options as never);
   };
   const write = (...args: Parameters<typeof actual.write>) => {
     if (gate.writeThrows) throw new Error('encoder exploded');
@@ -52,8 +49,8 @@ const makeService = (body: Buffer, contentType = 'application/vnd.openxmlformats
   const stream = Readable.from([body]);
   const cls = {
     request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
-    sourceDirection: () => ({ set: () => undefined }),
-    sourceStream: () => ({ get: () => stream, set: () => undefined }),
+    sourceDirection: () => ({ set: () => {} }),
+    sourceStream: () => ({ get: () => stream, set: () => {} }),
   };
   return new XlsxService(cls as never);
 };

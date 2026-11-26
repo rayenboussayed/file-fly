@@ -138,11 +138,11 @@ export const buildPdfDocument = async (body: PdfBuildType): Promise<Uint8Array> 
   const ctx = await embedFonts(pdfDoc, body, segments);
   const images = await embedImages(pdfDoc, segments);
 
-  pagePairs.forEach(([segment, page], index) => {
+  for (const [index, [segment, page]] of pagePairs.entries()) {
     for (const element of segment.elements) {
       drawElement(pdfDoc, page, element, ctx, images, numPages, index + 1);
     }
-  });
+  }
 
   applyMetadata(pdfDoc, body);
 

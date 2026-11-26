@@ -3,8 +3,8 @@ import { AVSEEK_FLAG_BACKWARD } from 'node-av/constants';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pipeline as streamPipeline } from 'node:stream/promises';
 import { workerData } from 'node:worker_threads';
-import { pipeline as streamPipeline } from 'stream/promises';
 
 import { CACHE_DIR } from '@/constants/fs.js';
 
@@ -68,6 +68,11 @@ export async function screenshot(frames: number[]) {
     process.stdout.write(writeTerminator(boundary));
   } finally {
     process.stdout.end();
-    await fs.promises.rm(tmp, { force: true }).catch(() => undefined);
+    try {
+      await fs.promises.rm(tmp, { force: true });
+    } catch {
+      // best-effort cleanup
+      void 0;
+    }
   }
 }
