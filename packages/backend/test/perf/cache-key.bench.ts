@@ -21,7 +21,9 @@ const UPLOAD_PAYLOAD = {
   query: { bitrate: '192k', source: 'https://fixtures.local/audio-0.mp3', trim: '5' },
 };
 
-/** Payload for a `source=` download, where content length is unknown at key time. */
+/**
+Payload for a `source=` download, where content length is unknown at key time.
+ */
 const DOWNLOAD_PAYLOAD = {
   contentLength: 0,
   fileHash: '',

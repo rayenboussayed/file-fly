@@ -5,7 +5,9 @@ import { guardSignature } from '@/utils/signature-guard.js';
 
 import { FileTypeService } from '../../services/file-type.service.js';
 
-/** Rejects /image requests whose probed signature is not an image mime (runs after the signature scan). */
+/**
+Rejects /image requests whose probed signature is not an image mime (runs after the signature scan).
+ */
 @Injectable()
 export class ImageSignatureInterceptor implements NestInterceptor {
   constructor(

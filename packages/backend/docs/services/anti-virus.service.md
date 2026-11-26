@@ -57,7 +57,7 @@ is ever reported as safe — infected payloads, inconclusive daemon replies,
 oversized bodies and scanner errors all throw.
 
 **Kind**: global variable  
-src: packages/backend/src/services/anti-virus.service.ts:90  
+src: packages/backend/src/services/anti-virus.service.ts:102  
 dist: packages/backend/dist/services/anti-virus.service.js:40
 
 * [AntiVirusService](#AntiVirusService)
@@ -72,7 +72,7 @@ can flip the environment between assertions.
 
 **Kind**: instance method of [<code>AntiVirusService</code>](#AntiVirusService)  
 **Returns**: <code>boolean</code> - True when both `CLAMAV_HOST` and `CLAMAV_PORT` are set.  
-src: packages/backend/src/services/anti-virus.service.ts:104  
+src: packages/backend/src/services/anti-virus.service.ts:116  
 dist: packages/backend/dist/services/anti-virus.service.js:46
 <a name="AntiVirusService+scan"></a>
 
@@ -100,7 +100,7 @@ replayed body is handed downstream.
 | options | <code>{ stream: Readable; }</code> | Object carrying the request source stream to scan. |
 | options.stream |  | The source stream (upload `request.raw` or the download body); replaced in CLS on success. |
 
-src: packages/backend/src/services/anti-virus.service.ts:124  
+src: packages/backend/src/services/anti-virus.service.ts:136  
 dist: packages/backend/dist/services/anti-virus.service.js:49
 <a name="loadClamAv"></a>
 
@@ -113,5 +113,5 @@ dropped from the memoization cache, so the next call retries from scratch.
 
 **Kind**: global constant  
 **Returns**: The initialized ClamAV client.  
-src: packages/backend/src/services/anti-virus.service.ts:45  
+src: packages/backend/src/services/anti-virus.service.ts:57  
 dist: packages/backend/dist/services/anti-virus.service.js:18

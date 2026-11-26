@@ -46,8 +46,8 @@ vi.mock('tesseract.js', () => ({
   OEM: { LSTM_ONLY: 1 },
 }));
 
-const importService = async (env: Record<string, string>) => {
-  for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
+const importService = async (environment: Record<string, string>) => {
+  for (const [key, value] of Object.entries(environment)) vi.stubEnv(key, value);
   vi.resetModules();
   return import('./tesseract.service.js');
 };
@@ -82,8 +82,8 @@ describe('TesseractService edge cases', () => {
     await flush();
     expect(createWorker).toHaveBeenCalledTimes(1);
     // The invalid codes are dropped from the preload list entirely.
-    const args = vi.mocked(createWorker).mock.calls[0]?.[0];
-    expect(args).toEqual(['eng', 'fra']);
+    const arguments_ = vi.mocked(createWorker).mock.calls[0]?.[0];
+    expect(arguments_).toEqual(['eng', 'fra']);
     await service.onModuleDestroy();
   });
 
@@ -156,7 +156,7 @@ describe('TesseractService line coverage', () => {
     const { createWorker } = await import('tesseract.js');
     vi.mocked(createWorker).mockImplementationOnce(async () => ({
       recognize: vi.fn(async () => ({
-        data: { blocks: [{ paragraphs: null }, {}], confidence: 90, text: 'x\n' },
+        data: { blocks: [{ paragraphs: undefined }, {}], confidence: 90, text: 'x\n' },
       })) as never,
       reinitialize: vi.fn(async () => {}),
       terminate: vi.fn(async () => {}),

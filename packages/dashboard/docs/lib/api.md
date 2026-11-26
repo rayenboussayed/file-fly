@@ -42,7 +42,7 @@ becomes the same generic error, since it may contain client IPs.</p>
 Error carrying the HTTP status returned by the backend.
 
 **Kind**: global class  
-src: packages/dashboard/src/lib/api.ts:77  
+src: packages/dashboard/src/lib/api.ts:85  
 
 * [ApiError](#ApiError)
     * [new ApiError(status)](#new_ApiError_new)
@@ -64,14 +64,14 @@ Creates an ApiError.
 HTTP status code returned by the server.
 
 **Kind**: instance property of [<code>ApiError</code>](#ApiError)  
-src: packages/dashboard/src/lib/api.ts:79  
+src: packages/dashboard/src/lib/api.ts:89  
 <a name="MetricsContractError"></a>
 
 ## MetricsContractError
 Error thrown when a successful response does not match the metrics contract.
 
 **Kind**: global class  
-src: packages/dashboard/src/lib/api.ts:93  
+src: packages/dashboard/src/lib/api.ts:105  
 <a name="new_MetricsContractError_new"></a>
 
 ### new MetricsContractError()
@@ -92,7 +92,7 @@ Reads the session token, when one was stored for this tab.
 
 **Kind**: global function  
 **Returns**: <code>string</code> - The stored token, or undefined.  
-src: packages/dashboard/src/lib/api.ts:108  
+src: packages/dashboard/src/lib/api.ts:122  
 <a name="setMetricsToken"></a>
 
 ## setMetricsToken(token)
@@ -104,7 +104,7 @@ Stores or clears the session token.
 | --- | --- | --- |
 | token | <code>string</code> | Token to store, or undefined/empty to clear it. |
 
-src: packages/dashboard/src/lib/api.ts:116  
+src: packages/dashboard/src/lib/api.ts:130  
 <a name="fetchMetrics"></a>
 
 ## fetchMetrics() ⇒ <code>Promise&lt;{ generatedAt: string; inFlight: number; last24h: { bucket: string; bytesIn: number; bytesOut: number; errors: number; requests: number; }[]; metricsDisabled: boolean; perIp: { [x: string]: unknown; bytesIn: number; bytesOut: number; filesIn: number; filesOut: number; ip: string; requests: number; }[]; perRoute: { [x: string]: unknown; avgMs: number; bytesOut: number; errors: number; p50: number; p95: number; p99: number; requests: number; route: string; }[]; today: { avgMs: number; bytesIn: number; bytesOut: number; cacheHitRate: number; cacheHits: number; cacheMisses: number; clientErrors: number; filesIn: number; filesOut: number; requests: number; scanBlocked: number; scanClean: number; scanInfected: number; serverErrors: number; }; totals: { avgMs: number; bytesIn: number; bytesOut: number; cacheHitRate: number; cacheHits: number; cacheMisses: number; clientErrors: number; filesIn: number; filesOut: number; requests: number; scanBlocked: number; scanClean: number; scanInfected: number; serverErrors: number; }; uptimeSeconds: number; }&gt;</code>
@@ -122,4 +122,4 @@ becomes the same generic error, since it may contain client IPs.
 - ApiError When the backend answers with a non-2xx status.
 - MetricsContractError When the payload does not match the documented contract.
 
-src: packages/dashboard/src/lib/api.ts:146  
+src: packages/dashboard/src/lib/api.ts:160  

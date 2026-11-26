@@ -61,6 +61,8 @@ const buildPresentationSafe = async (): Promise<Buffer> => {
   return Packer.toBuffer(new Document({ sections: [{ children: [] }] }));
 };
 
+const paragraph = (text: string) => ({ runs: [{ text }], type: 'paragraph' as const });
+
 describe('DocxService.build', () => {
   it('sets the cache key and spawns the worker', async () => {
     const setCacheKey = vi.fn();
@@ -200,8 +202,8 @@ describe('DocxService.build', () => {
           },
         ],
       });
-    } catch (caught) {
-      error = caught;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toBeInstanceOf(BadRequestException);
     expect(setCacheKey).not.toHaveBeenCalled();
@@ -284,7 +286,7 @@ describe('DocxService.extract', () => {
   it('extracts text, headings, lists, tables, links and images', async () => {
     const rels =
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-      '<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>' +
+      '<Relationship Id="rId7" Type="https://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>' +
       '</Relationships>';
     const withRels = Buffer.from(
       zipSync({
@@ -335,9 +337,9 @@ describe('DocxService.extract', () => {
     expect(result.structure.images.alts).toEqual([]);
   });
 
-  it('tolerates a null paragraph node in document.xml', async () => {
+  it('tolerates an empty paragraph node in document.xml', async () => {
     const parse = vi.spyOn(xml, 'parse');
-    parse.mockReturnValueOnce({ document: { body: { p: [null, { r: { t: 'ok' } }] } } } as never);
+    parse.mockReturnValueOnce({ document: { body: { p: [undefined, { r: { t: 'ok' } }] } } } as never);
     const service = makeService(buildDocx('<w:document/>')).service;
     const result = await service.extract();
     expect(result.structure.headings).toEqual([]);
@@ -368,7 +370,7 @@ describe('DocxService body and read caps', () => {
       cacheKey: () => ({ set: vi.fn() }),
       request: () => ({ headers: { 'content-type': DOCX_MIME } }),
       sourceDirection: () => ({ set: () => {} }),
-      sourceStream: () => ({ get: () => null, set: () => {} }),
+      sourceStream: () => ({ get: () => {}, set: () => {} }),
     };
     const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
     await expect(service.extract()).rejects.toMatchObject({ response: { code: 'DOCX_NO_SOURCE' } });
@@ -391,8 +393,8 @@ describe('DocxService body and read caps', () => {
     let error: unknown;
     try {
       await service.metadata();
-    } catch (caught) {
-      error = caught;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toBeInstanceOf(PayloadTooLargeException);
     expect(error).toHaveProperty('message', 'package exceeds the total uncompressed size cap');
@@ -406,8 +408,8 @@ describe('DocxService body and read caps', () => {
     let error: unknown;
     try {
       await service.metadata();
-    } catch (caught) {
-      error = caught;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toBeInstanceOf(BadRequestException);
     expect(error).toHaveProperty('response', {
@@ -418,8 +420,6 @@ describe('DocxService body and read caps', () => {
 });
 
 describe('DocxService.build cross-field validation', () => {
-  const paragraph = (text: string) => ({ runs: [{ text }], type: 'paragraph' as const });
-
   it('rejects duplicate endnote ids', async () => {
     const cls = { cacheKey: () => ({ set: vi.fn() }) };
     const service = new DocxService(cls as never, { createWorker: vi.fn() } as never);
@@ -466,8 +466,8 @@ describe('DocxService.build cross-field validation', () => {
           { children: [{ runs: Array.from({ length: 50_001 }, () => ({ text: '' })), type: 'paragraph' }] },
         ],
       });
-    } catch (caught) {
-      error = caught;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toBeInstanceOf(PayloadTooLargeException);
     expect(error).toHaveProperty('message', 'document exceeds the element cap');
@@ -514,8 +514,8 @@ describe('DocxService.build cross-field validation', () => {
     const service = new DocxService(cls as never, workerService as never);
     const malformed = [
       { rows: undefined as never, type: 'table' as const },
-      { rows: [null as never], type: 'table' as const },
-      { rows: [[null as never]], type: 'table' as const },
+      { rows: [undefined as never], type: 'table' as const },
+      { rows: [[undefined as never]], type: 'table' as const },
     ];
     for (const table of malformed) {
       await expect(service.build({ sections: [{ children: [table] }] })).resolves.toEqual(valid);
@@ -531,8 +531,8 @@ describe('DocxService.build cross-field validation', () => {
     let error: unknown;
     try {
       await service.build({ sections: [{ children: [] }] });
-    } catch (caught) {
-      error = caught;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toBeInstanceOf(Error);
     expect(error).toHaveProperty('message', 'docx builder produced an invalid document');

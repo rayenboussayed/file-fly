@@ -3,7 +3,9 @@ import { bench, describe } from 'vitest';
 
 import { drainStream } from '@/utils/drain.js';
 
-/** Bytes dropped per iteration (4 MiB of discarded media). */
+/**
+Bytes dropped per iteration (4 MiB of discarded media).
+ */
 const PAYLOAD_BYTES = 4 * 1024 * 1024;
 
 describe('drainStream', () => {

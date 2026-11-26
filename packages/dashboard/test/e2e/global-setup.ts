@@ -21,8 +21,24 @@ const FIXTURE_JPEG = Buffer.from(
   'base64',
 );
 
-/** How long to wait for the booted backend to answer `/health` before giving up. */
+/**
+How long to wait for the booted backend to answer `/health` before giving up.
+ */
 const BOOT_TIMEOUT_MS = 45_000;
+
+const upload = (forwardedFor: string) =>
+  fetch(`${BASE_URL}/image?format=webp&quality=50`, {
+    body: FIXTURE_JPEG,
+    headers: { 'content-type': 'image/jpeg', 'x-forwarded-for': forwardedFor },
+    method: 'POST',
+  });
+
+const scan = (forwardedFor: string) =>
+  fetch(`${BASE_URL}/virus-scan`, {
+    body: FIXTURE_JPEG,
+    headers: { 'content-type': 'image/jpeg', 'x-forwarded-for': forwardedFor },
+    method: 'POST',
+  });
 
 /**
  * Boots the built backend (serving the real dashboard build) with a throwaway
@@ -32,35 +48,39 @@ const BOOT_TIMEOUT_MS = 45_000;
  */
 export default async function globalSetup(): Promise<() => Promise<void>> {
   const clamd = await startFakeClamd(CLAMAV_PORT);
-  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'file-fly-dashboard-e2e-'));
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'file-fly-dashboard-e2e-'));
   const stdout: Buffer[] = [];
   const stderr: Buffer[] = [];
   const backend = spawn(process.execPath, [BACKEND_MAIN], {
     env: {
       ...process.env,
-      CACHE_DIR: path.join(tmp, 'cache'),
+      CACHE_DIR: path.join(temporary, 'cache'),
       CLAMAV_HOST: '127.0.0.1',
       CLAMAV_PORT: String(CLAMAV_PORT),
       DASHBOARD_DIR: DASHBOARD_DIST,
       EGRESS_ALLOWLIST: '127.0.0.1',
       LOG_LEVEL: 'warn',
-      METRICS_DIR: path.join(tmp, 'metrics'),
+      METRICS_DIR: path.join(temporary, 'metrics'),
       METRICS_FLUSH_INTERVAL_MS: '50',
       NODE_ENV: 'development',
       PORT: String(PORT),
-      TESSERACT_DIR: path.join(tmp, 'tesseract'),
+      TESSERACT_DIR: path.join(temporary, 'tesseract'),
       TRUST_PROXY: 'true',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  backend.stdout.on('data', (chunk: Buffer) => stdout.push(chunk));
-  backend.stderr.on('data', (chunk: Buffer) => stderr.push(chunk));
+  backend.stdout.on('data', (chunk: Buffer) => {
+    stdout.push(chunk);
+  });
+  backend.stderr.on('data', (chunk: Buffer) => {
+    stderr.push(chunk);
+  });
 
   const logs = (): string => Buffer.concat([...stdout, ...stderr]).toString('utf8');
   const teardown = async (): Promise<void> => {
     await stopBackend(backend);
     await stopFakeClamd(clamd);
-    await fs.rm(tmp, { force: true, recursive: true });
+    await fs.rm(temporary, { force: true, recursive: true });
   };
 
   try {
@@ -81,19 +101,6 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
  * screenshots of a broken boot are worse than no screenshots.
  */
 async function seedTraffic(): Promise<void> {
-  const upload = (forwardedFor: string) =>
-    fetch(`${BASE_URL}/image?format=webp&quality=50`, {
-      body: FIXTURE_JPEG,
-      headers: { 'content-type': 'image/jpeg', 'x-forwarded-for': forwardedFor },
-      method: 'POST',
-    });
-  const scan = (forwardedFor: string) =>
-    fetch(`${BASE_URL}/virus-scan`, {
-      body: FIXTURE_JPEG,
-      headers: { 'content-type': 'image/jpeg', 'x-forwarded-for': forwardedFor },
-      method: 'POST',
-    });
-
   const steps: Array<{ label: string; run: () => Promise<Response>; status: number }> = [
     { label: 'upload 203.0.113.7 (miss)', run: async () => upload('203.0.113.7'), status: 201 },
     { label: 'upload 203.0.113.7 (cache hit)', run: async () => upload('203.0.113.7'), status: 201 },

@@ -58,7 +58,9 @@ interface PrimitiveStats {
  * @param primitive - The primitive to measure.
  * @returns The vertex and triangle counts.
  */
-/** glTF primitive mode constants. */
+/**
+glTF primitive mode constants.
+ */
 const MODE_TRIANGLES = 4;
 const MODE_TRIANGLE_STRIP = 5;
 const MODE_TRIANGLE_FAN = 6;
@@ -89,7 +91,7 @@ const boundsOf = (document: Document) => {
   const root = document.getRoot();
   const min: [number, number, number] = [Infinity, Infinity, Infinity];
   const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
-  let found = false;
+  let isFound = false;
   for (const mesh of root.listMeshes()) {
     for (const primitive of mesh.listPrimitives()) {
       const positions = primitive.getAttribute('POSITION');
@@ -98,7 +100,7 @@ const boundsOf = (document: Document) => {
       const normalized = positions.getNormalized();
       const minTarget = normalized ? positions.getMinNormalized([0, 0, 0]) : positions.getMin([0, 0, 0]);
       const maxTarget = normalized ? positions.getMaxNormalized([0, 0, 0]) : positions.getMax([0, 0, 0]);
-      found = true;
+      isFound = true;
       // glTF POSITION accessors are VEC3; getMin/getMax return a 3-element target here.
       const [minX, minY, minZ] = minTarget as [number, number, number];
       const [maxX, maxY, maxZ] = maxTarget as [number, number, number];
@@ -110,7 +112,7 @@ const boundsOf = (document: Document) => {
       max[2] = Math.max(max[2], maxZ);
     }
   }
-  return found ? { max, min } : undefined;
+  return isFound ? { max, min } : undefined;
 };
 
 /**
@@ -170,7 +172,7 @@ const extractOf = (document: Document) => {
     }
     return {
       name: current.getName() || 'unnamed',
-      ...(current.getMesh() ? { mesh: current.getMesh()?.getName() } : {}),
+      ...(current.getMesh() && { mesh: current.getMesh()?.getName() }),
       rotation: current.getRotation(),
       scale: current.getScale(),
       translation: current.getTranslation(),
@@ -238,7 +240,9 @@ const extractOf = (document: Document) => {
   };
 };
 
-/** Model feature service: glTF/GLB inspection, extraction, optimization (DRACO/Meshopt) and conversion. */
+/**
+Model feature service: glTF/GLB inspection, extraction, optimization (DRACO/Meshopt) and conversion.
+ */
 @Injectable()
 export class ModelService {
   constructor(

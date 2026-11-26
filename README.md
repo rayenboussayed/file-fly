@@ -343,14 +343,12 @@ Unit specs match `**/*.spec.ts` (dashboard: `**/*.spec.tsx`); e2e specs match `*
 
 ## Linting
 
-The root flat config delegates to the pinned `@stackrb/eslint-config@0.1.0`, targeting
-`node` and `react`. Playwright rules are scoped to `packages/dashboard/test/e2e`, so
-Vitest specs are checked with Vitest rules only. On top of the shared config, the repo
-applies `eslint-plugin-unicorn`'s `unopinionated` preset to all code files, keeping
-correctness rules and dropping style-only rules that predate this repo. The dashboard
-keeps two scoped exceptions: `n/no-unsupported-features/node-builtins` is off (browser
-APIs are allowed), and `unicorn/filename-case` accepts both kebab-case and PascalCase
-component filenames.
+The root flat config uses the pinned `@stackrb/eslint-config@0.1.0` with targets `node`
+and `react` and `nodeVersion` set to `>=24.0.0`. The package applies Playwright rules to
+all test files; the config scopes that partial to `packages/dashboard/test/e2e` so
+Vitest specs keep their own Vitest rules, with no Playwright rule disabled. The package's
+browser target is applied to dashboard code for browser globals and Node feature checks.
+The only hand-written rule-offs are two narrow file-scoped exceptions for values that cannot change without breaking a contract: `unicorn/no-null` on the Fastify callback, XLSX wire, clamd verdict and worker cache-key tag files, and `security/detect-non-literal-fs-filename` on the code generator CLI.
 
 Generated docs, test results, and the generated router file
 (`packages/dashboard/src/routeTree.gen.ts`) stay ignored, alongside the package defaults

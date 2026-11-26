@@ -15,7 +15,7 @@
 Boots the Nest application: OpenTelemetry first (when configured), then pino logging, metrics shutdown hooks, CORS/security headers in production, Swagger, and the listener.
 
 **Kind**: global function  
-src: packages/backend/src/main.ts:37  
+src: packages/backend/src/main.ts:39  
 dist: packages/backend/dist/main.js:21
 <a name="swagger"></a>
 
@@ -28,5 +28,5 @@ Mounts Swagger/OpenAPI docs at `/api` with a zod-to-OpenAPI schema converter.
 | --- | --- | --- |
 | app | <code>NestFastifyApplication&lt;import(&quot;fastify&quot;).RawServerDefault&gt;</code> | The Nest application instance. |
 
-src: packages/backend/src/main.ts:76  
+src: packages/backend/src/main.ts:78  
 dist: packages/backend/dist/main.js:38

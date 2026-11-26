@@ -64,18 +64,28 @@ export const metricsSnapshotSchema = z.object({
   uptimeSeconds: z.number(),
 });
 
-/** Counters for one client IP over the retained window. */
+/**
+Counters for one client IP over the retained window.
+ */
 export type MetricsPerIp = z.infer<typeof metricsPerIpSchema>;
 
-/** Latency and volume statistics for one route template. */
+/**
+Latency and volume statistics for one route template.
+ */
 export type MetricsRouteStat = z.infer<typeof metricsRouteStatSchema>;
 
-/** Everything the dashboard renders. */
+/**
+Everything the dashboard renders.
+ */
 export type MetricsSnapshot = z.infer<typeof metricsSnapshotSchema>;
 
-/** Error carrying the HTTP status returned by the backend. */
+/**
+Error carrying the HTTP status returned by the backend.
+ */
 export class ApiError extends Error {
-  /** HTTP status code returned by the server. */
+  /**
+  HTTP status code returned by the server.
+   */
   readonly status: number;
 
   /**
@@ -89,9 +99,13 @@ export class ApiError extends Error {
   }
 }
 
-/** Error thrown when a successful response does not match the metrics contract. */
+/**
+Error thrown when a successful response does not match the metrics contract.
+ */
 export class MetricsContractError extends Error {
-  /** Creates a contract error with a fixed message that never echoes the payload. */
+  /**
+  Creates a contract error with a fixed message that never echoes the payload.
+   */
   constructor() {
     super('GET /metrics returned an unexpected payload');
     this.name = 'MetricsContractError';

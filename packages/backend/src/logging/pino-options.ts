@@ -10,9 +10,13 @@ import { HEADER_X_AUTH_PASSWORD, HEADER_X_AUTH_USERNAME } from '@/constants/head
  * `level` wins over the environment defaults when set.
  */
 export interface PinoEnvironment {
-  /** Whether the app runs in production mode. Drives the default level only. */
+  /**
+  Whether the app runs in production mode. Drives the default level only.
+   */
   isProduction: boolean;
-  /** Explicit pino level (e.g. from `LOG_LEVEL`); unset means `info`/`debug`. */
+  /**
+  Explicit pino level (e.g. from `LOG_LEVEL`); unset means `info`/`debug`.
+   */
   level?: string;
 }
 
@@ -30,7 +34,9 @@ export function stripQuery(url: string | undefined): string | undefined {
   return index === -1 ? url : url.slice(0, index);
 }
 
-/** Paths censored from any nested request/response object pino sees. */
+/**
+Paths censored from any nested request/response object pino sees.
+ */
 export const redactPaths = [
   'req.headers.authorization',
   'req.headers.cookie',
@@ -76,9 +82,7 @@ export function buildPinoHttpOptions(
   const { isProduction } = environment;
   return {
     ...buildPinoOptions(environment),
-    ...(isProduction
-      ? {}
-      : { transport: { options: { singleLine: true } satisfies PrettyOptions, target: 'pino-pretty' } }),
+    ...(!isProduction && { transport: { options: { singleLine: true } satisfies PrettyOptions, target: 'pino-pretty' } }),
     serializers: { req: serializeRequest, res: serializeResponse },
   };
 }

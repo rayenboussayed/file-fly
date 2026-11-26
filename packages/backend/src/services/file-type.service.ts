@@ -5,7 +5,9 @@ import { Readable } from 'node:stream';
 
 import { NormalizedClsService } from './normalized-cls.service.js';
 
-/** File-type sniffing helpers shared by the signature gates. */
+/**
+File-type sniffing helpers shared by the signature gates.
+ */
 @Injectable()
 export class FileTypeService {
   constructor(private readonly normalizedCls: NormalizedClsService) {}
@@ -30,13 +32,11 @@ export class FileTypeService {
    * @returns True for docx, pptx and pdf mimes.
    */
   isDocument(mime: string) {
-    return (
-      mime ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      mime ===
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-      mime === 'application/pdf'
-    );
+    return [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ].includes(mime);
   }
 
   isImage(mime: string) {
@@ -60,7 +60,7 @@ export class FileTypeService {
   }
 
   async signature(options: { stream: Readable }) {
-    let detected = false;
+    let isDetected = false;
     // `Readable.toWeb` propagates the web cancel done by `fileTypeFromStream`
     // as a destroy of the Node stream, tearing the probe branch out of the
     // request's tee and stalling the upload. Use a non-destructive wrapper.
@@ -74,9 +74,9 @@ export class FileTypeService {
         throw new ForbiddenException('File signature could not be determined');
 
       this.normalizedCls.fileSignature().set(signature);
-      detected = true;
+      isDetected = true;
     } finally {
-      if (!detected) {
+      if (!isDetected) {
         // Rejected before the request is routed: stop consuming the upload.
         options.stream.destroy();
       }
@@ -99,10 +99,9 @@ export class FileTypeService {
  * @param node - The Node readable to wrap (e.g. a probe branch of a tee).
  * @returns A web ReadableStream serving the same bytes.
  */
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
 function nonDestructiveWebStream(node: Readable): ReadableStream<Uint8Array> {
   const iterator = node[Symbol.asyncIterator]();
-  let cancelled = false;
+  let isCancelled = false;
 
   /**
    * Reads the remainder of the Node stream with the same iterator, discarding
@@ -122,31 +121,30 @@ function nonDestructiveWebStream(node: Readable): ReadableStream<Uint8Array> {
     return dropped;
   };
 
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins
   return new ReadableStream<Uint8Array>({
     cancel() {
       // Keep pulling from the Node stream with the same iterator and drop
       // everything, so the probe branch of the tee is not left backed up.
-      cancelled = true;
+      isCancelled = true;
       void drainIterator().catch(() => {});
     },
     async pull(controller) {
-      if (cancelled) return;
+      if (isCancelled) return;
       try {
         const { done, value } = await iterator.next();
-        if (cancelled) return;
+        if (isCancelled) return;
         if (done) {
           controller.close();
           return;
         }
         controller.enqueue(toBuffer(value));
       } catch (error) {
-        if (!cancelled) {
+        if (!isCancelled) {
           try {
             controller.error(error);
           } catch {
             // The web stream was cancelled concurrently; forget the pump.
-            cancelled = true;
+            isCancelled = true;
           }
         }
       }

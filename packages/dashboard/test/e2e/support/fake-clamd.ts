@@ -1,11 +1,17 @@
 import { createServer, type Server, type Socket } from 'node:net';
 
-/** Maximum INSTREAM payload buffered per connection; upload fixtures are tiny, this is only a guard. */
+/**
+Maximum INSTREAM payload buffered per connection; upload fixtures are tiny, this is only a guard.
+ */
 const MAX_INSTREAM_BYTES = 64 * 1024 * 1024;
-/** Command lines longer than this are treated as garbage. */
+/**
+Command lines longer than this are treated as garbage.
+ */
 const COMMAND_BUFFER_LIMIT = 16 * 1024;
 
-/** Open sockets per server, destroyed on stopFakeClamd so teardown never hangs. */
+/**
+Open sockets per server, destroyed on stopFakeClamd so teardown never hangs.
+ */
 const serverSockets = new WeakMap<Server, Set<Socket>>();
 
 /**

@@ -20,6 +20,19 @@ function collector() {
   return { chunks, raw };
 }
 
+/**
+ * Creates a readable that destroys itself with a test error when first read.
+ * @returns A readable whose first read fails.
+ */
+const failingReadable = (): Readable => {
+  const stream = new Readable({
+    read() {
+      stream.destroy(new Error('boom'));
+    },
+  });
+  return stream;
+};
+
 describe('pipeToReply', () => {
   it('pipes the source into the raw response', async () => {
     const { chunks, raw } = collector();
@@ -34,11 +47,7 @@ describe('pipeToReply', () => {
   });
 
   it('destroys the raw response when the source errors', async () => {
-    const source = new Readable({
-      read() {
-        this.destroy(new Error('boom'));
-      },
-    });
+    const source = failingReadable();
     const { raw } = collector();
     const response = { raw } as never;
 

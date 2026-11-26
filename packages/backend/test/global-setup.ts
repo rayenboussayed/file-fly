@@ -9,9 +9,13 @@ import { startFakeClamd, stopFakeClamd } from './fake-clamd.js';
 // createRequire sidesteps the interop ambiguity the same way the repo does for CJS-only deps.
 const XLSX = createRequire(import.meta.url)('xlsx') as typeof import('xlsx');
 
-/** Where committed fixture copies and generated media land for e2e runs. */
+/**
+Where committed fixture copies and generated media land for e2e runs.
+ */
 export const FIXTURES_DIR = path.join('test', 'results', 'fixtures');
-/** Scratch cache dir e2e runs use instead of the repo cache. */
+/**
+Scratch cache dir e2e runs use instead of the repo cache.
+ */
 export const CACHE_DIR = path.join('test', 'results', 'cache');
 const FAKE_CLAMD_PORT = 33_331;
 

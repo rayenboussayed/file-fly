@@ -29,7 +29,9 @@ import {
 import { VideoSignatureInterceptor } from './video-signature.interceptor.js';
 import { VideoService } from './video.service.js';
 
-/** Video routes: processor, audio extraction, metadata, DNA, stats and screenshot (binary stream endpoints). */
+/**
+Video routes: processor, audio extraction, metadata, DNA, stats and screenshot (binary stream endpoints).
+ */
 @Controller('video')
 @UseMediaPipeline(VideoSignatureInterceptor)
 export class VideoController {
@@ -71,12 +73,12 @@ export class VideoController {
 
   @Get('dna')
   async dnaGet() {
-    return this.dna();
+    return this.videoService.dna();
   }
 
   @Post('dna')
   async dnaPost() {
-    return this.dna();
+    return this.videoService.dna();
   }
 
   async main(
@@ -108,12 +110,12 @@ export class VideoController {
 
   @Get('metadata')
   async metadataGet() {
-    return this.metadata();
+    return this.videoService.metadata();
   }
 
   @Post('metadata')
   async metadataPost() {
-    return this.metadata();
+    return this.videoService.metadata();
   }
 
   async screenshot(
@@ -147,23 +149,11 @@ export class VideoController {
 
   @Get('stats')
   async statsGet() {
-    return this.stats();
+    return this.videoService.stats();
   }
 
   @Post('stats')
   async statsPost() {
-    return this.stats();
-  }
-
-  private async dna() {
-    return this.videoService.dna();
-  }
-
-  private async metadata() {
-    return this.videoService.metadata();
-  }
-
-  private async stats() {
     return this.videoService.stats();
   }
 }

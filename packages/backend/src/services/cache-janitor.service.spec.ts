@@ -4,16 +4,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-let dir: string;
+import { compareCodeUnits } from '@/utils/sort.js';
+
+const directoryState: { value: string } = { value: '' };
 
 beforeEach(async () => {
   vi.resetModules(); // CACHE_DIR is read at module scope; each test needs a fresh module
-  dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cache-janitor-'));
+  directoryState.value = await fs.mkdtemp(path.join(os.tmpdir(), 'cache-janitor-'));
 });
 
 afterEach(async () => {
   try {
-    await fs.rm(dir, { force: true, recursive: true });
+    await fs.rm(directoryState.value, { force: true, recursive: true });
   } catch (error) {
     console.warn('test cleanup failed', error);
   }
@@ -22,11 +24,11 @@ afterEach(async () => {
 
 describe('CacheJanitorService', () => {
   it('drops entries older than the TTL and keeps fresh ones', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-        const fresh = path.join(dir, 'fresh.cache');
-        const stale = path.join(dir, 'stale.cache');
+        const fresh = path.join(directoryState.value, 'fresh.cache');
+        const stale = path.join(directoryState.value, 'stale.cache');
     await fs.writeFile(fresh, 'fresh-bytes');
     await fs.writeFile(stale, 'stale-bytes');
     const old = new Date(Date.now() - 60_000);
@@ -37,17 +39,17 @@ describe('CacheJanitorService', () => {
     await service.sweep({ maxBytes: Number.MAX_SAFE_INTEGER, ttlMs: 1000 });
     service.onModuleDestroy();
 
-    expect(await fs.readdir(dir)).toEqual(['fresh.cache']);
+    expect(await fs.readdir(directoryState.value)).toEqual(['fresh.cache']);
     expect(await fs.readFile(fresh, 'utf8')).toBe('fresh-bytes');
   });
 
   it('evicts least recently used entries when the total size exceeds the cap', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-    const a = path.join(dir, 'a.bin');
-    const b = path.join(dir, 'b.bin');
-    const c = path.join(dir, 'c.bin');
+    const a = path.join(directoryState.value, 'a.bin');
+    const b = path.join(directoryState.value, 'b.bin');
+    const c = path.join(directoryState.value, 'c.bin');
     await fs.writeFile(a, 'a'.repeat(10));
     await fs.writeFile(b, 'b'.repeat(20));
     await fs.writeFile(c, 'c'.repeat(30));
@@ -62,17 +64,17 @@ describe('CacheJanitorService', () => {
     service.onModuleDestroy();
 
     // a (oldest, 10B) and b (20B) are evicted; c (30B) keeps exactly maxBytes.
-    expect(await fs.readdir(dir)).toEqual(['c.bin']);
+    expect(await fs.readdir(directoryState.value)).toEqual(['c.bin']);
   });
 
   it('never reaps the live undici cache database', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-    const store = path.join(dir, 'undici-cache.db');
-    const wal = path.join(dir, 'undici-cache.db-wal');
-    const shm = path.join(dir, 'undici-cache.db-shm');
-    const entry = path.join(dir, 'old.cache');
+    const store = path.join(directoryState.value, 'undici-cache.db');
+    const wal = path.join(directoryState.value, 'undici-cache.db-wal');
+    const shm = path.join(directoryState.value, 'undici-cache.db-shm');
+    const entry = path.join(directoryState.value, 'old.cache');
     await fs.writeFile(store, 'sqlite');
     await fs.writeFile(wal, 'wal');
     await fs.writeFile(shm, 'shm');
@@ -88,7 +90,8 @@ describe('CacheJanitorService', () => {
     await service.sweep({ maxBytes: 0, ttlMs: 1000 });
     service.onModuleDestroy();
 
-    expect((await fs.readdir(dir)).toSorted()).toEqual([
+    const names = await fs.readdir(directoryState.value);
+    expect(names.toSorted(compareCodeUnits)).toEqual([
       'undici-cache.db',
       'undici-cache.db-shm',
       'undici-cache.db-wal',
@@ -96,11 +99,11 @@ describe('CacheJanitorService', () => {
   });
 
   it('keeps recent .tmp files and removes only expired ones', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-    const tmp = path.join(dir, 'inflight.tmp');
-    await fs.writeFile(tmp, 'in-progress');
+    const temporary = path.join(directoryState.value, 'inflight.tmp');
+    await fs.writeFile(temporary, 'in-progress');
 
     const service = new CacheJanitorService();
     await service.onModuleInit();
@@ -108,21 +111,21 @@ describe('CacheJanitorService', () => {
     service.onModuleDestroy();
 
     // Fresh tmp entries survive a sweep (in-progress writes must not be reaped underneath).
-    expect(await fs.readdir(dir)).toContain('inflight.tmp');
+    expect(await fs.readdir(directoryState.value)).toContain('inflight.tmp');
   });
 
   const isRoot = process.getuid?.() === 0;
 
   it.skipIf(isRoot)('continues the sweep when an entry cannot be removed', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-    const lockedDir = path.join(dir, 'locked');
-    await fs.mkdir(lockedDir);
-    await fs.writeFile(path.join(lockedDir, 'keep.cache'), 'keep');
+    const lockedDirectory = path.join(directoryState.value, 'locked');
+    await fs.mkdir(lockedDirectory);
+    await fs.writeFile(path.join(lockedDirectory, 'keep.cache'), 'keep');
     // Read-only directory: rm() must fail and the janitor must survive.
     // eslint-disable-next-line sonarjs/file-permissions -- intentional read-only probe for the unlink-failure path
-    await fs.chmod(lockedDir, 0o555);
+    await fs.chmod(lockedDirectory, 0o555);
 
     const service = new CacheJanitorService();
     await service.onModuleInit();
@@ -131,12 +134,12 @@ describe('CacheJanitorService', () => {
     service.onModuleDestroy();
 
     // eslint-disable-next-line sonarjs/file-permissions -- restore write permission so the temp dir can be cleaned up
-    await fs.chmod(lockedDir, 0o755);
-    expect(await fs.readdir(lockedDir)).toEqual(['keep.cache']);
+    await fs.chmod(lockedDirectory, 0o755);
+    expect(await fs.readdir(lockedDirectory)).toEqual(['keep.cache']);
   });
 
   it('ignores a concurrent sweep invocation', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
     const service = new CacheJanitorService();
@@ -144,28 +147,28 @@ describe('CacheJanitorService', () => {
     await Promise.all([service.sweep(), service.sweep(), service.sweep()]);
     service.onModuleDestroy();
     // The concurrent sweep completed without creating or corrupting anything.
-    expect(await fs.readdir(dir)).toEqual([]);
+    expect(await fs.readdir(directoryState.value)).toEqual([]);
   });
 });
 
 describe('CacheJanitorService failure paths', () => {
   it('skips entries whose stat fails (e.g. broken symlinks)', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-    await fs.writeFile(path.join(dir, 'ok.cache'), 'keep');
-    await fs.symlink(path.join(dir, 'definitely-missing-target'), path.join(dir, 'broken.cache'));
+    await fs.writeFile(path.join(directoryState.value, 'ok.cache'), 'keep');
+    await fs.symlink(path.join(directoryState.value, 'definitely-missing-target'), path.join(directoryState.value, 'broken.cache'));
 
     const service = new CacheJanitorService();
     await service.onModuleInit();
     await service.sweep();
     service.onModuleDestroy();
 
-    expect(await fs.readdir(dir)).toContain('ok.cache');
+    expect(await fs.readdir(directoryState.value)).toContain('ok.cache');
   });
 
   it('logs and continues when the initial sweep fails', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
     const service = new CacheJanitorService();
@@ -181,11 +184,11 @@ describe('CacheJanitorService failure paths', () => {
   });
 
   it('logs and continues when a scheduled sweep fails', async () => {
-    vi.stubEnv('CACHE_DIR', dir);
+    vi.stubEnv('CACHE_DIR', directoryState.value);
     vi.stubEnv('CACHE_SWEEP_INTERVAL_MS', '1');
     const { CacheJanitorService } = await import('./cache-janitor.service.js');
 
-    await fs.writeFile(path.join(dir, 'ok.cache'), 'keep');
+    await fs.writeFile(path.join(directoryState.value, 'ok.cache'), 'keep');
     const service = new CacheJanitorService();
     const realSweep = service.sweep.bind(service);
     vi.spyOn(service, 'sweep')

@@ -5,7 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const originalStdin = process.stdin;
 const originalStdout = process.stdout;
 
-let tinyJpeg: Buffer;
+/**
+ * Creates a tiny synthetic JPEG for worker stdin.
+ * @returns The encoded JPEG bytes.
+ */
+const createTinyJpeg = async (): Promise<Buffer> => sharp({
+  create: { background: { b: 30, g: 60, r: 90 }, channels: 3, height: 16, width: 24 },
+})
+  .jpeg()
+  .toBuffer();
 
 const stubStdin = (bytes: Buffer) => {
   Object.defineProperty(process, 'stdin', { value: Readable.from([bytes]), writable: true });
@@ -41,12 +49,7 @@ const importWorker = async (workerData: Record<string, unknown>) => {
 describe('image worker', () => {
   beforeEach(async () => {
     vi.stubEnv('FILE_FLY_WORKER', '0');
-    tinyJpeg = await sharp({
-      create: { background: { b: 30, g: 60, r: 90 }, channels: 3, height: 16, width: 24 },
-    })
-      .jpeg()
-      .toBuffer();
-    stubStdin(tinyJpeg);
+    stubStdin(await createTinyJpeg());
   });
 
   afterEach(() => {

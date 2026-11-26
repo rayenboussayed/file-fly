@@ -1,4 +1,3 @@
- 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import fs from 'node:fs';

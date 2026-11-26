@@ -7,6 +7,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { binaryParser, bootApp, FIXTURES_DIR } from './helpers.js';
 
+// Path built from the test-results fixture dir, never from user input.
+// eslint-disable-next-line security/detect-non-literal-fs-filename
+const readFixture = () => fs.readFileSync(path.join(FIXTURES_DIR, 'basic.xlsx'));
+
 describe('Xlsx (e2e)', () => {
   let app: NestFastifyApplication;
 
@@ -17,10 +21,6 @@ describe('Xlsx (e2e)', () => {
   afterAll(async () => {
     await app.close();
   });
-
-  // Path built from the test-results fixture dir, never from user input.
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
-  const readFixture = () => fs.readFileSync(path.join(FIXTURES_DIR, 'basic.xlsx'));
 
   it('POST /xlsx/build answers 201 with an xlsx payload', async () => {
     const response = await request(app.getHttpServer())
@@ -76,11 +76,7 @@ describe('Xlsx (e2e)', () => {
       .send({ sheets: [{ rows: [['x', 'y'], [10, 'ok']] }] })
       .set('content-type', 'application/json')
       .buffer(true)
-      .parse((res, callback) => {
-        const chunks: Buffer[] = [];
-        res.on('data', (chunk: Buffer) => chunks.push(chunk));
-        res.on('end', () => callback(null, Buffer.concat(chunks)));
-      });
+      .parse(binaryParser as never);
     expect(built.status).toBe(201);
 
     const extracted = await request(app.getHttpServer())

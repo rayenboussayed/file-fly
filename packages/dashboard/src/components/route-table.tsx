@@ -7,19 +7,21 @@ import type { MetricsRouteStat } from '../lib/api.js';
 
 import { formatBytes, formatCount, formatMs } from '../lib/format.js';
 
-/** Props for the per-route traffic table. */
-export interface RouteTableProps {
+/**
+Props for the per-route traffic table.
+ */
+export interface RouteTableProperties {
   data: MetricsRouteStat[];
   sortPlugin: TablePlugin<MetricsRouteStat>;
 }
 
 /**
  * Renders the sortable per-route traffic table.
- * @param props - Rows and sort plugin for the table.
+ * @param properties - Rows and sort plugin for the table.
  * @returns The rendered table.
  */
-export function RouteTable(props: RouteTableProps) {
-  const { data, sortPlugin } = props;
+export function RouteTable(properties: RouteTableProperties) {
+  const { data, sortPlugin } = properties;
   const columns = useMemo<TableColumn<MetricsRouteStat>[]>(
     () => [
       { header: 'Route', key: 'route', sortable: true },

@@ -28,8 +28,12 @@ const traceEndpoint =
   environment.OTEL_TRACE_EXPORTER_URL ??
   process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT;
 
-/** Whether OpenTelemetry starts on boot. Endpoint-gated, never implicit. */
-export const otelTracingEnabled = traceEndpoint !== undefined && traceEndpoint.trim().length > 0;
+/**
+Whether OpenTelemetry starts on boot. Endpoint-gated, never implicit.
+ */
+const isOtelTracingEnabled = traceEndpoint !== undefined && traceEndpoint.trim().length > 0;
+
+export { isOtelTracingEnabled as otelTracingEnabled };
 
 const SERVICE_VERSION = process.env.npm_package_version ?? '0.0.1';
 
@@ -42,7 +46,7 @@ const SERVICE_VERSION = process.env.npm_package_version ?? '0.0.1';
  * `NestFactory.create` so Fastify's plugin registration is captured; see
  * `main.ts`.
  */
-export const otelSDK = otelTracingEnabled
+export const otelSDK = isOtelTracingEnabled
   ? new NodeSDK({
       contextManager: new AsyncLocalStorageContextManager(),
       instrumentations: [
@@ -71,7 +75,7 @@ export const otelSDK = otelTracingEnabled
         ],
       }),
       traceExporter: new OTLPTraceExporter({
-        // traceEndpoint is defined here (otelTracingEnabled); the fallback is unreachable.
+        // traceEndpoint is defined here (isOtelTracingEnabled); the fallback is unreachable.
         url: traceEndpoint,
       }),
     })

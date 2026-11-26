@@ -9,7 +9,7 @@
 ## Functions
 
 <dl>
-<dt><a href="#hyperlinkUrlOk">hyperlinkUrlOk(url)</a> ⇒ <code>boolean</code></dt>
+<dt><a href="#isHyperlinkUrlOk">isHyperlinkUrlOk(url)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Whether a URL uses one of the allowed schemes (http, https, mailto).
 Generated documents opened by Word/PowerPoint will follow <code>javascript:</code> and <code>file:</code> links,
 so anything else is rejected at the boundary.</p>
@@ -22,11 +22,11 @@ so anything else is rejected at the boundary.</p>
 URL schemes allowed for hrefs written into generated documents (Word/PowerPoint open these).
 
 **Kind**: global constant  
-src: packages/backend/src/utils/hyperlinks.ts:2  
+src: packages/backend/src/utils/hyperlinks.ts:4  
 dist: packages/backend/dist/utils/hyperlinks.js:1
-<a name="hyperlinkUrlOk"></a>
+<a name="isHyperlinkUrlOk"></a>
 
-## hyperlinkUrlOk(url) ⇒ <code>boolean</code>
+## isHyperlinkUrlOk(url) ⇒ <code>boolean</code>
 Whether a URL uses one of the allowed schemes (http, https, mailto).
 Generated documents opened by Word/PowerPoint will follow `javascript:` and `file:` links,
 so anything else is rejected at the boundary.
@@ -38,5 +38,5 @@ so anything else is rejected at the boundary.
 | --- | --- | --- |
 | url | <code>string</code> | The absolute URL to check. |
 
-src: packages/backend/src/utils/hyperlinks.ts:11  
+src: packages/backend/src/utils/hyperlinks.ts:13  
 dist: packages/backend/dist/utils/hyperlinks.js:2

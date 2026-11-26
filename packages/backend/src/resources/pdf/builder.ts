@@ -31,7 +31,7 @@ const collectStandardFontNames = (
 
 
 const embedFonts = async (
-  pdfDoc: PDFDocument,
+  pdfDocument: PDFDocument,
   body: PdfBuildType,
   segments: ReturnType<typeof segmentPages>,
 ): Promise<BuilderContext> => {
@@ -39,12 +39,13 @@ const embedFonts = async (
   const fonts = new Map<string, import('pdf-lib').PDFFont>();
   if (embeddedFonts.length > 0) {
     const { default: fontkit } = await import('@pdf-lib/fontkit');
-    pdfDoc.registerFontkit(fontkit);
+    pdfDocument.registerFontkit(fontkit);
   }
   for (const font of embeddedFonts) {
     try {
       // pooled Buffer -> copied, standalone view (pdf-lib reads imageData.buffer wholesale)
-      fonts.set(font.name, await pdfDoc.embedFont(new Uint8Array(Buffer.from(font.data, 'base64')), { subset: true }));
+      const bytes = new Uint8Array(Buffer.from(font.data, 'base64'));
+      fonts.set(font.name, await pdfDocument.embedFont(bytes, { subset: true }));
     } catch {
       throw new BadRequestException({
         code: 'PDF_FONT_UNREADABLE',
@@ -56,24 +57,24 @@ const embedFonts = async (
   for (const name of collectStandardFontNames(segments)) {
     const standardFont = standardValueOf(name);
     // collectStandardFontNames only yields names with a standard value.
-    assert(standardFont, `no standard value for seeded font "${name}"`);
-    standard.set(name, await pdfDoc.embedFont(standardFont));
+    assert.ok(standardFont, `no standard value for seeded font "${name}"`);
+    standard.set(name, await pdfDocument.embedFont(standardFont));
   }
   const defaultFont = standard.get('Helvetica');
   // 'Helvetica' is always seeded by collectStandardFontNames.
-  assert(defaultFont, 'Helvetica is seeded by collectStandardFontNames');
+  assert.ok(defaultFont, 'Helvetica is seeded by collectStandardFontNames');
   return { defaultFont, fonts, standard };
 };
 
 const embedOneImage = async (
-  pdfDoc: PDFDocument,
+  pdfDocument: PDFDocument,
   element: Extract<ElementType, { type: 'image' }>,
 ): Promise<import('pdf-lib').PDFImage> => {
   // pdf-lib's embedders read `imageData.buffer` wholesale, ignoring byteOffset:
   // hand them a copied, standalone view or pooled Node Buffers decode garbage.
   const bytes = new Uint8Array(Buffer.from(element.data, 'base64'));
   try {
-    return element.imageType === 'png' ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+    return element.imageType === 'png' ? await pdfDocument.embedPng(bytes) : await pdfDocument.embedJpg(bytes);
   } catch (error) {
     throw new BadRequestException({
       code: 'PDF_IMAGE_UNREADABLE',
@@ -83,34 +84,34 @@ const embedOneImage = async (
 };
 
 const embedImages = async (
-  pdfDoc: PDFDocument,
+  pdfDocument: PDFDocument,
   segments: ReturnType<typeof segmentPages>,
 ): Promise<Map<object, import('pdf-lib').PDFImage>> => {
   const images = new Map<object, import('pdf-lib').PDFImage>();
   for (const segment of segments) {
     for (const element of segment.elements) {
       if (element.type !== 'image') continue;
-      images.set(element, await embedOneImage(pdfDoc, element));
+      images.set(element, await embedOneImage(pdfDocument, element));
     }
   }
   return images;
 };
 
-const applyMetadata = (pdfDoc: PDFDocument, body: PdfBuildType): void => {
+const applyMetadata = (pdfDocument: PDFDocument, body: PdfBuildType): void => {
   const metadata = body.metadata;
   if (!metadata) return;
-  if (metadata.title !== undefined) pdfDoc.setTitle(metadata.title);
-  if (metadata.author !== undefined) pdfDoc.setAuthor(metadata.author);
-  if (metadata.subject !== undefined) pdfDoc.setSubject(metadata.subject);
+  if (metadata.title !== undefined) pdfDocument.setTitle(metadata.title);
+  if (metadata.author !== undefined) pdfDocument.setAuthor(metadata.author);
+  if (metadata.subject !== undefined) pdfDocument.setSubject(metadata.subject);
   if (metadata.keywords !== undefined) {
     const keywords = Array.isArray(metadata.keywords)
       ? metadata.keywords
       : metadata.keywords.split(',').map((keyword) => keyword.trim()).filter((keyword) => keyword.length > 0);
-    pdfDoc.setKeywords(keywords);
+    pdfDocument.setKeywords(keywords);
   }
-  if (metadata.creator !== undefined) pdfDoc.setCreator(metadata.creator);
-  if (metadata.language !== undefined) pdfDoc.setLanguage(metadata.language);
-  if (metadata.creationDate !== undefined) pdfDoc.setCreationDate(new Date(metadata.creationDate));
+  if (metadata.creator !== undefined) pdfDocument.setCreator(metadata.creator);
+  if (metadata.language !== undefined) pdfDocument.setLanguage(metadata.language);
+  if (metadata.creationDate !== undefined) pdfDocument.setCreationDate(new Date(metadata.creationDate));
   // updateInfoDict overrides Producer and ModificationDate at create/save time; user calls do not stick.
 };
 
@@ -131,21 +132,21 @@ const applyMetadata = (pdfDoc: PDFDocument, body: PdfBuildType): void => {
  */
 export const buildPdfDocument = async (body: PdfBuildType): Promise<Uint8Array> => {
   const segments = segmentPages(body.pages);
-  const pdfDoc = await PDFDocument.create();
-  const pagePairs = segments.map((segment) => [segment, pdfDoc.addPage(pageSizeOf(segment.page))] as const);
-  const numPages = pagePairs.length;
+  const pdfDocument = await PDFDocument.create();
+  const pagePairs = segments.map((segment) => [segment, pdfDocument.addPage(pageSizeOf(segment.page))] as const);
+  const numberPages = pagePairs.length;
 
-  const ctx = await embedFonts(pdfDoc, body, segments);
-  const images = await embedImages(pdfDoc, segments);
+  const context = await embedFonts(pdfDocument, body, segments);
+  const images = await embedImages(pdfDocument, segments);
 
   for (const [index, [segment, page]] of pagePairs.entries()) {
     for (const element of segment.elements) {
-      drawElement(pdfDoc, page, element, ctx, images, numPages, index + 1);
+      drawElement(pdfDocument, page, element, context, images, numberPages, index + 1);
     }
   }
 
-  applyMetadata(pdfDoc, body);
+  applyMetadata(pdfDocument, body);
 
   // pdf-lib refreshes widget appearances at save() time; the explicit call is unnecessary.
-  return pdfDoc.save();
+  return pdfDocument.save();
 };

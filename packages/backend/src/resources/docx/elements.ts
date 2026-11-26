@@ -148,7 +148,7 @@ const LINE_RULE: Record<string, (typeof LineRuleType)[keyof typeof LineRuleType]
   exact: LineRuleType.EXACT,
 };
 
-const buildRunChildren = (runs: RunType[]) => runs.map(buildRun);
+const buildRunChildren = (runs: RunType[]) => runs.map((run) => buildRun(run));
 
 const buildImageRun = (img: Extract<ElementType, { type: 'image' }>) => {
   if (img.imageType === 'svg') {
@@ -236,15 +236,19 @@ const buildBorder = (border: { color?: string; size?: number; style: string }) =
   style: BORDER_STYLE[border.style] ?? BorderStyle.SINGLE,
 });
 
-/** Block-level elements buildBlock delegates to buildInline — the inline subset only. */
+/**
+Block-level elements buildBlock delegates to buildInline — the inline subset only.
+ */
 type InlineElementType = Extract<ElementType, { type: 'bookmark' | 'commentRef' | 'hyperlink' | 'image' }>;
 
 const buildInline = (element: InlineElementType): ParagraphChild[] => {
   switch (element.type) {
-    case 'bookmark':
+    case 'bookmark': {
       return [new Bookmark({ children: buildRunChildren(element.children), id: element.name })];
-    case 'commentRef':
+    }
+    case 'commentRef': {
       return [new CommentRangeStart(element.id), new CommentRangeEnd(element.id), new CommentReference(element.id)];
+    }
     case 'hyperlink': {
       if (element.anchor) {
         return [
@@ -257,8 +261,9 @@ const buildInline = (element: InlineElementType): ParagraphChild[] => {
       }
       return [new ExternalHyperlink({ children: buildRunChildren(element.runs), link: element.url })];
     }
-    case 'image':
+    case 'image': {
       return [buildImageRun(element)];
+    }
   }
 };
 
@@ -273,29 +278,38 @@ export const buildBlock = (
   switch (element.type) {
     case 'bookmark':
     case 'commentRef':
-    case 'hyperlink':
+    case 'hyperlink': {
       return [new Paragraph({ children: buildInline(element) })];
-    case 'columnBreak':
+    }
+    case 'columnBreak': {
       return [new Paragraph({ children: [new ColumnBreak()] })];
-    case 'image':
+    }
+    case 'image': {
       return [new Paragraph({ children: buildInline(element) })];
-    case 'pageBreak':
+    }
+    case 'pageBreak': {
       return [new Paragraph({ children: [new PageBreak()] })];
-    case 'paragraph':
+    }
+    case 'paragraph': {
       return [buildParagraph(element)];
-    case 'table':
+    }
+    case 'table': {
       return [buildTable(element)];
-    case 'thematicBreak':
+    }
+    case 'thematicBreak': {
       return [new Paragraph({ children: [], thematicBreak: true })];
-    case 'toc':
+    }
+    case 'toc': {
       return [
         new TableOfContents(element.title ?? 'Table of contents', {
           headingStyleRange: `1-${element.levels}`,
           hyperlink: true,
         }),
       ];
-    default:
+    }
+    default: {
       return [];
+    }
   }
 };
 

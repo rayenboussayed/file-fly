@@ -1,24 +1,48 @@
 import { Readable } from 'node:stream';
 import { bench, describe, vi } from 'vitest';
 
-vi.mock('node:worker_threads', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- vi.mock factories need a synchronous require for node builtins
-  const { EventEmitter } = require('node:events');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- vi.mock factories need a synchronous require for node builtins
-  const { Readable, Writable } = require('node:stream');
+vi.mock('node:worker_threads', async () => {
+  const { Readable: WorkerReadable, Writable } = await import('node:stream');
 
-  class Worker extends EventEmitter {
+  type PayloadEvent = Event & { payload?: unknown };
+
+  class Worker extends EventTarget {
     static readonly instances: unknown[] = [];
-    stderr: unknown;
-    stdin: unknown;
-    stdout: unknown;
+    stderr: InstanceType<typeof WorkerReadable>;
+    stdin: InstanceType<typeof Writable>;
+    stdout: InstanceType<typeof WorkerReadable>;
+
     constructor() {
       super();
-      this.stdout = Readable.from(['cached']);
-      this.stderr = new Readable({ read() { this.push(null); } });
-      this.stdin = new Writable({ write(_c: unknown, _e: unknown, cb: () => void) { cb(); } });
+      this.stdout = WorkerReadable.from(['cached']);
+      this.stderr = WorkerReadable.from([]);
+      this.stdin = new Writable({
+        write(_chunk: unknown, _encoding: unknown, callback: () => void) {
+          callback();
+        },
+      });
       Worker.instances.push(this);
-      queueMicrotask(() => this.emit('exit', 0));
+      queueMicrotask(() => {
+        const event = new Event('exit') as PayloadEvent;
+        event.payload = 0;
+        this.dispatchEvent(event);
+      });
+    }
+
+    on(type: string, listener: (payload: unknown) => void): void {
+      this.addEventListener(type, (event: Event) => {
+        listener((event as PayloadEvent).payload);
+      });
+    }
+
+    once(type: string, listener: (payload: unknown) => void): void {
+      this.addEventListener(
+        type,
+        (event: Event) => {
+          listener((event as PayloadEvent).payload);
+        },
+        { once: true },
+      );
     }
 
     terminate() {
@@ -39,7 +63,9 @@ const makeCls = (): unknown => ({
 
 const drainToString = async (stream: Readable): Promise<string> => {
   const chunks: Buffer[] = [];
-  stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+  stream.on('data', (chunk: Buffer) => {
+    chunks.push(Buffer.from(chunk));
+  });
   await new Promise<void>((resolve, reject) => {
     stream.once('end', () => resolve());
     stream.once('error', reject);

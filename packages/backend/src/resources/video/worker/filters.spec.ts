@@ -16,7 +16,9 @@ const base: VideoProcessorType = {
   sharpen: false,
 } as VideoProcessorType;
 
-/** Runtime shape of a node-av FilterAPI: description exists but is private in the types. */
+/**
+Runtime shape of a node-av FilterAPI: description exists but is private in the types.
+ */
 type DescribedFilter = { description: string };
 
 const descriptions = (filters: Array<object>): string[] =>

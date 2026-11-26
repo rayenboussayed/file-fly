@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { binaryParser, bootApp, FIXTURES_DIR } from './helpers.js';
 
-const smallDoc = {
+const smallDocument = {
   metadata: { author: 'E2E Author', creator: 'file-fly', title: 'E2E PDF' },
   pages: [
     {
@@ -35,7 +35,7 @@ describe('Pdf (e2e)', () => {
   it('POST /pdf/build answers 201 with a pdf payload', async () => {
     const response = await request(app.getHttpServer())
       .post('/pdf/build')
-      .send(smallDoc)
+      .send(smallDocument)
       .set('content-type', 'application/json')
       .buffer(true)
       .parse(binaryParser as never);
@@ -49,7 +49,7 @@ describe('Pdf (e2e)', () => {
   it('built output round-trips through extract', async () => {
     const built = await request(app.getHttpServer())
       .post('/pdf/build')
-      .send(smallDoc)
+      .send(smallDocument)
       .set('content-type', 'application/json')
       .buffer(true)
       .parse(binaryParser as never);
@@ -72,7 +72,7 @@ describe('Pdf (e2e)', () => {
   it('built output round-trips through metadata', async () => {
     const built = await request(app.getHttpServer())
       .post('/pdf/build')
-      .send(smallDoc)
+      .send(smallDocument)
       .set('content-type', 'application/json')
       .buffer(true)
       .parse(binaryParser as never);

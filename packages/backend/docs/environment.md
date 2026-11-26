@@ -75,6 +75,9 @@
 ## Constants
 
 <dl>
+<dt><a href="#zCatch">zCatch</a></dt>
+<dd><p>Alias avoiding unicorn/prefer-await on zod&#39;s <code>.catch()</code> (a non-promise method).</p>
+</dd>
 <dt><a href="#DEFAULT_CACHE_DIR">DEFAULT_CACHE_DIR</a></dt>
 <dd><p>Absolute default cache root, used when <code>CACHE_DIR</code> is unset or blank.</p>
 </dd>
@@ -83,6 +86,15 @@
 </dd>
 <dt><a href="#DEFAULT_DASHBOARD_DIR">DEFAULT_DASHBOARD_DIR</a></dt>
 <dd><p>Default static root for the dashboard build output, used when <code>DASHBOARD_DIR</code> is unset or blank.</p>
+</dd>
+<dt><a href="#trimmedString">trimmedString</a></dt>
+<dd><p>Whitespace-trimmed string used as the base of the comma-separated list schemas.</p>
+</dd>
+<dt><a href="#egressHost">egressHost</a></dt>
+<dd><p>One <code>EGRESS_ALLOWLIST</code> host entry, kept separate to limit call nesting.</p>
+</dd>
+<dt><a href="#corsOrigin">corsOrigin</a></dt>
+<dd><p>One <code>CORS_ORIGIN</code> URL entry, kept separate to limit call nesting.</p>
 </dd>
 <dt><a href="#environment">environment</a></dt>
 <dd><p>Validated process environment; parsed once at import time (fail-fast on invalid values).</p>
@@ -95,7 +107,7 @@
 ## Functions
 
 <dl>
-<dt><a href="#numericFromEnv">numericFromEnv(fallback)</a> ⇒ <code>z.ZodPreprocess&lt;z.ZodCatch&lt;z.ZodCoercedNumber&lt;unknown&gt;&gt;, unknown&gt;</code></dt>
+<dt><a href="#numericFromEnvironment">numericFromEnvironment(fallback)</a> ⇒ <code>z.ZodPreprocess&lt;z.ZodCatch&lt;z.ZodCoercedNumber&lt;unknown&gt;&gt;, unknown&gt;</code></dt>
 <dd><p>Numeric env var handling:</p>
 <ul>
 <li>blank strings (whitespace included) are treated as unset, matching <code>process.env.X || fallback</code> ergonomics
@@ -111,227 +123,259 @@
 Basic-auth credentials; enforced only when BOTH are set (both-or-neither).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:29  
-dist: packages/backend/dist/environment.js:9
+src: packages/backend/src/environment.ts:55  
+dist: packages/backend/dist/environment.js:13
 <a name="AUTH_USERNAME"></a>
 
 ## AUTH\_USERNAME
 Basic-auth credentials; enforced only when BOTH are set (both-or-neither).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:31  
-dist: packages/backend/dist/environment.js:10
+src: packages/backend/src/environment.ts:59  
+dist: packages/backend/dist/environment.js:14
 <a name="CACHE_DIR"></a>
 
 ## CACHE\_DIR
 Cache root; the directory is created at startup.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:34  
-dist: packages/backend/dist/environment.js:11
+src: packages/backend/src/environment.ts:64  
+dist: packages/backend/dist/environment.js:15
 <a name="CACHE_MAX_BYTES"></a>
 
 ## CACHE\_MAX\_BYTES
 Soft cap for the whole cache dir; oldest-used entries are evicted first.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:36  
-dist: packages/backend/dist/environment.js:12
+src: packages/backend/src/environment.ts:68  
+dist: packages/backend/dist/environment.js:16
 <a name="CACHE_SWEEP_INTERVAL_MS"></a>
 
 ## CACHE\_SWEEP\_INTERVAL\_MS
 How often the cache janitor sweeps.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:38  
-dist: packages/backend/dist/environment.js:13
+src: packages/backend/src/environment.ts:72  
+dist: packages/backend/dist/environment.js:17
 <a name="CACHE_TMP_MAX_AGE_MS"></a>
 
 ## CACHE\_TMP\_MAX\_AGE\_MS
 Orphaned *.tmp files (crashed writers) older than this are removed.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:40  
-dist: packages/backend/dist/environment.js:14
+src: packages/backend/src/environment.ts:76  
+dist: packages/backend/dist/environment.js:18
 <a name="CACHE_TTL_MS"></a>
 
 ## CACHE\_TTL\_MS
 Entries not used for this long are evicted.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:43  
-dist: packages/backend/dist/environment.js:15
+src: packages/backend/src/environment.ts:81  
+dist: packages/backend/dist/environment.js:19
 <a name="CLAMAV_HOST"></a>
 
 ## CLAMAV\_HOST
 Host of the clamd daemon; unset = virus scanning skipped with a warning.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:45  
-dist: packages/backend/dist/environment.js:16
+src: packages/backend/src/environment.ts:85  
+dist: packages/backend/dist/environment.js:20
 <a name="CLAMAV_MAX_BYTES"></a>
 
 ## CLAMAV\_MAX\_BYTES
 Bodies larger than this are rejected 413 before scanning so clamd's INSTREAM size limit is never hit; raise together with clamd.conf StreamMaxLength.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:47  
-dist: packages/backend/dist/environment.js:17
+src: packages/backend/src/environment.ts:89  
+dist: packages/backend/dist/environment.js:21
 <a name="CLAMAV_PORT"></a>
 
 ## CLAMAV\_PORT
 Port of the clamd daemon; must be set together with CLAMAV_HOST.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:49  
-dist: packages/backend/dist/environment.js:18
+src: packages/backend/src/environment.ts:93  
+dist: packages/backend/dist/environment.js:22
 <a name="CLAMAV_TIMEOUT_MS"></a>
 
 ## CLAMAV\_TIMEOUT\_MS
 Clamd socket connect timeout passed to clamdscan.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:51  
-dist: packages/backend/dist/environment.js:19
+src: packages/backend/src/environment.ts:97  
+dist: packages/backend/dist/environment.js:23
 <a name="CORS_ORIGIN"></a>
 
 ## CORS\_ORIGIN
 Allowed origins in production; comma-separated URLs (a bare string is accepted as a single origin).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:54  
-dist: packages/backend/dist/environment.js:20
+src: packages/backend/src/environment.ts:102  
+dist: packages/backend/dist/environment.js:24
 <a name="DASHBOARD_DIR"></a>
 
 ## DASHBOARD\_DIR
 Static root for the dashboard build (`packages/dashboard/dist`); missing dir = dashboard not served.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:64  
-dist: packages/backend/dist/environment.js:26
+src: packages/backend/src/environment.ts:114  
+dist: packages/backend/dist/environment.js:30
 <a name="EGRESS_ALLOWLIST"></a>
 
 ## EGRESS\_ALLOWLIST
 Comma-separated bare hostnames the `source=` media download may fetch (dotted suffixes allowed for subdomains); unset = only the built-in scheme and private-literal rules apply.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:66  
-dist: packages/backend/dist/environment.js:27
+src: packages/backend/src/environment.ts:118  
+dist: packages/backend/dist/environment.js:31
 <a name="LOG_LEVEL"></a>
 
 ## LOG\_LEVEL
 pino log level; unset (or blank) = `info` in production, `debug` otherwise. Invalid values are rejected at boot.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:77  
-dist: packages/backend/dist/environment.js:34
+src: packages/backend/src/environment.ts:131  
+dist: packages/backend/dist/environment.js:38
 <a name="METRICS_DIR"></a>
 
 ## METRICS\_DIR
 Directory holding `metrics.db`; created at startup. Kept out of `CACHE_DIR` on purpose.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:83  
-dist: packages/backend/dist/environment.js:35
+src: packages/backend/src/environment.ts:139  
+dist: packages/backend/dist/environment.js:39
 <a name="METRICS_FLUSH_INTERVAL_MS"></a>
 
 ## METRICS\_FLUSH\_INTERVAL\_MS
 Flush interval for the in-memory metric deltas; invalid values fall back to 1s (0 is not accepted here).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:85  
-dist: packages/backend/dist/environment.js:36
+src: packages/backend/src/environment.ts:143  
+dist: packages/backend/dist/environment.js:40
 <a name="METRICS_RETENTION_DAYS"></a>
 
 ## METRICS\_RETENTION\_DAYS
 Retention for the metrics tables; invalid values fall back to 35 days.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:87  
-dist: packages/backend/dist/environment.js:37
+src: packages/backend/src/environment.ts:147  
+dist: packages/backend/dist/environment.js:41
 <a name="METRICS_TOKEN"></a>
 
 ## METRICS\_TOKEN
 Bearer token for `GET /metrics`; production refuses requests without it. Unset in development = open.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:89  
-dist: packages/backend/dist/environment.js:38
+src: packages/backend/src/environment.ts:151  
+dist: packages/backend/dist/environment.js:42
 <a name="OTEL_METRICS_PORT"></a>
 
 ## OTEL\_METRICS\_PORT
 Port the Prometheus host-metrics exporter serves on (9464 is the conventional Prometheus exposition port; 8888 is the reference example's port and often already taken).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:94  
-dist: packages/backend/dist/environment.js:40
+src: packages/backend/src/environment.ts:158  
+dist: packages/backend/dist/environment.js:44
 <a name="OTEL_TRACE_EXPORTER_URL"></a>
 
 ## OTEL\_TRACE\_EXPORTER\_URL
 OTLP/HTTP traces endpoint for OpenTelemetry (`/v1/traces` appended when only the base is given). Blank/unset ⇒ tracing disabled. The standard `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` is also honored.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:96  
-dist: packages/backend/dist/environment.js:41
+src: packages/backend/src/environment.ts:162  
+dist: packages/backend/dist/environment.js:45
 <a name="TESSERACT_DIR"></a>
 
 ## TESSERACT\_DIR
 Language data for tesseract.js; defaults to `<CACHE_DIR>/tesseract`.
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:103  
-dist: packages/backend/dist/environment.js:42
+src: packages/backend/src/environment.ts:171  
+dist: packages/backend/dist/environment.js:46
 <a name="TRUST_PROXY"></a>
 
 ## TRUST\_PROXY
 Honor `X-Forwarded-For` for `request.ip` (set only behind a trusted proxy).
 
 **Kind**: global variable  
-src: packages/backend/src/environment.ts:109  
-dist: packages/backend/dist/environment.js:47
+src: packages/backend/src/environment.ts:179  
+dist: packages/backend/dist/environment.js:51
+<a name="zCatch"></a>
+
+## zCatch
+Alias avoiding unicorn/prefer-await on zod's `.catch()` (a non-promise method).
+
+**Kind**: global constant  
+src: packages/backend/src/environment.ts:7  
+dist: packages/backend/dist/environment.js:3
 <a name="DEFAULT_CACHE_DIR"></a>
 
 ## DEFAULT\_CACHE\_DIR
 Absolute default cache root, used when `CACHE_DIR` is unset or blank.
 
 **Kind**: global constant  
-src: packages/backend/src/environment.ts:5  
-dist: packages/backend/dist/environment.js:3
+src: packages/backend/src/environment.ts:12  
+dist: packages/backend/dist/environment.js:4
 <a name="DEFAULT_METRICS_DIR"></a>
 
 ## DEFAULT\_METRICS\_DIR
 Absolute default metrics root, used when `METRICS_DIR` is unset or blank.
 
 **Kind**: global constant  
-src: packages/backend/src/environment.ts:7  
-dist: packages/backend/dist/environment.js:4
+src: packages/backend/src/environment.ts:16  
+dist: packages/backend/dist/environment.js:5
 <a name="DEFAULT_DASHBOARD_DIR"></a>
 
 ## DEFAULT\_DASHBOARD\_DIR
 Default static root for the dashboard build output, used when `DASHBOARD_DIR` is unset or blank.
 
 **Kind**: global constant  
-src: packages/backend/src/environment.ts:9  
-dist: packages/backend/dist/environment.js:5
+src: packages/backend/src/environment.ts:20  
+dist: packages/backend/dist/environment.js:6
+<a name="trimmedString"></a>
+
+## trimmedString
+Whitespace-trimmed string used as the base of the comma-separated list schemas.
+
+**Kind**: global constant  
+src: packages/backend/src/environment.ts:40  
+dist: packages/backend/dist/environment.js:8
+<a name="egressHost"></a>
+
+## egressHost
+One `EGRESS_ALLOWLIST` host entry, kept separate to limit call nesting.
+
+**Kind**: global constant  
+src: packages/backend/src/environment.ts:44  
+dist: packages/backend/dist/environment.js:9
+<a name="corsOrigin"></a>
+
+## corsOrigin
+One `CORS_ORIGIN` URL entry, kept separate to limit call nesting.
+
+**Kind**: global constant  
+src: packages/backend/src/environment.ts:48  
+dist: packages/backend/dist/environment.js:10
 <a name="environment"></a>
 
 ## environment
 Validated process environment; parsed once at import time (fail-fast on invalid values).
 
 **Kind**: global constant  
-src: packages/backend/src/environment.ts:131  
-dist: packages/backend/dist/environment.js:64
+src: packages/backend/src/environment.ts:203  
+dist: packages/backend/dist/environment.js:68
 <a name="isProduction"></a>
 
 ## isProduction
 True when `NODE_ENV=production`.
 
 **Kind**: global constant  
-src: packages/backend/src/environment.ts:134  
-dist: packages/backend/dist/environment.js:65
-<a name="numericFromEnv"></a>
+src: packages/backend/src/environment.ts:208  
+dist: packages/backend/dist/environment.js:69
+<a name="numericFromEnvironment"></a>
 
-## numericFromEnv(fallback) ⇒ <code>z.ZodPreprocess&lt;z.ZodCatch&lt;z.ZodCoercedNumber&lt;unknown&gt;&gt;, unknown&gt;</code>
+## numericFromEnvironment(fallback) ⇒ <code>z.ZodPreprocess&lt;z.ZodCatch&lt;z.ZodCoercedNumber&lt;unknown&gt;&gt;, unknown&gt;</code>
 Numeric env var handling:
 - blank strings (whitespace included) are treated as unset, matching `process.env.X || fallback` ergonomics
   (`Number('') === 0` would otherwise silently pass),
@@ -344,5 +388,5 @@ Numeric env var handling:
 | --- | --- | --- |
 | fallback | <code>number</code> | Value used when the env var is unset, blank or invalid. |
 
-src: packages/backend/src/environment.ts:19  
-dist: packages/backend/dist/environment.js:6
+src: packages/backend/src/environment.ts:30  
+dist: packages/backend/dist/environment.js:7

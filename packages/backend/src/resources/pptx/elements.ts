@@ -1,8 +1,8 @@
 import type { ElementType, PptxBuildType, RunType } from './schema.js';
 
-import { type Presentation, type Slide, type TextProp } from './pptxgenjs.js';
+import { type Presentation, type Slide, type TextProperty } from './pptxgenjs.js';
 
-const runToProps = (run: RunType): TextProp => ({
+const runToProperties = (run: RunType): TextProperty => ({
   options: {
     bold: run.bold,
     breakLine: run.breakLine,
@@ -95,7 +95,7 @@ const buildElement = (pres: Presentation, slide: Slide, element: ElementType): v
       const shape = shapeOf(pres, element.shape);
       // pptxgenjs renders caption text only via addText(..., { shape }); addShape ignores it.
       if (element.text) {
-        slide.addText(element.text.map(runToProps), {
+        slide.addText(element.text.map((run) => runToProperties(run)), {
           fill: element.fill,
           h: element.h,
           line: element.line,
@@ -143,7 +143,7 @@ const buildElement = (pres: Presentation, slide: Slide, element: ElementType): v
     }
     case 'text': {
       slide.addText(
-        element.runs.map(runToProps),
+        element.runs.map((run) => runToProperties(run)),
         {
           align: element.align,
           bullet: element.bullet,
@@ -165,9 +165,10 @@ const buildElement = (pres: Presentation, slide: Slide, element: ElementType): v
       );
       return;
     }
-    default:
+    default: {
       // Every union member is handled above; this is unreachable.
       return exhaustiveError(element);
+    }
   }
 };
 

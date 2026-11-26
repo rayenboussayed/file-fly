@@ -5,10 +5,14 @@ import { bufferStream } from '@/utils/buffer.js';
 
 import { settleHeap } from './helpers.js';
 
-/** Bytes buffered by one fake upload (2 MiB). */
+/**
+Bytes buffered by one fake upload (2 MiB).
+ */
 const PAYLOAD_BYTES = 2 * 1024 * 1024;
 
-/** Iterations in the measured loop; enough pressure to trip weak GC accounting. */
+/**
+Iterations in the measured loop; enough pressure to trip weak GC accounting.
+ */
 const ITERATIONS = 8;
 
 /**
@@ -26,7 +30,7 @@ describe('bufferStream memory', () => {
     await settleHeap();
     const before = process.memoryUsage();
 
-    for (let i = 0; i < ITERATIONS; i += 1) {
+    for (let index = 0; index < ITERATIONS; index += 1) {
       const buffered = await bufferStream(fakeUpload());
       expect(buffered).toHaveLength(PAYLOAD_BYTES);
     }

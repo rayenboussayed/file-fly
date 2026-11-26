@@ -6,11 +6,17 @@ import { TextInput } from '@astryxdesign/core/TextInput';
 import { VStack } from '@astryxdesign/core/VStack';
 import { useState } from 'react';
 
-/** Props for {@link TokenGate}. */
-export interface TokenGateProps {
-  /** Called with the entered token; the parent stores it and refetches. */
+/**
+Props for {@link TokenGate}.
+ */
+export interface TokenGateProperties {
+  /**
+  Called with the entered token; the parent stores it and refetches.
+   */
   onSubmit: (token: string) => void;
-  /** The HTTP status that led here (401 or 503). */
+  /**
+  The HTTP status that led here (401 or 503).
+   */
   reason: 401 | 503;
 }
 
@@ -20,13 +26,13 @@ export interface TokenGateProps {
  * Two cases: 401 (the operator configured `METRICS_TOKEN`), where the user
  * enters that token once per tab; and 503 (production without `METRICS_TOKEN`),
  * which is a server misconfiguration the visitor cannot fix.
- * @param props - Gate props.
- * @param props.reason - The HTTP status that led here (401 or 503).
- * @param props.onSubmit - Called with the entered token; the parent stores it and refetches.
+ * @param properties - Gate props.
+ * @param properties.reason - The HTTP status that led here (401 or 503).
+ * @param properties.onSubmit - Called with the entered token; the parent stores it and refetches.
  * @returns The gate element.
  */
-export function TokenGate(props: TokenGateProps) {
-  const { onSubmit, reason } = props;
+export function TokenGate(properties: TokenGateProperties) {
+  const { onSubmit, reason } = properties;
   const [value, setValue] = useState('');
 
   if (reason === 503) {

@@ -1,6 +1,6 @@
 <a name="RouteTable"></a>
 
-## RouteTable(props) ⇒ <code>import(&quot;react&quot;).JSX.Element</code>
+## RouteTable(properties) ⇒ <code>import(&quot;react&quot;).JSX.Element</code>
 Renders the sortable per-route traffic table.
 
 **Kind**: global function  
@@ -8,6 +8,6 @@ Renders the sortable per-route traffic table.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| props | <code>RouteTableProps</code> | Rows and sort plugin for the table. |
+| properties | <code>RouteTableProperties</code> | Rows and sort plugin for the table. |
 
-src: packages/dashboard/src/components/RouteTable.tsx:21  
+src: packages/dashboard/src/components/route-table.tsx:23  

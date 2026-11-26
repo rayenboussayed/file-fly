@@ -34,7 +34,7 @@ Everything else falls through to Nest's own 404 handler unchanged. A
 missing dist folder logs a warning and serves no dashboard.
 
 **Kind**: global variable  
-src: packages/backend/src/dashboard-static.service.ts:28  
+src: packages/backend/src/dashboard-static.service.ts:27  
 dist: packages/backend/dist/dashboard-static.service.js:18
 <a name="DashboardStaticService+onApplicationBootstrap"></a>
 
@@ -43,7 +43,7 @@ Registers the static routes and the deep-link aliases.
 
 **Kind**: instance method of [<code>DashboardStaticService</code>](#DashboardStaticService)  
 **Returns**: <code>Promise&lt;void&gt;</code> - Nothing.  
-src: packages/backend/src/dashboard-static.service.ts:37  
+src: packages/backend/src/dashboard-static.service.ts:36  
 dist: packages/backend/dist/dashboard-static.service.js:24
 <a name="CLIENT_ROUTE_ALIASES"></a>
 
@@ -54,5 +54,5 @@ therefore need an explicit alias to `index.html`. Keep this in sync with
 index.html itself is served at `/` by the static plugin.
 
 **Kind**: global constant  
-src: packages/backend/src/dashboard-static.service.ts:16  
+src: packages/backend/src/dashboard-static.service.ts:15  
 dist: packages/backend/dist/dashboard-static.service.js:17

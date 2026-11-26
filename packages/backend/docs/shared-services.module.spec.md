@@ -1,13 +1,13 @@
-<a name="metadata"></a>
+<a name="reflect"></a>
 
-## metadata(key) ⇒ <code>unknown</code>
+## reflect ⇒
 Reads Nest's module metadata.
 
-**Kind**: global function  
-**Returns**: <code>unknown</code> - The stored value, or undefined when the key is absent.  
+**Kind**: global constant  
+**Returns**: The stored value, or undefined when the key is absent.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> | Metadata key to read from the module class. |
+| Param | Description |
+| --- | --- |
+| key | Metadata key to read from the module class. |
 
 src: packages/backend/src/shared-services.module.spec.ts:15  

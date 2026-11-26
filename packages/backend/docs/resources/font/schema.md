@@ -65,7 +65,7 @@
 Collection member to select by PostScript name; defaults to the first.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:27  
+src: packages/backend/src/resources/font/schema.ts:33  
 dist: packages/backend/dist/resources/font/schema.js:14
 <a name="font"></a>
 
@@ -73,7 +73,7 @@ dist: packages/backend/dist/resources/font/schema.js:14
 Collection member to select by PostScript name; defaults to the first.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:37  
+src: packages/backend/src/resources/font/schema.ts:49  
 dist: packages/backend/dist/resources/font/schema.js:19
 <a name="limit"></a>
 
@@ -81,7 +81,7 @@ dist: packages/backend/dist/resources/font/schema.js:19
 Maximum glyph records to return (default: 10 000, capped at the `limit` max).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:39  
+src: packages/backend/src/resources/font/schema.ts:53  
 dist: packages/backend/dist/resources/font/schema.js:20
 <a name="direction"></a>
 
@@ -89,7 +89,7 @@ dist: packages/backend/dist/resources/font/schema.js:20
 Direction override; defaults to the script default.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:48  
+src: packages/backend/src/resources/font/schema.ts:68  
 dist: packages/backend/dist/resources/font/schema.js:24
 <a name="features"></a>
 
@@ -97,7 +97,7 @@ dist: packages/backend/dist/resources/font/schema.js:24
 Comma-separated feature tags to enable or disable with a leading '-' (e.g. 'liga,-dlig,kern').
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:50  
+src: packages/backend/src/resources/font/schema.ts:72  
 dist: packages/backend/dist/resources/font/schema.js:25
 <a name="font"></a>
 
@@ -105,7 +105,7 @@ dist: packages/backend/dist/resources/font/schema.js:25
 Collection member to select by PostScript name; defaults to the first.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:52  
+src: packages/backend/src/resources/font/schema.ts:76  
 dist: packages/backend/dist/resources/font/schema.js:26
 <a name="language"></a>
 
@@ -113,7 +113,7 @@ dist: packages/backend/dist/resources/font/schema.js:26
 Language override (e.g. en); defaults to the script default.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:54  
+src: packages/backend/src/resources/font/schema.ts:80  
 dist: packages/backend/dist/resources/font/schema.js:27
 <a name="script"></a>
 
@@ -121,7 +121,7 @@ dist: packages/backend/dist/resources/font/schema.js:27
 Script override (e.g. Latn); defaults to the shaper's detection.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:56  
+src: packages/backend/src/resources/font/schema.ts:84  
 dist: packages/backend/dist/resources/font/schema.js:28
 <a name="text"></a>
 
@@ -129,7 +129,7 @@ dist: packages/backend/dist/resources/font/schema.js:28
 The text to shape (max 500 chars).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:58  
+src: packages/backend/src/resources/font/schema.ts:88  
 dist: packages/backend/dist/resources/font/schema.js:29
 <a name="font"></a>
 
@@ -137,7 +137,7 @@ dist: packages/backend/dist/resources/font/schema.js:29
 Collection member to select by PostScript name; defaults to the first.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:66  
+src: packages/backend/src/resources/font/schema.ts:102  
 dist: packages/backend/dist/resources/font/schema.js:32
 <a name="text"></a>
 
@@ -145,7 +145,7 @@ dist: packages/backend/dist/resources/font/schema.js:32
 The text to include in the subset (max 10 000 chars).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/font/schema.ts:68  
+src: packages/backend/src/resources/font/schema.ts:106  
 dist: packages/backend/dist/resources/font/schema.js:33
 <a name="FONT_MIMES"></a>
 
@@ -153,7 +153,7 @@ dist: packages/backend/dist/resources/font/schema.js:33
 Plain mimes (no macro/executable fonts); file-type detects all of these.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/font/schema.ts:6  
+src: packages/backend/src/resources/font/schema.ts:8  
 dist: packages/backend/dist/resources/font/schema.js:3
 <a name="isFontMime"></a>
 
@@ -167,7 +167,7 @@ Whether the mime is a supported font container.
 | --- | --- | --- |
 | mime | <code>string</code> | The lowercased content-type mime. |
 
-src: packages/backend/src/resources/font/schema.ts:21  
+src: packages/backend/src/resources/font/schema.ts:23  
 dist: packages/backend/dist/resources/font/schema.js:11
 <a name="FontMetaSchema"></a>
 
@@ -175,7 +175,7 @@ dist: packages/backend/dist/resources/font/schema.js:11
 Flat query parameters for `POST /font/metadata`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/font/schema.ts:24  
+src: packages/backend/src/resources/font/schema.ts:28  
 dist: packages/backend/dist/resources/font/schema.js:12
 <a name="FontExtractSchema"></a>
 
@@ -183,7 +183,7 @@ dist: packages/backend/dist/resources/font/schema.js:12
 Flat query parameters for `POST /font/extract`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/font/schema.ts:34  
+src: packages/backend/src/resources/font/schema.ts:44  
 dist: packages/backend/dist/resources/font/schema.js:17
 <a name="FontShapeSchema"></a>
 
@@ -191,7 +191,7 @@ dist: packages/backend/dist/resources/font/schema.js:17
 Flat query parameters for `POST /font/shape`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/font/schema.ts:46  
+src: packages/backend/src/resources/font/schema.ts:64  
 dist: packages/backend/dist/resources/font/schema.js:23
 <a name="FontSubsetSchema"></a>
 
@@ -199,5 +199,5 @@ dist: packages/backend/dist/resources/font/schema.js:23
 Flat query parameters for `POST /font/subset`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/font/schema.ts:64  
+src: packages/backend/src/resources/font/schema.ts:98  
 dist: packages/backend/dist/resources/font/schema.js:31

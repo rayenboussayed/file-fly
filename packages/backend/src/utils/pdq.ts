@@ -5,7 +5,9 @@ import { createRequire } from 'node:module';
 
 const require_ = createRequire(import.meta.url);
 
-/** Initialized PDQ perceptual-hash class from the `pdq-wasm` package. */
+/**
+Initialized PDQ perceptual-hash class from the `pdq-wasm` package.
+ */
 export type PdqType = typeof PdqClass;
 
 /**

@@ -24,7 +24,7 @@ URL-encoded (<code>%2B</code>), because query-string decoders treat a raw <code>
 resize position accepts sharp's corner/edge names plus everything in sharp.gravity.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/schema.ts:14  
+src: packages/backend/src/resources/image/schema.ts:16  
 dist: packages/backend/dist/resources/image/schema.js:8
 <a name="ImageProcessorSchema"></a>
 
@@ -32,8 +32,8 @@ dist: packages/backend/dist/resources/image/schema.js:8
 Query parameters for `/image/processor`, `/image/metadata`, `/image/dna` and `/image/stats` uploads.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/schema.ts:23  
-dist: packages/backend/dist/resources/image/schema.js:14
+src: packages/backend/src/resources/image/schema.ts:33  
+dist: packages/backend/dist/resources/image/schema.js:20
 <a name="LANG_REGEX"></a>
 
 ## LANG\_REGEX
@@ -43,13 +43,13 @@ combined with `+` or `,` (up to four). `+` only reaches this endpoint
 URL-encoded (`%2B`), because query-string decoders treat a raw `+` as a space.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/schema.ts:58  
-dist: packages/backend/dist/resources/image/schema.js:38
+src: packages/backend/src/resources/image/schema.ts:70  
+dist: packages/backend/dist/resources/image/schema.js:44
 <a name="OcrSchema"></a>
 
 ## OcrSchema
 Query schema for the `/image/ocr` endpoint.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/schema.ts:63  
-dist: packages/backend/dist/resources/image/schema.js:39
+src: packages/backend/src/resources/image/schema.ts:75  
+dist: packages/backend/dist/resources/image/schema.js:45

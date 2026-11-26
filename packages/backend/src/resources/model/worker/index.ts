@@ -8,7 +8,9 @@ import { optimizeDocument, readModel, writeGlb } from '../gltf.js';
 
 const logger = createWorkerLogger();
 
-/** Worker input: { operation: 'optimize', payload: { buffer, query } } from WorkerService. */
+/**
+Worker input: { operation: 'optimize', payload: { buffer, query } } from WorkerService.
+ */
 type WorkerInput = { operation?: string; payload: { buffer: Buffer; query: ModelOptimizeType } };
 
 // workerData is set exclusively by ModelService.optimize's createWorker call with this exact shape.

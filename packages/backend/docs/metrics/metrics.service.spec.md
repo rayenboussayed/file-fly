@@ -4,10 +4,10 @@
 <dt><a href="#record">record(overrides)</a> ⇒ <code>MetricsRecord</code></dt>
 <dd><p>Convenience record with overridable fields.</p>
 </dd>
-<dt><a href="#indexNames">indexNames(dbPath)</a> ⇒ <code>string[]</code></dt>
+<dt><a href="#indexNames">indexNames(databasePath)</a> ⇒ <code>string[]</code></dt>
 <dd><p>Lists the hot-path indexes present in a metrics database.</p>
 </dd>
-<dt><a href="#queryPlan">queryPlan(dbPath, sql)</a> ⇒ <code>string[]</code></dt>
+<dt><a href="#queryPlan">queryPlan(databasePath, sql)</a> ⇒ <code>string[]</code></dt>
 <dd><p>Returns the plan detail lines for a statement against a temporary store.</p>
 </dd>
 </dl>
@@ -27,7 +27,7 @@ Convenience record with overridable fields.
 src: packages/backend/src/metrics/metrics.service.spec.ts:28  
 <a name="indexNames"></a>
 
-## indexNames(dbPath) ⇒ <code>string[]</code>
+## indexNames(databasePath) ⇒ <code>string[]</code>
 Lists the hot-path indexes present in a metrics database.
 
 **Kind**: global function  
@@ -35,12 +35,12 @@ Lists the hot-path indexes present in a metrics database.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| dbPath | <code>string</code> | Path to the temporary test database. |
+| databasePath | <code>string</code> | Path to the temporary test database. |
 
 src: packages/backend/src/metrics/metrics.service.spec.ts:53  
 <a name="queryPlan"></a>
 
-## queryPlan(dbPath, sql) ⇒ <code>string[]</code>
+## queryPlan(databasePath, sql) ⇒ <code>string[]</code>
 Returns the plan detail lines for a statement against a temporary store.
 
 **Kind**: global function  
@@ -48,7 +48,7 @@ Returns the plan detail lines for a statement against a temporary store.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| dbPath | <code>string</code> | Path to the temporary test database. |
+| databasePath | <code>string</code> | Path to the temporary test database. |
 | sql | <code>string</code> | Statement to explain. |
 
-src: packages/backend/src/metrics/metrics.service.spec.ts:79  
+src: packages/backend/src/metrics/metrics.service.spec.ts:80  

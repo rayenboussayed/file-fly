@@ -1,14 +1,9 @@
-## Members
-
-<dl>
-<dt><a href="#ioPromise">ioPromise</a></dt>
-<dd><p>Lazily-built NodeIO with meshopt and draco registered; wasm modules are created once per process.</p>
-</dd>
-</dl>
-
 ## Constants
 
 <dl>
+<dt><a href="#ioCache">ioCache</a></dt>
+<dd><p>Lazily-built NodeIO with meshopt and draco registered; wasm modules are created once per process.</p>
+</dd>
 <dt><a href="#readModel">readModel</a> ⇒ <code>Promise&lt;Document&gt;</code></dt>
 <dd><p>Opens a GLB work package; a single corrupt byte answers 400.</p>
 </dd>
@@ -23,13 +18,13 @@
 </dd>
 </dl>
 
-<a name="ioPromise"></a>
+<a name="ioCache"></a>
 
-## ioPromise
+## ioCache
 Lazily-built NodeIO with meshopt and draco registered; wasm modules are created once per process.
 
-**Kind**: global variable  
-src: packages/backend/src/resources/model/gltf.ts:18  
+**Kind**: global constant  
+src: packages/backend/src/resources/model/gltf.ts:22  
 dist: packages/backend/dist/resources/model/gltf.js:7
 <a name="readModel"></a>
 
@@ -43,8 +38,8 @@ Opens a GLB work package; a single corrupt byte answers 400.
 | --- | --- | --- |
 | buffer | <code>Buffer&lt;ArrayBufferLike&gt;</code> | The uploaded GLB bytes. |
 
-src: packages/backend/src/resources/model/gltf.ts:47  
-dist: packages/backend/dist/resources/model/gltf.js:27
+src: packages/backend/src/resources/model/gltf.ts:52  
+dist: packages/backend/dist/resources/model/gltf.js:29
 <a name="writeGlb"></a>
 
 ## writeGlb ⇒ <code>Promise&lt;Uint8Array&lt;ArrayBufferLike&gt;&gt;</code>
@@ -57,8 +52,8 @@ Serializes a document to GLB bytes.
 | --- | --- | --- |
 | document | <code>Document</code> | The document to serialize. |
 
-src: packages/backend/src/resources/model/gltf.ts:62  
-dist: packages/backend/dist/resources/model/gltf.js:36
+src: packages/backend/src/resources/model/gltf.ts:67  
+dist: packages/backend/dist/resources/model/gltf.js:38
 <a name="writeGltfJson"></a>
 
 ## writeGltfJson ⇒ <code>Promise&lt;GltfJsonOutput&gt;</code>
@@ -71,8 +66,8 @@ Converts a document to the glTF JSON document plus its resources.
 | --- | --- | --- |
 | document | <code>Document</code> | The document to convert. |
 
-src: packages/backend/src/resources/model/gltf.ts:72  
-dist: packages/backend/dist/resources/model/gltf.js:40
+src: packages/backend/src/resources/model/gltf.ts:77  
+dist: packages/backend/dist/resources/model/gltf.js:42
 <a name="optimizeDocument"></a>
 
 ## optimizeDocument ⇒ <code>Promise&lt;void&gt;</code>
@@ -88,5 +83,5 @@ Runs the optimize pipeline in the caller (used by the worker, where transforms a
 | options.simplify |  | The simplification ratio in [0, 1]; 1 disables it. |
 | options.weld |  | Whether to weld bitwise-identical vertices. |
 
-src: packages/backend/src/resources/model/gltf.ts:86  
-dist: packages/backend/dist/resources/model/gltf.js:45
+src: packages/backend/src/resources/model/gltf.ts:91  
+dist: packages/backend/dist/resources/model/gltf.js:47

@@ -8,10 +8,14 @@ import { environment } from '@/environment.js';
 import { SourceSchema } from '@/schema.js';
 import { ByteCapTransform } from '@/utils/buffer.js';
 
-/** Headers safe to forward to the remote origin; everything else is dropped. */
+/**
+Headers safe to forward to the remote origin; everything else is dropped.
+ */
 const FORWARDABLE_HEADERS = new Set(['accept', 'accept-language', 'user-agent']);
 
-/** Hostnames always refused, regardless of EGRESS_ALLOWLIST. */
+/**
+Hostnames always refused, regardless of EGRESS_ALLOWLIST.
+ */
 const REFUSED_HOSTNAMES = new Set(['localhost']);
 
 /**
@@ -90,7 +94,9 @@ const isPrivateIpv6 = (host: string): boolean => {
   return embedded !== undefined && isPrivateIpv4(embedded);
 };
 
-/** Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive. */
+/**
+Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive.
+ */
 const EGRESS_ALLOWLIST = (environment.EGRESS_ALLOWLIST ?? []).map((entry) =>
   entry.toLowerCase(),);
 
@@ -196,7 +202,8 @@ export async function openMediaSource(cls: NormalizedClsService): Promise<void> 
   const url = new URL(source);
   assertEgressAllowed(url);
   const headers: Record<string, string | string[]> = {};
-  for (const [name, value] of Object.entries(request.headers ?? {})) {
+  const headerEntries = Object.entries(request.headers ?? {});
+  for (const [name, value] of headerEntries) {
     if (value === undefined) continue;
     if (FORWARDABLE_HEADERS.has(name.toLowerCase())) headers[name.toLowerCase()] = value;
   }

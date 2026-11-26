@@ -17,15 +17,18 @@ const data: ImageWorkerData = workerData;
  */
 export async function runImageWorker(inputData: ImageWorkerData = data) {
   switch (inputData.operation) {
-    case 'metadata':
+    case 'metadata': {
       await metadata();
       break;
-    case 'processor':
+    }
+    case 'processor': {
       await new Processor().process(inputData.payload);
       break;
-    case 'stats':
+    }
+    case 'stats': {
       await stats();
       break;
+    }
   }
 }
 

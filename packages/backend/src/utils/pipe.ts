@@ -34,17 +34,17 @@ export async function pipeToReply(
   // stream whose 'end' completes the pump; without one, the source plays both.
   const endStream = outMeter ?? source;
 
-  let settled = false;
+  let isSettled = false;
   await new Promise<void>((resolve) => {
     /**
      * Settles the pump exactly once.
-     * @param failed - Whether the stream failed (rather than finished cleanly).
+     * @param isFailed - Whether the stream failed (rather than finished cleanly).
      * @param error - The error that caused the failure, if any.
      */
-    const finish = (failed: boolean, error?: unknown) => {
-      if (settled) return;
-      settled = true;
-      if (!failed) {
+    const finish = (isFailed: boolean, error?: unknown) => {
+      if (isSettled) return;
+      isSettled = true;
+      if (!isFailed) {
         resolve();
         return;
       }

@@ -5,10 +5,14 @@ import { drainStream } from '@/utils/drain.js';
 
 import { settleHeap } from './helpers.js';
 
-/** Bytes discarded by one fake stream (4 MiB). */
+/**
+Bytes discarded by one fake stream (4 MiB).
+ */
 const PAYLOAD_BYTES = 4 * 1024 * 1024;
 
-/** Iterations in the measured loop. */
+/**
+Iterations in the measured loop.
+ */
 const ITERATIONS = 8;
 
 describe('drainStream memory', () => {
@@ -18,7 +22,7 @@ describe('drainStream memory', () => {
     await settleHeap();
     const before = process.memoryUsage();
 
-    for (let i = 0; i < ITERATIONS; i += 1) {
+    for (let index = 0; index < ITERATIONS; index += 1) {
       const dropped = await drainStream(Readable.from([Buffer.alloc(PAYLOAD_BYTES)]));
       expect(dropped).toBe(PAYLOAD_BYTES);
     }

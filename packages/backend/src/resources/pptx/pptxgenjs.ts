@@ -1,94 +1,172 @@
 import PptxGenJsRuntime from 'pptxgenjs';
 
-/** A presentation in progress; this is the narrow subset the builder uses. */
+/**
+A presentation in progress; this is the narrow subset the builder uses.
+ */
 export interface Presentation {
-  /** Creates a new slide. */
+  /**
+  Creates a new slide.
+   */
   addSlide(): Slide;
-  /** Workbook author metadata. */
+  /**
+  Workbook author metadata.
+   */
   author: string;
   ChartType: Record<string, string>;
-  /** Workbook company metadata. */
+  /**
+  Workbook company metadata.
+   */
   company: string;
-  /** Declared slide layout, e.g. `LAYOUT_16x9`. */
+  /**
+  Declared slide layout, e.g. `LAYOUT_16x9`.
+   */
   layout: string;
-  /** Workbook revision metadata. */
+  /**
+  Workbook revision metadata.
+   */
   revision: string;
-  /** Enum tables exposed on the instance. */
+  /**
+  Enum tables exposed on the instance.
+   */
   ShapeType: Record<string, string>;
-  /** Workbook subject metadata. */
+  /**
+  Workbook subject metadata.
+   */
   subject: string;
-  /** Theme font faces. */
+  /**
+  Theme font faces.
+   */
   theme: { bodyFontFace?: string; headFontFace?: string };
-  /** Workbook title metadata. */
+  /**
+  Workbook title metadata.
+   */
   title: string;
-  /** Serializes the presentation; `nodebuffer` returns a Node Buffer. */
+  /**
+  Serializes the presentation; `nodebuffer` returns a Node Buffer.
+   */
   write(options: { outputType: 'nodebuffer' }): Promise<Buffer | Uint8Array>;
 }
 
-/** A slide created by the presentation; exposes the element-adding methods we use. */
+/**
+A slide created by the presentation; exposes the element-adding methods we use.
+ */
 export interface Slide {
-  /** Adds a chart with the given pptxgenjs chart type. */
+  /**
+  Adds a chart with the given pptxgenjs chart type.
+   */
   addChart(
     type: string,
     data: Array<Record<string, unknown>>,
     options?: Record<string, unknown>,
   ): Slide;
-  /** Adds an image from encoded data or a URL. */
+  /**
+  Adds an image from encoded data or a URL.
+   */
   addImage(options: Record<string, unknown>): Slide;
-  /** Adds speaker notes to the slide. */
+  /**
+  Adds speaker notes to the slide.
+   */
   addNotes(notes: string): Slide;
-  /** Adds a shape by name (e.g. `pres.ShapeType.rect`). */
+  /**
+  Adds a shape by name (e.g. `pres.ShapeType.rect`).
+   */
   addShape(shapeName: string, options?: Record<string, unknown>): Slide;
-  /** Adds a table. */
+  /**
+  Adds a table.
+   */
   addTable(rows: unknown[][], options?: Record<string, unknown>): Slide;
-  /** Adds a text box. */
-  addText(text: string | TextProp[], options?: Record<string, unknown>): Slide;
-  /** Slide background fill. */
+  /**
+  Adds a text box.
+   */
+  addText(text: string | TextProperty[], options?: Record<string, unknown>): Slide;
+  /**
+  Slide background fill.
+   */
   background: { color?: string };
 }
 
-/** A text run as pptxgenjs expects it. */
-export interface TextProp {
-  /** Run option bag (bold, italic, color, hyperlink, bullet, ...). */
+/**
+A text run as pptxgenjs expects it.
+ */
+export interface TextProperty {
+  /**
+  Run option bag (bold, italic, color, hyperlink, bullet, ...).
+   */
   options?: RunOptions;
-  /** The literal text content of the run. */
+  /**
+  The literal text content of the run.
+   */
   text?: string;
 }
 
-/** Constructor of the narrow Presentation above (matches the CJS export shape). */
+/**
+Constructor of the narrow Presentation above (matches the CJS export shape).
+ */
 type PresentationConstructor = new () => Presentation;
 
-/** Run-level options subset; passed through to pptxgenjs unchanged. */
+/**
+Run-level options subset; passed through to pptxgenjs unchanged.
+ */
 interface RunOptions {
-  /** Bold styling. */
+  /**
+  Bold styling.
+   */
   bold?: boolean;
-  /** Force a line break after the run. */
+  /**
+  Force a line break after the run.
+   */
   breakLine?: boolean;
-  /** Bullet configuration; `true` means the default bullet. */
+  /**
+  Bullet configuration; `true` means the default bullet.
+   */
   bullet?: boolean | { code?: string };
-  /** Hex color without a leading `#`. */
+  /**
+  Hex color without a leading `#`.
+   */
   color?: string;
-  /** Font face name. */
+  /**
+  Font face name.
+   */
   fontFace?: string;
-  /** Font size in points. */
+  /**
+  Font size in points.
+   */
   fontSize?: number;
-  /** Highlight (marker) hex color. */
+  /**
+  Highlight (marker) hex color.
+   */
   highlight?: string;
-  /** Run hyperlink. */
+  /**
+  Run hyperlink.
+   */
   hyperlink?: { slide?: number; url?: string };
-  /** Bullet indent level (0-8). */
+  /**
+  Bullet indent level (0-8).
+   */
   indentLevel?: number;
-  /** Italic styling. */
+  /**
+  Italic styling.
+   */
   italic?: boolean;
-  /** ISO 639 language for the run. */
+  /**
+  ISO 639 language for the run.
+   */
   lang?: string;
-  /** Strikethrough. */
+  /**
+  Strikethrough.
+   */
   strike?: boolean;
-  /** Subscript (pptxgenjs `subscript`). */
+  /**
+  Subscript (pptxgenjs `subscript`).
+   */
   subscript?: boolean;
-  /** Superscript (pptxgenjs `superscript`). */
+  /**
+  Superscript (pptxgenjs `superscript`).
+   */
   superscript?: boolean;
-  /** Underline (single line). */
+  /**
+  Underline (single line).
+   */
   underline?: boolean;
 }
 

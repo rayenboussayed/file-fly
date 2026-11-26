@@ -8,16 +8,18 @@ import { CLS_FILE_SCAN, CLS_SOURCE_STREAM } from '@/constants/cls.js';
  * Default mocked environment, restored before/after every test.
  * @returns The default mocked CLAMAV_* environment values.
  */
-const defaultEnv = () => ({
+const defaultEnvironment = () => ({
   CLAMAV_HOST: '127.0.0.1',
   CLAMAV_MAX_BYTES: 1024,
   CLAMAV_PORT: 3310,
   CLAMAV_TIMEOUT_MS: 1000,
 });
 
-/** @returns A clean scan verdict, as `_processResult` would produce it. */
+/**
+@returns A clean scan verdict, as `_processResult` would produce it.
+ */
 const freshScanResult = () => ({
-  file: null,
+  file: undefined,
   isInfected: false as boolean | null,
   viruses: [] as string[],
 });
@@ -27,7 +29,7 @@ const freshScanResult = () => ({
  * restore the defaults.
  * @returns The stable mocked environment object.
  */
-function env() {
+function environment() {
   if (!mocks.env) throw new Error('environment mock not initialized yet');
   return mocks.env;
 }
@@ -38,7 +40,7 @@ const mocks = vi.hoisted(() => ({
   initError: undefined as Error | undefined,
   scanError: undefined as Error | undefined,
   scanResult: {
-    file: null,
+    file: undefined,
     isInfected: false as boolean | null,
     viruses: [] as string[],
   },
@@ -58,25 +60,27 @@ vi.mock('jutilities/lazy', () => {
    */
   return {
     lazy:
-      <T extends (...args: never[]) => unknown>(fn: T): T => {
+      <T extends (...arguments_: never[]) => unknown>(function_: T): T => {
         // Key by argument identity, not JSON: Symbols stringify to `null` and
         // would collide (every CLS accessor would share one cache entry).
         const NULL_ARGS = {};
         const store = new Map<unknown, unknown>();
-        return ((...args: Parameters<T>) => {
+        return ((...arguments_: Parameters<T>) => {
           let key: unknown;
-          if (args.length === 0) {
+          if (arguments_.length === 0) {
             key = NULL_ARGS;
-          } else if (args.length === 1) {
-            key = args[0];
+          } else if (arguments_.length === 1) {
+            key = arguments_[0];
           } else {
-            key = args;
+            key = arguments_;
           }
           if (store.has(key)) return store.get(key);
-          const result = fn(...args);
+          const result = function_(...arguments_);
           store.set(key, result);
           if (result instanceof Promise) {
-            const cleanup = () => store.delete(key);
+            const cleanup = () => {
+              store.delete(key);
+            };
             return (async () => {
               try {
                 return await result;
@@ -134,7 +138,7 @@ vi.mock('clamscan', () => {
 vi.mock('@/environment.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/environment.js')>();
   // Stable object across re-imports so tests can flip env vars at will.
-  mocks.env ??= { ...actual.environment, ...defaultEnv() };
+  mocks.env ??= { ...actual.environment, ...defaultEnvironment() };
   return { ...actual, environment: mocks.env };
 });
 
@@ -231,12 +235,12 @@ describe('AntiVirusService', () => {
     mocks.scanStreamBytes = 0;
     mocks.scanStreamCalls = [];
     mocks.scanStreamError = undefined;
-    if (mocks.env) Object.assign(mocks.env, defaultEnv());
+    if (mocks.env) Object.assign(mocks.env, defaultEnvironment());
   });
 
   afterEach(() => {
     // Restore the environment the other tests (and suites) rely on.
-    if (mocks.env) Object.assign(mocks.env, defaultEnv());
+    if (mocks.env) Object.assign(mocks.env, defaultEnvironment());
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });
@@ -245,14 +249,14 @@ describe('AntiVirusService', () => {
     const { service } = await createService();
     expect(service.enabled()).toBe(true);
 
-    env().CLAMAV_HOST = undefined;
+    environment().CLAMAV_HOST = undefined;
     expect(service.enabled()).toBe(false);
-    env().CLAMAV_HOST = defaultEnv().CLAMAV_HOST;
+    environment().CLAMAV_HOST = defaultEnvironment().CLAMAV_HOST;
     expect(service.enabled()).toBe(true);
 
-    env().CLAMAV_PORT = undefined;
+    environment().CLAMAV_PORT = undefined;
     expect(service.enabled()).toBe(false);
-    env().CLAMAV_PORT = defaultEnv().CLAMAV_PORT;
+    environment().CLAMAV_PORT = defaultEnvironment().CLAMAV_PORT;
     expect(service.enabled()).toBe(true);
   });
 
@@ -284,7 +288,7 @@ describe('AntiVirusService', () => {
     const { cls, service, sourceDestroy, store } = await createService();
     stubRequest(store, '10');
     mocks.scanResult = {
-      file: null,
+      file: undefined,
       isInfected: true,
       viruses: ['Test.Virus'],
     };
@@ -356,7 +360,7 @@ describe('AntiVirusService', () => {
   it('rejects with 503 when clamd answers inconclusively (isInfected null)', async () => {
     const { cls, service, store } = await createService();
     stubRequest(store, '10');
-    mocks.scanResult = { file: null, isInfected: null, viruses: [] };
+    mocks.scanResult = { file: undefined, isInfected: null, viruses: [] };
     const branch = branchOf(10);
     const destroySpy = vi.spyOn(branch, 'destroy');
 

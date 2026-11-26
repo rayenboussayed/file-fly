@@ -6,7 +6,9 @@ import { BadRequestException } from '@nestjs/common';
 import draco3d from 'draco3dgltf';
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 
-/** Structured output of writeJSON: the glTF JSON document plus a map of resource URIs to bytes. */
+/**
+Structured output of writeJSON: the glTF JSON document plus a map of resource URIs to bytes.
+ */
 interface GltfJsonOutput {
   json: GLTF.IGLTF;
   resources: JSONDocument['resources'];
@@ -14,29 +16,32 @@ interface GltfJsonOutput {
 
 type IO = InstanceType<typeof NodeIO>;
 
-/** Lazily-built NodeIO with meshopt and draco registered; wasm modules are created once per process. */
-let ioPromise: Promise<IO> | undefined;
+/**
+Lazily-built NodeIO with meshopt and draco registered; wasm modules are created once per process.
+ */
+const ioCache: { promise?: Promise<IO> } = {};
 
 const ioOf = async (): Promise<IO> => {
-  if (ioPromise === undefined) {
-    ioPromise = (async () => {
-      await MeshoptDecoder.ready;
-      await MeshoptEncoder.ready;
-      await MeshoptSimplifier.ready;
-      return new NodeIO()
-        // stdout is the binary channel in the worker; the default console logger would corrupt it.
-        // ALL_EXTENSIONS covers draco, meshopt, basisu, WebP/AVIF, instancing and structural metadata.
-        .setLogger(new Logger(Verbosity.SILENT))
-        .registerExtensions([...ALL_EXTENSIONS])
-        .registerDependencies({
-          'draco3d.decoder': await draco3d.createDecoderModule(),
-          'draco3d.encoder': await draco3d.createEncoderModule(),
-          'meshopt.decoder': MeshoptDecoder,
-          'meshopt.encoder': MeshoptEncoder,
-        });
-    })();
-  }
-  return ioPromise;
+  const cached = ioCache.promise;
+  if (cached !== undefined) return cached;
+  const created = (async () => {
+    await MeshoptDecoder.ready;
+    await MeshoptEncoder.ready;
+    await MeshoptSimplifier.ready;
+    return new NodeIO()
+      // stdout is the binary channel in the worker; the default console logger would corrupt it.
+      // ALL_EXTENSIONS covers draco, meshopt, basisu, WebP/AVIF, instancing and structural metadata.
+      .setLogger(new Logger(Verbosity.SILENT))
+      .registerExtensions([...ALL_EXTENSIONS])
+      .registerDependencies({
+        'draco3d.decoder': await draco3d.createDecoderModule(),
+        'draco3d.encoder': await draco3d.createEncoderModule(),
+        'meshopt.decoder': MeshoptDecoder,
+        'meshopt.encoder': MeshoptEncoder,
+      });
+  })();
+  ioCache.promise = created;
+  return created;
 };
 
 /**

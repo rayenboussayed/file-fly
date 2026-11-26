@@ -32,7 +32,7 @@ Minimal Fastify-ish request/reply and CLS stand-ins for the interceptor.
 | options.fileScan |  | Virus-scan verdict stored on CLS. |
 | options.fileScan.isInfected |  | True when ClamAV flagged the payload. |
 
-src: packages/backend/src/metrics/metrics.interceptor.spec.ts:41  
+src: packages/backend/src/metrics/metrics.interceptor.spec.ts:43  
 <a name="fire"></a>
 
 ## fire(stub) ⇒ <code>Record&lt;string, unknown&gt;</code>
@@ -45,4 +45,4 @@ Runs one request through the interceptor and returns the record passed to metric
 | --- | --- | --- |
 | stub | <code>Stub</code> | Stub bundle from `makeStub`. |
 
-src: packages/backend/src/metrics/metrics.interceptor.spec.ts:101  
+src: packages/backend/src/metrics/metrics.interceptor.spec.ts:103  

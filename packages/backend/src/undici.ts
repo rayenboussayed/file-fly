@@ -10,6 +10,10 @@ import {
 import { CACHE_DIR, UNDICI_CACHE_FILE } from './constants/fs.js';
 import { isProduction } from './environment.js';
 
+const cacheLocation = path.join(CACHE_DIR, UNDICI_CACHE_FILE);
+const cacheStore = new cacheStores.SqliteCacheStore({ location: cacheLocation });
+const cacheInterceptor = interceptors.cache({ store: cacheStore });
+
 const client = new Agent({
   bodyTimeout: 30_000,
   connect: {
@@ -22,13 +26,7 @@ const client = new Agent({
   keepAliveMaxTimeout: 600_000,
   keepAliveTimeout: 60_000,
   pipelining: 10,
-}).compose(
-  interceptors.cache({
-    store: new cacheStores.SqliteCacheStore({
-      location: path.join(CACHE_DIR, UNDICI_CACHE_FILE),
-    }),
-  }),
-);
+}).compose(cacheInterceptor);
 
 if (isProduction) setGlobalDispatcher(client);
 install();

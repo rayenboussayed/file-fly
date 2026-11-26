@@ -36,9 +36,23 @@ export function buildVideoFilters(payload: VideoProcessorType) {
     filters.push(FilterAPI.create(`scale=${payload.width ?? -1}:${payload.height ?? -1}`));
   }
   if (payload.fps !== undefined) filters.push(FilterAPI.create(`fps=${payload.fps}`));
-  if (payload.rotate === '90') filters.push(FilterAPI.create('transpose=1'));
-  if (payload.rotate === '180') filters.push(FilterAPI.create('transpose=1,transpose=1'));
-  if (payload.rotate === '270') filters.push(FilterAPI.create('transpose=2'));
+  switch (payload.rotate) {
+    case '90': {
+      filters.push(FilterAPI.create('transpose=1'));
+      break;
+    }
+    case '180': {
+      filters.push(FilterAPI.create('transpose=1,transpose=1'));
+      break;
+    }
+    case '270': {
+      filters.push(FilterAPI.create('transpose=2'));
+      break;
+    }
+    default: {
+      break;
+    }
+  }
   if (payload.flip) filters.push(FilterAPI.create('hflip'));
   if (payload.flop) filters.push(FilterAPI.create('vflip'));
   if (payload.normalize) filters.push(FilterAPI.create('eq=contrast=1.1:brightness=0.04:saturation=1.05'));

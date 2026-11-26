@@ -32,13 +32,15 @@ export const xmlRaw = new XMLParser({
  * @param name - The attribute name without its `@_` prefix.
  * @returns The attribute string, or ''.
  */
-export const attr = (value: unknown, name: string): string => {
+const attributeOf = (value: unknown, name: string): string => {
   if (value && typeof value === 'object') {
     const inner = (value as Record<string, unknown>)[`@_${name}`];
     if (typeof inner === 'string') return inner;
   }
   return '';
 };
+
+export { attributeOf as attr };
 
 /**
  * Depth-first walk of a parsed XML tree; visits every key/value pair.
@@ -68,7 +70,8 @@ export const collectByKey = (node: unknown, key: string): unknown[] => {
   const found: unknown[] = [];
   walkXml(node, (entryKey, value) => {
     if (entryKey !== key) return;
-    for (const item of Array.isArray(value) ? value : [value]) found.push(item);
+    const items = Array.isArray(value) ? value : [value];
+    for (const item of items) found.push(item);
   });
   return found;
 };
@@ -83,7 +86,8 @@ export const collectByLocalName = (node: unknown, localName: string): unknown[] 
   const found: unknown[] = [];
   walkXml(node, (entryKey, value) => {
     if (entryKey.split(':').pop() !== localName) return;
-    for (const item of Array.isArray(value) ? value : [value]) found.push(item);
+    const items = Array.isArray(value) ? value : [value];
+    for (const item of items) found.push(item);
   });
   return found;
 };
@@ -118,11 +122,17 @@ export const textOf = (node: unknown): string => {
   return parts.join('');
 };
 
-/** An entry of the relationships map: resolved absolute-or-relative target, plus mode. */
+/**
+An entry of the relationships map: resolved absolute-or-relative target, plus mode.
+ */
 export interface RelationshipInfo {
-  /** True when the relationship points outside the package (`TargetMode="External"`). */
+  /**
+  True when the relationship points outside the package (`TargetMode="External"`).
+   */
   external: boolean;
-  /** The `Target` as authored (relative to the source part). */
+  /**
+  The `Target` as authored (relative to the source part).
+   */
   target: string;
 }
 
@@ -136,12 +146,12 @@ export const collectRelationships = (relsXml: string | undefined): Map<string, R
   if (relsXml === undefined) return map;
   // fast-xml-parser does not throw on malformed XML; garbage yields no entries.
   const parsed = xml.parse(relsXml) as Record<string, unknown>;
-  for (const rel of collectByKey(parsed, 'Relationship')) {
-    const record = rel as Record<string, unknown>;
-    const id = attr(record, 'Id');
-    const target = attr(record, 'Target');
+  for (const relationship of collectByKey(parsed, 'Relationship')) {
+    const record = relationship as Record<string, unknown>;
+    const id = attributeOf(record, 'Id');
+    const target = attributeOf(record, 'Target');
     if (id !== '' && target !== '') {
-      map.set(id, { external: attr(record, 'TargetMode').toLowerCase() === 'external', target });
+      map.set(id, { external: attributeOf(record, 'TargetMode').toLowerCase() === 'external', target });
     }
   }
   return map;

@@ -5,7 +5,9 @@
  * handled by an embedded font.
  */
 
-/** The set of unicode code points representable in WinAnsiEncoding. */
+/**
+The set of unicode code points representable in WinAnsiEncoding.
+ */
 const WINANSI = new Set<number>();
 
 for (let cp = 0x20; cp <= 0x7e; cp += 1) WINANSI.add(cp);
@@ -56,10 +58,12 @@ export function findUnencodableWinAnsi(
   const seen = new Map<number, string>();
   for (const char of text) {
     const codePoint = char.codePointAt(0) ?? 0; // for..of always yields a full code point
-    if (!WINANSI.has(codePoint) && !seen.has(codePoint)) {
-      seen.set(codePoint, char);
-      if (seen.size >= limit) break;
+    if (WINANSI.has(codePoint) || seen.has(codePoint)) {
+      continue;
     }
+
+    seen.set(codePoint, char);
+    if (seen.size >= limit) break;
   }
   return [...seen].map(([codePoint, char]) => ({ char, codePoint }));
 }

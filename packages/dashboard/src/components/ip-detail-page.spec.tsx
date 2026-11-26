@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '../lib/api.js';
 import fixture from '../test/fixtures/metrics.fixture.json';
-import { IpDetailPage } from './IpDetailPage.js';
+import { IpDetailPage } from './ip-detail-page.js';
 
 const mocks = vi.hoisted(() => ({
   fetchMetrics: vi.fn<() => Promise<unknown>>(),

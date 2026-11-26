@@ -1,4 +1,3 @@
-
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import fs from 'node:fs';
@@ -180,10 +179,10 @@ describe('Image (e2e)', () => {
     const side = 2700;
     const raw = Buffer.alloc(side * side * 3);
     let seed = 0x9e_37_79_b9;
-    for (let i = 0; i < raw.length; i++) {
+    for (let index = 0; index < raw.length; index++) {
       seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0;
       // eslint-disable-next-line security/detect-object-injection -- index is bounded by the loop
-      raw[i] = seed & 0xff;
+      raw[index] = seed & 0xff;
     }
     const tiff = await sharp(raw, { raw: { channels: 3, height: side, width: side } }).tiff({ compression: 'none' }).toBuffer();
     expect(tiff.length).toBeGreaterThan(20 * 1024 * 1024);

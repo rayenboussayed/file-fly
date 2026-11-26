@@ -41,18 +41,18 @@ export async function dna(inputData: AudioWorkerData = data): Promise<void> {
       },
       { format: 'chromaprint', options: { algorithm: 1, fp_format: 'raw' } },
     );
-    let idx = -1;
-    for await (const p of encoder.packets(
-      filter.frames(decoder.frames(input.packets(stream.index))),
-    )) {
+    let index = -1;
+    const audioPackets = input.packets(stream.index);
+    const pcmFrames = filter.frames(decoder.frames(audioPackets));
+    for await (const p of encoder.packets(pcmFrames)) {
       if (!p) {
         continue;
       }
       try {
-        if (idx < 0) {
-          idx = muxer.addStream(encoder);
+        if (index < 0) {
+          index = muxer.addStream(encoder);
         }
-        await muxer.writePacket(p, idx);
+        await muxer.writePacket(p, index);
       } finally {
         p.free();
       }

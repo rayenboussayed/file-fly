@@ -33,7 +33,9 @@ process.on('uncaughtException', (error) => {
   logger.error(`uncaughtException: ${error.stack ?? String(error)}`);
 });
 
-/** Boots the Nest application: OpenTelemetry first (when configured), then pino logging, metrics shutdown hooks, CORS/security headers in production, Swagger, and the listener. */
+/**
+Boots the Nest application: OpenTelemetry first (when configured), then pino logging, metrics shutdown hooks, CORS/security headers in production, Swagger, and the listener.
+ */
 async function bootstrap() {
   // OpenTelemetry starts before NestFactory so Fastify instrumentation
   // captures plugin registration; no-op unless an OTLP traces endpoint is set.

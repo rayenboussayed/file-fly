@@ -4,16 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { parseOoxmlMetadata } from './ooxml-meta.js';
 import { OoxmlReader } from './ooxml-reader.js';
 
+const asZipEntry = ([name, value]: [string, string]) =>
+  [name, Buffer.from(value, 'utf8')] as const;
+
+const asZipEntries = (entries: Record<string, string>) =>
+  Object.fromEntries(Object.entries(entries).map((entry) => asZipEntry(entry)));
+
+const zipBuffer = (entries: Record<string, string>) =>
+  Buffer.from(zipSync(asZipEntries(entries)));
+
 const read = (entries: Record<string, string>) =>
-  OoxmlReader.readParts(
-    Buffer.from(
-      zipSync(
-        Object.fromEntries(
-          Object.entries(entries).map(([name, value]) => [name, Buffer.from(value, 'utf8')]),
-        ),
-      ),
-    ),
-  );
+  OoxmlReader.readParts(zipBuffer(entries));
 
 describe('parseOoxmlMetadata', () => {
   it('normalizes a Word core.xml and app.xml', () => {

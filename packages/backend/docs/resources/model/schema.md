@@ -21,7 +21,7 @@
 <dt><a href="#MODEL_MIME">MODEL_MIME</a></dt>
 <dd><p>Only the binary glTF container; .gltf JSON with external resources is not accepted.</p>
 </dd>
-<dt><a href="#boolParam">boolParam</a></dt>
+<dt><a href="#boolParameter">boolParameter</a></dt>
 <dd><p>House-standard query boolean (accepts true/false/1/0/yes/no/on/off, case-insensitive).</p>
 </dd>
 <dt><a href="#ModelOptimizeSchema">ModelOptimizeSchema</a></dt>
@@ -44,7 +44,7 @@
 Compression codec for mesh data; `none` keeps uncompressed accessors.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/model/schema.ts:15  
+src: packages/backend/src/resources/model/schema.ts:23  
 dist: packages/backend/dist/resources/model/schema.js:7
 <a name="simplify"></a>
 
@@ -52,7 +52,7 @@ dist: packages/backend/dist/resources/model/schema.js:7
 Lossy simplification ratio in [0, 1]; 1 (default) disables it. Values < 1 force weld on.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/model/schema.ts:17  
+src: packages/backend/src/resources/model/schema.ts:27  
 dist: packages/backend/dist/resources/model/schema.js:8
 <a name="weld"></a>
 
@@ -60,7 +60,7 @@ dist: packages/backend/dist/resources/model/schema.js:8
 Weld bitwise-identical vertices (forced on when simplify < 1); default on.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/model/schema.ts:23  
+src: packages/backend/src/resources/model/schema.ts:35  
 dist: packages/backend/dist/resources/model/schema.js:13
 <a name="to"></a>
 
@@ -68,7 +68,7 @@ dist: packages/backend/dist/resources/model/schema.js:13
 `glb`: binary container. `gltf`: self-contained JSON container with data URIs.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/model/schema.ts:33  
+src: packages/backend/src/resources/model/schema.ts:51  
 dist: packages/backend/dist/resources/model/schema.js:18
 <a name="MODEL_MIME"></a>
 
@@ -76,15 +76,15 @@ dist: packages/backend/dist/resources/model/schema.js:18
 Only the binary glTF container; .gltf JSON with external resources is not accepted.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:6  
+src: packages/backend/src/resources/model/schema.ts:8  
 dist: packages/backend/dist/resources/model/schema.js:3
-<a name="boolParam"></a>
+<a name="boolParameter"></a>
 
-## boolParam
+## boolParameter
 House-standard query boolean (accepts true/false/1/0/yes/no/on/off, case-insensitive).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:9  
+src: packages/backend/src/resources/model/schema.ts:13  
 dist: packages/backend/dist/resources/model/schema.js:4
 <a name="ModelOptimizeSchema"></a>
 
@@ -92,7 +92,7 @@ dist: packages/backend/dist/resources/model/schema.js:4
 Flat query parameters for `POST /model/optimize`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:12  
+src: packages/backend/src/resources/model/schema.ts:18  
 dist: packages/backend/dist/resources/model/schema.js:5
 <a name="ModelConvertSchema"></a>
 
@@ -100,7 +100,7 @@ dist: packages/backend/dist/resources/model/schema.js:5
 Flat query parameters for `POST /model/convert`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:30  
+src: packages/backend/src/resources/model/schema.ts:46  
 dist: packages/backend/dist/resources/model/schema.js:16
 <a name="ModelMetadataSchema"></a>
 
@@ -108,7 +108,7 @@ dist: packages/backend/dist/resources/model/schema.js:16
 Flat query parameters for `POST /model/metadata` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:40  
+src: packages/backend/src/resources/model/schema.ts:62  
 dist: packages/backend/dist/resources/model/schema.js:21
 <a name="ModelExtractSchema"></a>
 
@@ -116,5 +116,5 @@ dist: packages/backend/dist/resources/model/schema.js:21
 Flat query parameters for `POST /model/extract` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/model/schema.ts:42  
+src: packages/backend/src/resources/model/schema.ts:66  
 dist: packages/backend/dist/resources/model/schema.js:22

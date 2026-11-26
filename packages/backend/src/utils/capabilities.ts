@@ -9,10 +9,14 @@ export const STREAMABLE_OUTPUT_FORMATS = [
   'mp4',
 ] as const;
 
-/** The streamable container/codec formats `/audio|/video/processor` can emit. */
+/**
+The streamable container/codec formats `/audio|/video/processor` can emit.
+ */
 export type StreamableOutputFormat = (typeof STREAMABLE_OUTPUT_FORMATS)[number];
 
-/** Content-Type for each streamable output format. */
+/**
+Content-Type for each streamable output format.
+ */
 export const OUTPUT_CONTENT_TYPE: Record<StreamableOutputFormat, string> = {
   adts: 'audio/aac',
   flac: 'audio/flac',
@@ -24,7 +28,9 @@ export const OUTPUT_CONTENT_TYPE: Record<StreamableOutputFormat, string> = {
   webm: 'video/webm',
 };
 
-/** Fragmented-MP4 muxer flags for progressive download without re-muxing. */
+/**
+Fragmented-MP4 muxer flags for progressive download without re-muxing.
+ */
 export const MP4_FRAGMENTED_OPTIONS = {
   movflags: 'frag_keyframe+empty_moov+default_base_moof',
 } as const;

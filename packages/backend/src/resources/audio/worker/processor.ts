@@ -25,7 +25,7 @@ export async function processMedia(payload: AudioProcessorType, inputData: Audio
     throw new Error(`Streaming output does not support format: ${format}`);
   }
 
-  const transcodings = [
+  const isTranscodings = [
     payload.bitrate,
     payload.channels,
     payload.codec,
@@ -54,11 +54,11 @@ export async function processMedia(payload: AudioProcessorType, inputData: Audio
   });
 
   const stream = input.audio();
-  if (!stream && transcodings) {
+  if (!stream && isTranscodings) {
     throw new Error('Audio processing requires an audio stream');
   }
 
-  if (!transcodings || !stream) {
+  if (!isTranscodings || !stream) {
     const control = pipeline(input, output);
     await control.completion;
     return;
@@ -66,8 +66,8 @@ export async function processMedia(payload: AudioProcessorType, inputData: Audio
 
   using decoder = await Decoder.create(stream);
   // Opus requires an 8..48 kHz rate and s16/flt samples; fltp input is rejected by libopus.
-  const encoderIsOpus = codecFor(format, payload.codec) === FF_ENCODER_LIBOPUS;
-  const filters = encoderIsOpus
+  const isEncoderIsOpus = codecFor(format, payload.codec) === FF_ENCODER_LIBOPUS;
+  const filters = isEncoderIsOpus
     ? [FilterAPI.create('aresample=48000'), FilterAPI.create('aformat=sample_fmts=flt'), ...buildFilters(payload)]
     : buildFilters(payload);
   const bitrate: string = payload.bitrate ?? (format === 'ogg' ? '96k' : '128k');

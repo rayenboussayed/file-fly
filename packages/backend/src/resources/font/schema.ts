@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 import { trimmed } from '@/utils/zod.js';
 
-/** Plain mimes (no macro/executable fonts); file-type detects all of these. */
+/**
+Plain mimes (no macro/executable fonts); file-type detects all of these.
+ */
 export const FONT_MIMES = [
   'font/ttf',
   'font/otf',
@@ -20,52 +22,90 @@ const FONT_MIME_SET = new Set<string>(FONT_MIMES);
  */
 export const isFontMime = (mime: string): boolean => FONT_MIME_SET.has(mime);
 
-/** Flat query parameters for `POST /font/metadata`. */
+/**
+Flat query parameters for `POST /font/metadata`.
+ */
 export const FontMetaSchema = z
   .object({
-    /** Collection member to select by PostScript name; defaults to the first. */
+    /**
+    Collection member to select by PostScript name; defaults to the first.
+     */
     font: trimmed(z.string().min(1).max(100)).optional(),
   })
   .strict();
-/** Query parameters for `POST /font/metadata`. */
+/**
+Query parameters for `POST /font/metadata`.
+ */
 export type FontMetaType = z.infer<typeof FontMetaSchema>;
 
-/** Flat query parameters for `POST /font/extract`. */
+/**
+Flat query parameters for `POST /font/extract`.
+ */
 export const FontExtractSchema = z
   .object({
-    /** Collection member to select by PostScript name; defaults to the first. */
+    /**
+    Collection member to select by PostScript name; defaults to the first.
+     */
     font: trimmed(z.string().min(1).max(100)).optional(),
-    /** Maximum glyph records to return (default: 10 000, capped at the `limit` max). */
+    /**
+    Maximum glyph records to return (default: 10 000, capped at the `limit` max).
+     */
     limit: z.coerce.number().int().min(1).max(10_000).optional(),
   })
   .strict();
-/** Query parameters for `POST /font/extract`. */
+/**
+Query parameters for `POST /font/extract`.
+ */
 export type FontExtractType = z.infer<typeof FontExtractSchema>;
 
-/** Flat query parameters for `POST /font/shape`. */
+/**
+Flat query parameters for `POST /font/shape`.
+ */
 export const FontShapeSchema = z.object({
-  /** Direction override; defaults to the script default. */
+  /**
+  Direction override; defaults to the script default.
+   */
   direction: z.enum(['ltr', 'rtl', 'auto']).optional(),
-  /** Comma-separated feature tags to enable or disable with a leading '-' (e.g. 'liga,-dlig,kern'). */
+  /**
+  Comma-separated feature tags to enable or disable with a leading '-' (e.g. 'liga,-dlig,kern').
+   */
   features: trimmed(z.string().max(200)).optional(),
-  /** Collection member to select by PostScript name; defaults to the first. */
+  /**
+  Collection member to select by PostScript name; defaults to the first.
+   */
   font: trimmed(z.string().min(1).max(100)).optional(),
-  /** Language override (e.g. en); defaults to the script default. */
+  /**
+  Language override (e.g. en); defaults to the script default.
+   */
   language: trimmed(z.string().min(2).max(16)).optional(),
-  /** Script override (e.g. Latn); defaults to the shaper's detection. */
+  /**
+  Script override (e.g. Latn); defaults to the shaper's detection.
+   */
   script: trimmed(z.string().min(2).max(8)).optional(),
-  /** The text to shape (max 500 chars). */
+  /**
+  The text to shape (max 500 chars).
+   */
   text: trimmed(z.string().min(1).max(500)),
 }).strict();
-/** Query parameters for `POST /font/shape`. */
+/**
+Query parameters for `POST /font/shape`.
+ */
 export type FontShapeType = z.infer<typeof FontShapeSchema>;
 
-/** Flat query parameters for `POST /font/subset`. */
+/**
+Flat query parameters for `POST /font/subset`.
+ */
 export const FontSubsetSchema = z.object({
-  /** Collection member to select by PostScript name; defaults to the first. */
+  /**
+  Collection member to select by PostScript name; defaults to the first.
+   */
   font: trimmed(z.string().min(1).max(100)).optional(),
-  /** The text to include in the subset (max 10 000 chars). */
+  /**
+  The text to include in the subset (max 10 000 chars).
+   */
   text: trimmed(z.string().min(1).max(10_000)),
 }).strict();
-/** Query parameters for `POST /font/subset`. */
+/**
+Query parameters for `POST /font/subset`.
+ */
 export type FontSubsetType = z.infer<typeof FontSubsetSchema>;

@@ -8,15 +8,25 @@ import { OoxmlReader } from './ooxml-reader.js';
  * All fields are optional because files may omit any of them.
  */
 export interface OoxmlMetadata {
-  /** From `docProps/app.xml`. */
+  /**
+  From `docProps/app.xml`.
+   */
   application?: string;
-  /** From `docProps/app.xml`, e.g. the producing application's version. */
+  /**
+  From `docProps/app.xml`, e.g. the producing application's version.
+   */
   appVersion?: string;
-  /** `docProps/app.xml`, usually a word processor revision count (number as string). */
+  /**
+  `docProps/app.xml`, usually a word processor revision count (number as string).
+   */
   category?: string;
-  /** From `docProps/app.xml`. */
+  /**
+  From `docProps/app.xml`.
+   */
   company?: string;
-  /** Creation timestamp as authored (ISO string in practice). */
+  /**
+  Creation timestamp as authored (ISO string in practice).
+   */
   created?: string;
   creator?: string;
   description?: string;

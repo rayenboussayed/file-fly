@@ -10,7 +10,8 @@ describe('FileParserInterceptor', () => {
       request: () => ({ url: '/health' }),
       response: () => ({}),
     };
-    const interceptor = new (await import('./file-parser.interceptor.js')).FileParserInterceptor(cls as never, {} as never);
+    const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
+    const interceptor = new FileParserInterceptor(cls as never, {} as never);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(await (interceptor.intercept(undefined as never, { handle: () => handled } as never) as any)).toBe(handled);
   });
@@ -68,47 +69,46 @@ describe('FileParserInterceptor', () => {
     expect(typeof store.get(CLS_CACHE_KEY)).toBe('string');
   });
 });
-describe('FileParserInterceptor cache keys', () => {
-  const setup = async (overrides: {
-    direction?: string;
-    headers?: Record<string, string>;
-  }) => {
-    const { PassThrough } = await import('node:stream');
-    const source = new PassThrough();
-    source.end(Buffer.from('hello world, this is a deterministic payload for hashing'));
-    const request = {
-      headers: { 'content-length': '42', ...overrides.headers },
-      method: 'POST',
-      query: { q: '1' },
-      raw: source,
-      signal: new AbortController().signal,
-      url: '/upload',
-    };
-    const store = new Map<symbol, unknown>();
-    store.set(CLS_SOURCE_STREAM, request.raw);
-    if (overrides.direction !== undefined) store.set(CLS_SOURCE_DIRECTION, overrides.direction);
-    const cls = {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      cacheKey: () => ({ get: () => store.get(CLS_CACHE_KEY), set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      fileHash: () => ({ get: () => store.get(CLS_FILE_HASH), set: (v: any) => store.set(CLS_FILE_HASH, v) }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      fileSignature: () => ({ get: () => store.get(CLS_FILE_SIGNATURE), set: (v: any) => store.set(CLS_FILE_SIGNATURE, v) }),
-      request: () => request,
-      response: () => ({ header: () => {} }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sourceDirection: () => ({ get: () => store.get(CLS_SOURCE_DIRECTION), set: (v: any) => store.set(CLS_SOURCE_DIRECTION, v) }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sourceStream: () => ({ get: () => store.get(CLS_SOURCE_STREAM), set: (v: any) => store.set(CLS_SOURCE_STREAM, v) }),
-    };
-    const fileTypeService = { signature: vi.fn(async () => ({ ext: 'png', mime: 'image/png' })) };
-    const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
-    const { of } = await import('rxjs');
-    const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
-    await interceptor.intercept(undefined as never, { handle: () => of('done') } as never);
-    return { request, store };
+const setup = async (overrides: {
+  direction?: string;
+  headers?: Record<string, string>;
+}) => {
+  const { PassThrough } = await import('node:stream');
+  const source = new PassThrough();
+  source.end(Buffer.from('hello world, this is a deterministic payload for hashing'));
+  const request = {
+    headers: { 'content-length': '42', ...overrides.headers },
+    method: 'POST',
+    query: { q: '1' },
+    raw: source,
+    signal: new AbortController().signal,
+    url: '/upload',
   };
+  const store = new Map<symbol, unknown>([[CLS_SOURCE_STREAM, request.raw]]);
+  if (overrides.direction !== undefined) store.set(CLS_SOURCE_DIRECTION, overrides.direction);
+  const cls = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cacheKey: () => ({ get: () => store.get(CLS_CACHE_KEY), set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fileHash: () => ({ get: () => store.get(CLS_FILE_HASH), set: (v: any) => store.set(CLS_FILE_HASH, v) }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fileSignature: () => ({ get: () => store.get(CLS_FILE_SIGNATURE), set: (v: any) => store.set(CLS_FILE_SIGNATURE, v) }),
+    request: () => request,
+    response: () => ({ header: () => {} }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sourceDirection: () => ({ get: () => store.get(CLS_SOURCE_DIRECTION), set: (v: any) => store.set(CLS_SOURCE_DIRECTION, v) }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sourceStream: () => ({ get: () => store.get(CLS_SOURCE_STREAM), set: (v: any) => store.set(CLS_SOURCE_STREAM, v) }),
+  };
+  const fileTypeService = { signature: vi.fn(async () => ({ ext: 'png', mime: 'image/png' })) };
+  const { FileParserInterceptor } = await import('./file-parser.interceptor.js');
+  const { of } = await import('rxjs');
+  const interceptor = new FileParserInterceptor(cls as never, fileTypeService as never);
+  await interceptor.intercept(undefined as never, { handle: () => of('done') } as never);
+  return { request, store };
+};
 
+describe('FileParserInterceptor cache keys', () => {
   it('computes the file hash from the stream prefix when the client does not supply one', async () => {
     const { store } = await setup({});
     const hash = store.get(CLS_FILE_HASH);
@@ -162,8 +162,7 @@ describe('FileParserInterceptor prefix hash with a small cap', () => {
       signal: new AbortController().signal,
       url: '/upload',
     };
-    const store = new Map<symbol, unknown>();
-    store.set(CLS_SOURCE_STREAM, source);
+    const store = new Map<symbol, unknown>([[CLS_SOURCE_STREAM, source]]);
     const cls = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       cacheKey: () => ({ get: () => {}, set: (v: any) => store.set(CLS_CACHE_KEY, v) }),
@@ -196,7 +195,7 @@ describe('FileParserInterceptor prefix hash failure path', () => {
     // Discard the source-level error so vitest does not flag an unhandled
     // stream error; the interceptor under test rejects on its own listener.
     source.on('error', () => {});
-    const chunks = [Buffer.from('hello'), null] as const;
+    const chunks = [Buffer.from('hello'), undefined] as const;
     // feed one chunk then error the stream
     source.write(chunks[0]);
     queueMicrotask(() => source.destroy(new Error('connection reset')));
@@ -226,7 +225,7 @@ describe('FileParserInterceptor prefix hash failure path', () => {
         // Each tee output branch gets the source's error; swallow it here so
         // the failing branch (the one this test asserts on) is covered but
         // no unhandled 'error' leaks past the test.
-        set: (v: { on(event: string, cb: () => void): void }) => {
+        set: (v: { on(event: string, callback: () => void): void }) => {
           store2.current = v as never;
           v.on('error', () => {});
           return v;
@@ -235,7 +234,7 @@ describe('FileParserInterceptor prefix hash failure path', () => {
     };
     const store2 = { current: source as never };
     const fileTypeService = {
-      signature: vi.fn(async ({ stream }: { stream: { on(event: string, cb: () => void): void } }) => {
+      signature: vi.fn(async ({ stream }: { stream: { on(event: string, callback: () => void): void } }) => {
         // Real signature pump attaches error handlers; do the same here.
         stream.on('error', () => {});
         return { ext: 'png', mime: 'image/png' };

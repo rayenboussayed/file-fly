@@ -10,6 +10,9 @@
 <dt><a href="#importWorker">importWorker(workerData)</a> ⇒ <code>Promise&lt;void&gt;</code></dt>
 <dd><p>Imports the worker module fresh with the given workerData.</p>
 </dd>
+<dt><a href="#runProcessor">runProcessor(payload)</a> ⇒ <code>Promise&lt;Buffer&lt;ArrayBuffer&gt;&gt;</code></dt>
+<dd><p>Runs the processor worker with the given payload and collects its output.</p>
+</dd>
 </dl>
 
 <a name="stubStdin"></a>
@@ -44,3 +47,16 @@ Imports the worker module fresh with the given workerData.
 | workerData | <code>Record&lt;string, unknown&gt;</code> | The worker payload (operation + inputFormat). |
 
 src: packages/backend/src/resources/video/worker/worker.spec.ts:50  
+<a name="runProcessor"></a>
+
+## runProcessor(payload) ⇒ <code>Promise&lt;Buffer&lt;ArrayBuffer&gt;&gt;</code>
+Runs the processor worker with the given payload and collects its output.
+
+**Kind**: global function  
+**Returns**: <code>Promise&lt;Buffer&lt;ArrayBuffer&gt;&gt;</code> - The bytes written to stdout by the worker.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| payload | <code>Record&lt;string, unknown&gt;</code> | Video processor options passed to the worker. |
+
+src: packages/backend/src/resources/video/worker/worker.spec.ts:61  

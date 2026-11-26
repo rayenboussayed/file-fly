@@ -20,7 +20,7 @@
 File-based route for the per-IP detail page.
 
 **Kind**: global constant  
-src: packages/dashboard/src/routes/ip.$ip.tsx:6  
+src: packages/dashboard/src/routes/ip.$ip.tsx:8  
 <a name="RouteComponent"></a>
 
 ## RouteComponent() ⇒ <code>import(&quot;react&quot;).JSX.Element</code>
@@ -28,4 +28,4 @@ Reads the route param and renders the IP detail page.
 
 **Kind**: global function  
 **Returns**: <code>import(&quot;react&quot;).JSX.Element</code> - The IP detail page element.  
-src: packages/dashboard/src/routes/ip.$ip.tsx:14  
+src: packages/dashboard/src/routes/ip.$ip.tsx:16  

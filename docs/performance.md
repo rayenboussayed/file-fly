@@ -31,7 +31,7 @@ before/after delta under an identical workload is the signal.
 
 A later refactor routed `bufferStream` through `stream.compose(ByteCapTransform)`.
 Against the task baseline of 1.4278 ms mean / 700.4 hz (`vitest bench --run
---config ./vitest.config.perf.ts test/perf/buffer.bench.ts --compare`), two
+--config ./vitest.config.performance.ts test/perf/buffer.bench.ts --compare`), two
 isolated runs of the compose path measured 1.60 and 1.81 ms mean; restoring the
 jutilities `streamSize` generator measured 1.22 ms with the same oversize
 rejection. No JSON artifacts were retained for those comparison runs; the
@@ -55,7 +55,7 @@ run on their own worker threads. Raise it only based on load evidence.
 ## Benchmarks (`packages/backend/test/perf/`)
 
 `vitest bench` runs only files matched by `benchmark.include` in
-`vitest.config.perf.ts`. Results are reported as `hz`, `min`, `max`, `mean`,
+`vitest.config.performance.ts`. Results are reported as `hz`, `min`, `max`, `mean`,
 `p75/p99/p995/p999`, `rme` (relative margin of error) and `samples`.
 
 Rules that keep the suite honest:
@@ -63,8 +63,8 @@ Rules that keep the suite honest:
 - **Never gate CI on absolute times.** A fixed "ms < budget" fails on a loaded
   runner with zero code change. Compare runs instead:
   ```sh
-  npx vitest bench --run --config packages/backend/vitest.config.perf.ts --outputJson test/results/bench.json
-  npx vitest bench --run --config packages/backend/vitest.config.perf.ts --compare test/results/bench.json
+  npx vitest bench --run --config packages/backend/vitest.config.performance.ts --outputJson test/results/bench.json
+  npx vitest bench --run --config packages/backend/vitest.config.performance.ts --compare test/results/bench.json
   ```
   `--compare` prints a side-by-side table; v4 has no threshold or fail-on-
   regression option, so treat any regression > `max(10%, 3× combined rme)` as

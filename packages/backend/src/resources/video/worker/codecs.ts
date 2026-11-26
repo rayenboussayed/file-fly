@@ -12,7 +12,7 @@ import type { VideoProcessorType } from '../schema.js';
  * @returns The bitrate in bits per second, defaulting to 2 000 000 when unparsable.
  */
 export function parseBitrate(value: string): number {
-  const match = value.match(/^(\d+)([kM])$/i);
+  const match = /^(\d+)([kM])$/i.exec(value);
   const amount = match?.[1];
   const unit = match?.[2];
   if (amount === undefined || unit === undefined) return 2_000_000;

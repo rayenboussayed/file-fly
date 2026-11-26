@@ -4,18 +4,35 @@ import { EmptyQuerySchema, trimmed } from '@/utils/zod.js';
 
 const hexColor = trimmed(z.string().regex(/^[0-9a-f]{6}$/i));
 
-/** Only the plain OOXML word mime; templates, macros and other packages are rejected. */
+/**
+Only the plain OOXML word mime; templates, macros and other packages are rejected.
+ */
 export const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-/** Flat query parameters for `POST /docx/extract` (empty; rejects junk params). */
+/**
+Flat query parameters for `POST /docx/extract` (empty; rejects junk params).
+ */
 export const DocxExtractSchema = EmptyQuerySchema;
 
-/** Flat query parameters for `POST /docx/metadata` (empty; rejects junk params). */
+/**
+Flat query parameters for `POST /docx/metadata` (empty; rejects junk params).
+ */
 export const DocxMetadataSchema = EmptyQuerySchema;
 const points = z.number().min(0).max(2000);
 
-/** A formatted text run; every TextRun option is mirrored here. */
+const underlineStyleSchema = z
+  .object({
+    color: hexColor.optional(),
+    type: z.enum(['single', 'words', 'double', 'thick', 'dotted', 'dottedHeavy', 'dash', 'dashedHeavy', 'dashLong', 'dashLongHeavy', 'dotDash', 'dashDotHeavy', 'dotDotDash', 'dashDotDotHeavy', 'wave', 'wavyHeavy', 'wavyDouble', 'none']),
+  })
+  .strict();
+
+const underlineSchema = z.union([z.literal(true), underlineStyleSchema]).optional();
+
+/**
+A formatted text run; every TextRun option is mirrored here.
+ */
 const runSchema = z
   .object({
     allCaps: z.boolean().optional(),
@@ -23,9 +40,13 @@ const runSchema = z
     break: z.number().int().min(1).max(100).optional(),
     color: hexColor.optional(),
     doubleStrike: z.boolean().optional(),
-    /** Endnote id; renders an endnote reference at this position. */
+    /**
+    Endnote id; renders an endnote reference at this position.
+     */
     endnote: z.number().int().positive().optional(),
-    /** Footnote id; renders a footnote reference at this position. */
+    /**
+    Footnote id; renders a footnote reference at this position.
+     */
     footnote: z.number().int().positive().optional(),
     highlight: z
       .enum(['black', 'blue', 'cyan', 'darkBlue', 'darkCyan', 'darkGray', 'darkGreen', 'darkMagenta', 'darkRed', 'darkYellow', 'green', 'lightGray', 'magenta', 'none', 'red', 'white', 'yellow'])
@@ -35,35 +56,37 @@ const runSchema = z
     smallCaps: z.boolean().optional(),
     strike: z.boolean().optional(),
     subScript: z.boolean().optional(),
-    /** Superscript (mutually exclusive with subscript). */
+    /**
+    Superscript (mutually exclusive with subscript).
+     */
     superScript: z.boolean().optional(),
     text: z.string().max(100_000),
     type: z.literal('run').optional(),
-    underline: z
-      .union([
-        z.literal(true),
-        z.object({
-          color: hexColor.optional(),
-          type: z.enum(['single', 'words', 'double', 'thick', 'dotted', 'dottedHeavy', 'dash', 'dashedHeavy', 'dashLong', 'dashLongHeavy', 'dotDash', 'dashDotHeavy', 'dotDotDash', 'dashDotDotHeavy', 'wave', 'wavyHeavy', 'wavyDouble', 'none']),
-        }).strict(),
-      ])
-      .optional(),
+    underline: underlineSchema,
     vanish: z.boolean().optional(),
   })
   .strict()
   .refine((run) => run.superScript !== true || run.subScript !== true, {
     message: 'superScript and subScript are mutually exclusive',
   });
-/** A validated text run; mirrors the docx TextRun options. */
+/**
+A validated text run; mirrors the docx TextRun options.
+ */
 export type RunType = z.infer<typeof runSchema>;
 
 const spacingSchema = z
   .object({
-    /** Space before in points. */
+    /**
+    Space before in points.
+     */
     after: points.optional(),
-    /** Space after in points. */
+    /**
+    Space after in points.
+     */
     before: points.optional(),
-    /** Exact line rule (atLeast/exact exactly/auto). */
+    /**
+    Exact line rule (atLeast/exact exactly/auto).
+     */
     line: points.optional(),
     lineRule: z.enum(['atLeast', 'exact', 'auto']).optional(),
   })
@@ -89,19 +112,23 @@ const tabStopSchema = z
   .object({
     alignment: z.enum(['left', 'right', 'center', 'decimal', 'bar']).default('left'),
     leader: z.enum(['none', 'dot', 'hyphen', 'underscore', 'middleDot']).default('none'),
-    /** Position in twentieths of a point (same unit as Word tab positions). */
+    /**
+    Position in twentieths of a point (same unit as Word tab positions).
+     */
     position: z.number().min(0).max(32_000),
   })
   .strict();
 
-const numberingRefSchema = z
+const numberingReferenceSchema = z
   .object({ level: z.number().int().min(0).max(8), reference: trimmed(z.string().min(1).max(120)) })
   .strict();
 
 const borderSchema = z
   .object({
     color: hexColor.optional(),
-    /** Size in eighths of a point (Word sz). */
+    /**
+    Size in eighths of a point (Word sz).
+     */
     size: z.number().int().min(0).max(96).optional(),
     style: z.enum(['single', 'double', 'dotted', 'dashed', 'none', 'thick', 'wave', 'dotDash']).default('single'),
   })
@@ -133,7 +160,7 @@ const cellElementSchema = z.discriminatedUnion('type', [
   z.lazy(() => imageSchema),
   z.lazy(() => hyperlinkSchema),
   z.lazy(() => bookmarkSchema),
-  z.lazy(() => commentRefSchema),
+  z.lazy(() => commentReferenceSchema),
 ]);
 
 const tableCellSchema = z
@@ -150,7 +177,9 @@ const tableCellSchema = z
 const tableSchema = z
   .object({
     borders: tableBordersSchema.optional(),
-    /** Repeats the first row across pages. */
+    /**
+    Repeats the first row across pages.
+     */
     headerRow: z.boolean().optional(),
     layout: z.enum(['autofit', 'fixed']).optional(),
     rows: z.array(z.array(tableCellSchema)).min(1).max(1000),
@@ -162,9 +191,13 @@ const tableSchema = z
 const imageSchema = z
   .object({
     altText: z.string().max(500).optional(),
-    /** Base64-encoded image bytes (no data URI prefix). */
+    /**
+    Base64-encoded image bytes (no data URI prefix).
+     */
     data: z.string().min(1).max(15 * 1024 * 1024).regex(/^[A-Z0-9+/]*={0,2}$/i, 'invalid base64'),
-    /** Required for `imageType: 'svg'`; a raster fallback for processors that cannot draw SVG. */
+    /**
+    Required for `imageType: 'svg'`; a raster fallback for processors that cannot draw SVG.
+     */
     fallback: z
       .object({
         data: z.string().min(1).max(15 * 1024 * 1024).regex(/^[A-Z0-9+/]*={0,2}$/i, 'invalid base64'),
@@ -181,7 +214,9 @@ const imageSchema = z
 
 const hyperlinkSchema = z
   .object({
-    /** Anchor of an in-document bookmark; wins over url when both set. */
+    /**
+    Anchor of an in-document bookmark; wins over url when both set.
+     */
     anchor: z.string().min(1).max(255).optional(),
     runs: z.array(runSchema).min(1),
     type: z.literal('hyperlink'),
@@ -191,9 +226,13 @@ const hyperlinkSchema = z
 
 const tocSchema = z
   .object({
-    /** Heading depth to include (1-6). */
+    /**
+    Heading depth to include (1-6).
+     */
     levels: z.number().int().min(1).max(6).default(3),
-    /** The alias (title) of the inserted table of contents. */
+    /**
+    The alias (title) of the inserted table of contents.
+     */
     title: z.string().min(1).max(200).default('Table of contents'),
     type: z.literal('toc'),
   })
@@ -207,7 +246,7 @@ const bookmarkSchema = z
   })
   .strict();
 
-const commentRefSchema = z
+const commentReferenceSchema = z
   .object({
     id: z.number().int().positive(),
     type: z.literal('commentRef'),
@@ -221,7 +260,7 @@ const paragraphSchema = z
     indent: indentSchema.optional(),
     keepLines: z.boolean().optional(),
     keepWithNext: z.boolean().optional(),
-    numbering: numberingRefSchema.optional(),
+    numbering: numberingReferenceSchema.optional(),
     outlineLevel: z.number().int().min(0).max(9).optional(),
     pageBreakBefore: z.boolean().optional(),
     runs: z.array(runSchema).min(1),
@@ -233,7 +272,7 @@ const paragraphSchema = z
   .strict();
 
 const elementSchema = z.discriminatedUnion('type', [
-  commentRefSchema,
+  commentReferenceSchema,
   paragraphSchema,
   hyperlinkSchema,
   tableSchema,
@@ -244,11 +283,42 @@ const elementSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('columnBreak') }).strict(),
   z.object({ type: z.literal('thematicBreak') }).strict(),
 ]);
-/** The discriminated union of all supported document-body elements. */
+/**
+The discriminated union of all supported document-body elements.
+ */
 export type ElementType = z.infer<typeof elementSchema>;
 
 const headerFooterSchema = z
   .union([z.array(elementSchema).min(1), z.literal('blank')])
+  .optional();
+
+const columnCountSchema = z.number().int().min(1).max(40);
+
+const columnsSchema = z
+  .union([
+    columnCountSchema,
+    z.object({ count: columnCountSchema, spacing: z.number().int().min(0).max(2000) }).strict(),
+  ])
+  .optional();
+
+const marginSchema = z.number().int().min(0).max(2000).optional();
+
+const marginsSchema = z
+  .object({
+    bottom: marginSchema,
+    left: marginSchema,
+    right: marginSchema,
+    top: marginSchema,
+  })
+  .strict()
+  .optional();
+
+const pageSizeSchema = z
+  .object({
+    height: z.number().int().min(1440).max(20_160),
+    width: z.number().int().min(1440).max(20_160),
+  })
+  .strict()
   .optional();
 
 const sectionSchema = z
@@ -264,21 +334,10 @@ const sectionSchema = z
       .optional(),
     properties: z
       .object({
-        columns: z.union([z.number().int().min(1).max(40), z.object({ count: z.number().int().min(1).max(40), spacing: z.number().int().min(0).max(2000) }).strict()]).optional(),
-        margins: z
-          .object({
-            bottom: z.number().int().min(0).max(2000).optional(),
-            left: z.number().int().min(0).max(2000).optional(),
-            right: z.number().int().min(0).max(2000).optional(),
-            top: z.number().int().min(0).max(2000).optional(),
-          })
-          .strict()
-          .optional(),
+        columns: columnsSchema,
+        margins: marginsSchema,
         orientation: z.enum(['portrait', 'landscape']).optional(),
-        pageSize: z
-          .object({ height: z.number().int().min(1440).max(20_160), width: z.number().int().min(1440).max(20_160) })
-          .strict()
-          .optional(),
+        pageSize: pageSizeSchema,
         sectionType: z.enum(['continuous', 'nextColumn', 'nextPage', 'evenPage', 'oddPage']).optional(),
       })
       .strict()
@@ -299,19 +358,19 @@ const metadataSchema = z
   })
   .strict();
 
+const numberingLevelSchema = z
+  .object({
+    alignment: z.enum(['left', 'center', 'right']).optional(),
+    format: z.enum(['decimal', 'upperRoman', 'lowerRoman', 'upperLetter', 'lowerLetter', 'bullet', 'none']).default('decimal'),
+    level: z.number().int().min(0).max(8),
+    start: z.number().int().min(0).max(10_000).optional(),
+    text: z.string().max(50).optional(),
+  })
+  .strict();
+
 const numberingSchema = z
   .object({
-    levels: z.array(
-      z
-        .object({
-          alignment: z.enum(['left', 'center', 'right']).optional(),
-          format: z.enum(['decimal', 'upperRoman', 'lowerRoman', 'upperLetter', 'lowerLetter', 'bullet', 'none']).default('decimal'),
-          level: z.number().int().min(0).max(8),
-          start: z.number().int().min(0).max(10_000).optional(),
-          text: z.string().max(50).optional(),
-        })
-        .strict(),
-    ).min(1).max(9),
+    levels: z.array(numberingLevelSchema).min(1).max(9),
     reference: trimmed(z.string().min(1).max(120)),
   })
   .strict();
@@ -333,22 +392,34 @@ const commentSchema = z
   })
   .strict();
 
-/** Body of `POST /docx/build`. */
+/**
+Body of `POST /docx/build`.
+ */
 export const DocxBuildSchema = z
   .object({
-    /** Comments; each is appended at the end of the document with an id reference. */
+    /**
+    Comments; each is appended at the end of the document with an id reference.
+     */
     comments: z.array(commentSchema).max(100).optional(),
-    /** Endnote definitions keyed by the ids referenced from runs. */
+    /**
+    Endnote definitions keyed by the ids referenced from runs.
+     */
     endnotes: z.array(noteSchema).max(100).optional(),
-    /** Footnote definitions keyed by the ids referenced from runs. */
+    /**
+    Footnote definitions keyed by the ids referenced from runs.
+     */
     footnotes: z.array(noteSchema).max(100).optional(),
     metadata: metadataSchema.optional(),
-    /** Numbering definitions referenced from paragraph elements. */
+    /**
+    Numbering definitions referenced from paragraph elements.
+     */
     numbering: z.array(numberingSchema).max(100).optional(),
     sections: z.array(sectionSchema).min(1).max(100),
   })
   .strict();
-/** Validated `POST /docx/build` payload. */
+/**
+Validated `POST /docx/build` payload.
+ */
 export type DocxBuildType = z.infer<typeof DocxBuildSchema>;
 
 

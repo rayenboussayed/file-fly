@@ -32,7 +32,8 @@ export async function dna(): Promise<void> {
     const pdq = await loadPdq();
     const frames: Array<{ hash: string; quality: number; t: number }> = [];
     let n = 0;
-    for await (const frame of filter.frames(decoder.frames(input.packets(stream.index)))) {
+    const videoFrames = filter.frames(decoder.frames(input.packets(stream.index)));
+    for await (const frame of videoFrames) {
       if (!frame) {
         continue;
       }
@@ -43,22 +44,22 @@ export async function dna(): Promise<void> {
         let bytes: Buffer = rgb;
         let width = w;
         let height = h;
-        let trimmed: null | { data: Buffer; info: { height: number; width: number } } = null;
+        let trimmed: undefined | { data: Buffer; info: { height: number; width: number } };
         try {
           trimmed = await sharp(rgb, { raw: { channels: 3, height: h, width: w } })
             .trim({ threshold: 12 })
             .raw()
             .toBuffer({ resolveWithObject: true });
         } catch {
-          trimmed = null;
+          trimmed = undefined;
         }
         if (trimmed && trimmed.info.width >= 64 && trimmed.info.height >= 64) {
           bytes = trimmed.data;
           width = trimmed.info.width;
           height = trimmed.info.height;
         }
-        const res = pdq.hash({ channels: 3, data: new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.length), height, width });
-        frames.push({ hash: pdq.toHex(res.hash), quality: res.quality, t: n / 2 });
+        const result = pdq.hash({ channels: 3, data: new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.length), height, width });
+        frames.push({ hash: pdq.toHex(result.hash), quality: result.quality, t: n / 2 });
         n += 1;
       } finally {
         frame.free();

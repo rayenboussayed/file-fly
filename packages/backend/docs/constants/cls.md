@@ -36,7 +36,7 @@
 Outcome of the worker cache lookup for this request (`hit` | `miss`).
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:2  
+src: packages/backend/src/constants/cls.ts:4  
 dist: packages/backend/dist/constants/cls.js:1
 <a name="CLS_BYTES_IN"></a>
 
@@ -44,7 +44,7 @@ dist: packages/backend/dist/constants/cls.js:1
 Count of bytes received for this request (signature/file-hash path or download meter).
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:5  
+src: packages/backend/src/constants/cls.ts:9  
 dist: packages/backend/dist/constants/cls.js:2
 <a name="CLS_BYTES_OUT"></a>
 
@@ -52,7 +52,7 @@ dist: packages/backend/dist/constants/cls.js:2
 Count of bytes streamed to the client for this request (via the out meter).
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:8  
+src: packages/backend/src/constants/cls.ts:14  
 dist: packages/backend/dist/constants/cls.js:3
 <a name="CLS_CACHE_KEY"></a>
 
@@ -60,7 +60,7 @@ dist: packages/backend/dist/constants/cls.js:3
 Deterministic cache key for this request (file hash + query, or body digest).
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:11  
+src: packages/backend/src/constants/cls.ts:19  
 dist: packages/backend/dist/constants/cls.js:4
 <a name="CLS_FILE_HASH"></a>
 
@@ -68,7 +68,7 @@ dist: packages/backend/dist/constants/cls.js:4
 SHA-512 of the uploaded bytes (or its first FILE_HASH_HEADER_SIZE bytes).
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:14  
+src: packages/backend/src/constants/cls.ts:24  
 dist: packages/backend/dist/constants/cls.js:5
 <a name="CLS_FILE_SCAN"></a>
 
@@ -76,7 +76,7 @@ dist: packages/backend/dist/constants/cls.js:5
 Result of the virus scan for this request, when scanning is enabled.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:17  
+src: packages/backend/src/constants/cls.ts:29  
 dist: packages/backend/dist/constants/cls.js:6
 <a name="CLS_FILE_SIGNATURE"></a>
 
@@ -84,7 +84,7 @@ dist: packages/backend/dist/constants/cls.js:6
 Detected file-type signature of the upload, when probed.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:20  
+src: packages/backend/src/constants/cls.ts:34  
 dist: packages/backend/dist/constants/cls.js:7
 <a name="CLS_SOURCE_DIRECTION"></a>
 
@@ -92,7 +92,7 @@ dist: packages/backend/dist/constants/cls.js:7
 Direction of the media source: `upload` (POST body) or `download` (`source=` URL).
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:23  
+src: packages/backend/src/constants/cls.ts:39  
 dist: packages/backend/dist/constants/cls.js:8
 <a name="CLS_SOURCE_STREAM"></a>
 
@@ -100,5 +100,5 @@ dist: packages/backend/dist/constants/cls.js:8
 The (possibly capped) media stream for this request, set by the scanner/parser.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/cls.ts:26  
+src: packages/backend/src/constants/cls.ts:44  
 dist: packages/backend/dist/constants/cls.js:9

@@ -19,7 +19,7 @@ AUTH_* or ClamAV credentials never cross into a worker.</p>
 ## Functions
 
 <dl>
-<dt><a href="#workerEnv">workerEnv()</a> ⇒ <code>Record&lt;string, string&gt;</code></dt>
+<dt><a href="#workerEnvironment">workerEnvironment()</a> ⇒ <code>Record&lt;string, string&gt;</code></dt>
 <dd><p>Builds the worker environment from WORKER_ENV_KEYS.</p>
 </dd>
 <dt><a href="#workerPath">workerPath(filename, metaUrl)</a> ⇒ <code>string</code></dt>
@@ -35,12 +35,13 @@ would otherwise resolve it against the process cwd and fail in production.</p>
 Spawns sibling worker threads for CPU-heavy media/document work and serves their output (with a shared stream cache).
 
 **Kind**: global variable  
-src: packages/backend/src/services/worker.service.ts:68  
+src: packages/backend/src/services/worker.service.ts:73  
 dist: packages/backend/dist/services/worker.service.js:51
 
 * [WorkerService](#WorkerService)
     * [.createWorker(filename, options)](#WorkerService+createWorker) ⇒ <code>Promise&lt;Readable&gt;</code>
     * [.acquireWorkerSlot()](#WorkerService+acquireWorkerSlot) ⇒ <code>Promise&lt;void&gt;</code>
+    * [.finishPersist(key, branch, succeeded)](#WorkerService+finishPersist) ⇒ <code>Promise&lt;void&gt;</code>
     * [.keyFor(baseKey, filename, workerData)](#WorkerService+keyFor) ⇒ <code>string</code>
     * [.persist(key, branch, succeeded)](#WorkerService+persist)
     * [.releaseWorkerSlot()](#WorkerService+releaseWorkerSlot)
@@ -60,7 +61,7 @@ otherwise produced by a worker thread (and cached while streaming).
 | filename | <code>string</code> | Worker entry file to run in a worker thread. |
 | options | <code>CreateWorkerOptions</code> | Worker and cache options. |
 
-src: packages/backend/src/services/worker.service.ts:94  
+src: packages/backend/src/services/worker.service.ts:103  
 dist: packages/backend/dist/services/worker.service.js:66
 <a name="WorkerService+acquireWorkerSlot"></a>
 
@@ -68,8 +69,24 @@ dist: packages/backend/dist/services/worker.service.js:66
 Waits until a worker slot is free, then takes it.
 
 **Kind**: instance method of [<code>WorkerService</code>](#WorkerService)  
-src: packages/backend/src/services/worker.service.ts:127  
+src: packages/backend/src/services/worker.service.ts:136  
 dist: packages/backend/dist/services/worker.service.js:90
+<a name="WorkerService+finishPersist"></a>
+
+### workerService.finishPersist(key, branch, succeeded) ⇒ <code>Promise&lt;void&gt;</code>
+Waits for the worker and the cache fill, then unlinks failed entries.
+Never rejects: a cache failure only destroys the unused tee branch.
+
+**Kind**: instance method of [<code>WorkerService</code>](#WorkerService)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>string</code> | Cache key. |
+| branch | <code>Readable</code> | Source stream to persist. |
+| succeeded | <code>Promise&lt;boolean&gt;</code> | Worker exit status. |
+
+src: packages/backend/src/services/worker.service.ts:152  
+dist: packages/backend/dist/services/worker.service.js:98
 <a name="WorkerService+keyFor"></a>
 
 ### workerService.keyFor(baseKey, filename, workerData) ⇒ <code>string</code>
@@ -84,8 +101,8 @@ Builds the cache key: parts joined with NUL so no component can smuggle separato
 | filename | <code>string</code> | Worker entry filename mixed into the key. |
 | workerData | <code>unknown</code> | Worker payload mixed into the key. |
 
-src: packages/backend/src/services/worker.service.ts:142  
-dist: packages/backend/dist/services/worker.service.js:96
+src: packages/backend/src/services/worker.service.ts:185  
+dist: packages/backend/dist/services/worker.service.js:118
 <a name="WorkerService+persist"></a>
 
 ### workerService.persist(key, branch, succeeded)
@@ -102,16 +119,16 @@ Failures never affect the client: the entry is unlinked once the worker has sett
 | branch | <code>Readable</code> | Source stream to persist. |
 | succeeded | <code>Promise&lt;boolean&gt;</code> | Worker exit status. |
 
-src: packages/backend/src/services/worker.service.ts:163  
-dist: packages/backend/dist/services/worker.service.js:104
+src: packages/backend/src/services/worker.service.ts:206  
+dist: packages/backend/dist/services/worker.service.js:126
 <a name="WorkerService+releaseWorkerSlot"></a>
 
 ### workerService.releaseWorkerSlot()
 Releases a worker slot, waking one queued caller if any.
 
 **Kind**: instance method of [<code>WorkerService</code>](#WorkerService)  
-src: packages/backend/src/services/worker.service.ts:202  
-dist: packages/backend/dist/services/worker.service.js:124
+src: packages/backend/src/services/worker.service.ts:218  
+dist: packages/backend/dist/services/worker.service.js:130
 <a name="WorkerService+touch"></a>
 
 ### workerService.touch(key) ⇒ <code>Promise&lt;void&gt;</code>
@@ -123,8 +140,8 @@ Refreshes the entry's mtime so the janitor's LRU eviction keeps hot entries.
 | --- | --- | --- |
 | key | <code>string</code> | Cache key of the entry. |
 
-src: packages/backend/src/services/worker.service.ts:301  
-dist: packages/backend/dist/services/worker.service.js:199
+src: packages/backend/src/services/worker.service.ts:319  
+dist: packages/backend/dist/services/worker.service.js:205
 <a name="WORKER_ENV_KEYS"></a>
 
 ## WORKER\_ENV\_KEYS
@@ -135,9 +152,9 @@ AUTH_* or ClamAV credentials never cross into a worker.
 **Kind**: global constant  
 src: packages/backend/src/services/worker.service.ts:26  
 dist: packages/backend/dist/services/worker.service.js:23
-<a name="workerEnv"></a>
+<a name="workerEnvironment"></a>
 
-## workerEnv() ⇒ <code>Record&lt;string, string&gt;</code>
+## workerEnvironment() ⇒ <code>Record&lt;string, string&gt;</code>
 Builds the worker environment from WORKER_ENV_KEYS.
 
 **Kind**: global function  
@@ -160,5 +177,5 @@ would otherwise resolve it against the process cwd and fail in production.
 | filename | <code>string</code> | Worker filename as declared by the caller (e.g. `'./worker/index.js'`). |
 | metaUrl | <code>string</code> | `import.meta.url` of the module that declared the filename. |
 
-src: packages/backend/src/services/worker.service.ts:316  
-dist: packages/backend/dist/services/worker.service.js:209
+src: packages/backend/src/services/worker.service.ts:334  
+dist: packages/backend/dist/services/worker.service.js:215

@@ -21,7 +21,7 @@ import { isFontMime } from './schema.js';
  */
 const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
   const mime = requestMime(cls);
-  if (!isFontMime(mime) && mime !== 'application/octet-stream') {
+  if (mime !== 'application/octet-stream' && !isFontMime(mime)) {
     throw new UnsupportedMediaTypeException(`Unsupported media type "${mime}" for font input`);
   }
   await openMediaSource(cls);
@@ -80,8 +80,8 @@ const openFont = (
     }
     const selected = member === undefined
       ? first
-      : fonts.find((candidate) => candidate.postscriptName === member) ?? null;
-    if (selected === null || selected === undefined) {
+      : fonts.find((candidate) => candidate.postscriptName === member);
+    if (selected === undefined) {
       throw new BadRequestException({
         code: 'FONT_UNKNOWN_MEMBER',
         message: `collection member "${member}" not found (members: ${members.join(', ')})`,
@@ -160,7 +160,9 @@ const metadataOf = (font: fontkit.Font, format: string, collection: string[]) =>
   xHeight: font.xHeight,
 });
 
-/** Font feature service: parses sfnt containers (metadata, extraction, shaping, subsetting). */
+/**
+Font feature service: parses sfnt containers (metadata, extraction, shaping, subsetting).
+ */
 @Injectable()
 export class FontService {
   constructor(private readonly cls: NormalizedClsService) {}

@@ -18,19 +18,31 @@ import { NormalizedClsService } from './normalized-cls.service.js';
  * Outcome of a ClamAV scan, mirrored into CLS for the clean case.
  */
 export interface AntiVirusScanResult {
-  /** True when ClamAV reported at least one known threat in the payload. */
+  /**
+  True when ClamAV reported at least one known threat in the payload.
+   */
   isInfected: boolean;
-  /** Names of the threats reported by ClamAV; empty when the payload is clean. */
+  /**
+  Names of the threats reported by ClamAV; empty when the payload is clean.
+   */
   viruses: string[];
 }
 
-/** Shape of the answer produced by `clamd` for an INSTREAM request. */
+/**
+Shape of the answer produced by `clamd` for an INSTREAM request.
+ */
 interface ScanStreamResult {
-  /** Always null for streamed scans. */
+  /**
+  Always null for streamed scans.
+   */
   file: null | string;
-  /** clamd's verdict; null/undefined when clamd answers with ERROR or times out. */
+  /**
+  clamd's verdict; null/undefined when clamd answers with ERROR or times out.
+   */
   isInfected: boolean | null;
-  /** Threat names reported by clamd; empty when the payload is clean. */
+  /**
+  Threat names reported by clamd; empty when the payload is clean.
+   */
   viruses: string[];
 }
 

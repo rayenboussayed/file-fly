@@ -1,6 +1,19 @@
 import type { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 /**
+ * Reads a named header without indexing the headers object with a variable key.
+ * @param headers - The request headers.
+ * @param name - The header name to look up.
+ * @returns The header value, or undefined when absent.
+ */
+export function headerValue(
+  headers: Record<string, string | string[] | undefined>,
+  name: string,
+): string | string[] | undefined {
+  return Object.entries(headers).find(([key]) => key === name)?.[1];
+}
+
+/**
  * Reads the current request's media type without parameters.
  *
  * Returns `''` when the request or the header is absent. The header is split

@@ -166,7 +166,7 @@ describe('audio worker', () => {
     codecFor('mp4');
     Object.defineProperties(process, {
       stdin: { value: fs.createReadStream('assets/gifs/gif-0.gif'), writable: true },
-      stdout: { value: new Writable({ write(_c: unknown, _e: BufferEncoding, cb: (error?: Error | null) => void) { cb(); } }), writable: true },
+      stdout: { value: new Writable({ write(_c: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) { callback(); } }), writable: true },
     });
     void processMedia({ channels: '1', format: 'mp3' } as never, { inputFormat: 'gif', operation: 'processor', payload: { channels: '1', format: 'mp3' } } as never).catch(() => {});
     await new Promise((resolve) => setTimeout(resolve, 100));

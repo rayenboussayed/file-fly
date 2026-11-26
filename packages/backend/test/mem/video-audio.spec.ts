@@ -4,10 +4,14 @@ import { VideoAudioSchema } from '@/resources/video/schema.js';
 
 import { settleHeap } from './helpers.js';
 
-/** Iterations in the measured loop. */
+/**
+Iterations in the measured loop.
+ */
 const ITERATIONS = 100;
 
-/** Representative query for the audio extraction route. */
+/**
+Representative query for the audio extraction route.
+ */
 const QUERY = {
   bitrate: '192k',
   format: 'mp3',
@@ -20,7 +24,7 @@ describe('video audio query parsing memory', () => {
     await settleHeap();
     const before = process.memoryUsage();
 
-    for (let i = 0; i < ITERATIONS; i += 1) {
+    for (let index = 0; index < ITERATIONS; index += 1) {
       const parsed = VideoAudioSchema.parse(QUERY);
       expect(parsed.format).toBe('mp3');
     }

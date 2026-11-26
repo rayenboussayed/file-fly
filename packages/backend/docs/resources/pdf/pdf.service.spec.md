@@ -20,7 +20,7 @@
 Passes the signature gate (%PDF magic) but pdf-lib cannot parse it at all.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pdf/pdf.service.spec.ts:288  
+src: packages/backend/src/resources/pdf/pdf.service.spec.ts:293  
 <a name="handCraftedPdf"></a>
 
 ## handCraftedPdf(infoObject, kids, pageCount, mediaBox) ⇒ <code>Buffer&lt;ArrayBufferLike&gt;</code>
@@ -36,4 +36,4 @@ Hand-crafts a minimal PDF with an optional /Info dict; usable where pdf-lib cann
 | pageCount | <code>number</code> |  | The /Count value written into the pages object. |
 | mediaBox | <code>string</code> | <code>&quot;[0 0 200 200]&quot;</code> | The raw MediaBox array for the single page object. |
 
-src: packages/backend/src/resources/pdf/pdf.service.spec.ts:259  
+src: packages/backend/src/resources/pdf/pdf.service.spec.ts:262  

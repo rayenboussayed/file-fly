@@ -30,7 +30,7 @@ Formats a byte count with binary (1024) units.
 | --- | --- | --- |
 | bytes | <code>number</code> | Size in bytes; non-finite or negative values format as `0 B`. |
 
-src: packages/dashboard/src/lib/format.ts:6  
+src: packages/dashboard/src/lib/format.ts:8  
 <a name="formatCount"></a>
 
 ## formatCount(value) ⇒ <code>string</code>
@@ -43,7 +43,7 @@ Formats a count with thousands separators.
 | --- | --- | --- |
 | value | <code>number</code> | The count to format. |
 
-src: packages/dashboard/src/lib/format.ts:21  
+src: packages/dashboard/src/lib/format.ts:22  
 <a name="formatHourBucket"></a>
 
 ## formatHourBucket(bucket) ⇒ <code>string</code>
@@ -56,7 +56,7 @@ Turns an ISO hour bucket into an axis label like `11-17 14:00`.
 | --- | --- | --- |
 | bucket | <code>string</code> | ISO hour bucket, e.g. `2026-11-17T14`. |
 
-src: packages/dashboard/src/lib/format.ts:30  
+src: packages/dashboard/src/lib/format.ts:31  
 <a name="formatMs"></a>
 
 ## formatMs(ms) ⇒ <code>string</code>

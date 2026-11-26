@@ -5,9 +5,13 @@ import { streamSize } from 'jutilities/node/stream/size';
 import { toBuffer } from 'jutilities/to';
 import { Transform, type TransformCallback } from 'node:stream';
 
-/** Maximum number of bytes buffered from a stream (20 MiB). */
+/**
+Maximum number of bytes buffered from a stream (20 MiB).
+ */
 const MAX_BUFFER_BYTES = 20 * 1024 * 1024;
-/** Maximum JSON payload a worker may write to stdout (8 MiB). */
+/**
+Maximum JSON payload a worker may write to stdout (8 MiB).
+ */
 const WORKER_JSON_MAX_BYTES = 8 * 1024 * 1024;
 
 /**
@@ -29,7 +33,7 @@ export class ByteCapTransform extends Transform {
       callback(new PayloadTooLargeException(`Input exceeds ${this.maxBytes} bytes`));
       return;
     }
-    callback(null, chunk);
+    callback(undefined, chunk);
   }
 }
 
@@ -44,7 +48,7 @@ export async function bufferStream(
   maxBytes: number = MAX_BUFFER_BYTES,
 ): Promise<Buffer> {
   const chunks: Buffer[] = [];
-  for await (const chunk of streamSize({
+  const sizedStream = streamSize({
     onSize: ({ size }) => {
       if (size > maxBytes) {
         // Throwing inside the callback rejects the generator iteration.
@@ -52,7 +56,8 @@ export async function bufferStream(
       }
     },
     stream,
-  })) {
+  });
+  for await (const chunk of sizedStream) {
     chunks.push(toBuffer(chunk));
   }
   return Buffer.concat(chunks);

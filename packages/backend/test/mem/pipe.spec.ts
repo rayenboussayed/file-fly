@@ -5,7 +5,9 @@ import { pipeToReply } from '@/utils/pipe.js';
 
 import { settleHeap } from './helpers.js';
 
-/** Iterations in the measured loop. */
+/**
+Iterations in the measured loop.
+ */
 const ITERATIONS = 5;
 
 /**
@@ -37,7 +39,7 @@ describe('pipeToReply memory', () => {
     await settleHeap();
     const before = process.memoryUsage();
 
-    for (let i = 0; i < ITERATIONS; i += 1) {
+    for (let index = 0; index < ITERATIONS; index += 1) {
       const source = fakeSource();
       await pipeToReply(source, { raw: failingRaw() } as never);
       // The sibling tee branch must see EOF for the cache persist to complete.

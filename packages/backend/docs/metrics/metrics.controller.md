@@ -9,7 +9,7 @@
 ## Functions
 
 <dl>
-<dt><a href="#bearerMatches">bearerMatches(actual, expected)</a> ⇒ <code>boolean</code></dt>
+<dt><a href="#isBearerTokenMatch">isBearerTokenMatch(actual, expected)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Constant-time comparison of bearer tokens.</p>
 </dd>
 </dl>
@@ -20,8 +20,8 @@
 Read-only metrics and liveness endpoints for the dashboard.
 
 **Kind**: global variable  
-src: packages/backend/src/metrics/metrics.controller.ts:30  
-dist: packages/backend/dist/metrics/metrics.controller.js:24
+src: packages/backend/src/metrics/metrics.controller.ts:31  
+dist: packages/backend/dist/metrics/metrics.controller.js:22
 
 * [MetricsController](#MetricsController)
     * [.healthGet()](#MetricsController+healthGet) ⇒ <code>{ status: string; timestamp: string; uptimeSeconds: number; }</code>
@@ -34,8 +34,8 @@ Liveness probe for Docker HEALTHCHECK and uptime checks.
 
 **Kind**: instance method of [<code>MetricsController</code>](#MetricsController)  
 **Returns**: <code>{ status: string; timestamp: string; uptimeSeconds: number; }</code> - Status, uptime in seconds and the current timestamp.  
-src: packages/backend/src/metrics/metrics.controller.ts:38  
-dist: packages/backend/dist/metrics/metrics.controller.js:29
+src: packages/backend/src/metrics/metrics.controller.ts:39  
+dist: packages/backend/dist/metrics/metrics.controller.js:27
 <a name="MetricsController+metricsGet"></a>
 
 ### metricsController.metricsGet(authorization) ⇒ <code>MetricsSnapshot</code>
@@ -56,11 +56,11 @@ Requires `METRICS_TOKEN` as a bearer token; in production, a missing
 | --- | --- | --- |
 | authorization | <code>string</code> | The `Authorization` header, if present. |
 
-src: packages/backend/src/metrics/metrics.controller.ts:57  
-dist: packages/backend/dist/metrics/metrics.controller.js:36
-<a name="bearerMatches"></a>
+src: packages/backend/src/metrics/metrics.controller.ts:58  
+dist: packages/backend/dist/metrics/metrics.controller.js:34
+<a name="isBearerTokenMatch"></a>
 
-## bearerMatches(actual, expected) ⇒ <code>boolean</code>
+## isBearerTokenMatch(actual, expected) ⇒ <code>boolean</code>
 Constant-time comparison of bearer tokens.
 
 **Kind**: global function  

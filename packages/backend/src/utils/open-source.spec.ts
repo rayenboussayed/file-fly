@@ -1,14 +1,16 @@
 import { Readable } from 'node:stream';
 import { describe, expect, it, vi } from 'vitest';
 
-let lastBody: Readable | undefined;
-let lastRequestHeaders: Record<string, string | string[]> | undefined;
-let mockResponseHeaders: Record<string, string> = {};
+const remote: {
+  body?: Readable;
+  requestHeaders?: Record<string, string | string[]>;
+  responseHeaders: Record<string, string>;
+} = { responseHeaders: {} };
 vi.mock('undici', () => ({
   request: vi.fn(async (_url: string, options?: { headers?: Record<string, string | string[]> }) => {
-    lastRequestHeaders = options?.headers;
-    lastBody = Readable.from([Buffer.from('remote-'), Buffer.from('bytes')]);
-    return { body: lastBody, headers: mockResponseHeaders };
+    remote.requestHeaders = options?.headers;
+    remote.body = Readable.from([Buffer.from('remote-'), Buffer.from('bytes')]);
+    return { body: remote.body, headers: remote.responseHeaders };
   }),
 }));
 
@@ -55,7 +57,7 @@ const makeGetHarness = (): Harness => {
  */
 async function collect(stream: Readable): Promise<Buffer> {
   const chunks: Buffer[] = [];
-  stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+  stream.on('data', (chunk: Buffer) => { chunks.push(Buffer.from(chunk)); });
   await new Promise<void>((resolve, reject) => {
     stream.once('end', () => resolve());
     stream.once('error', reject);
@@ -110,9 +112,9 @@ describe('openMediaSource', () => {
     const { cls, state } = makeGetHarness();
     await openMediaSource(cls);
     const meter = state.source as Readable;
-    expect(lastBody).toBeDefined();
+    expect(remote.body).toBeDefined();
     meter.emit('error', new Error('meter exploded'));
-    expect(lastBody?.destroyed).toBe(true);
+    expect(remote.body?.destroyed).toBe(true);
   });
 
   it('is idempotent: a second call keeps the already-opened source', async () => {
@@ -124,7 +126,7 @@ describe('openMediaSource', () => {
   });
 
   it('sets the upload direction for POST bodies without a meter', async () => {
-    const raw = new Readable({ read() { this.push(null); } });
+    const raw = Readable.from([]);
     const state: { bytesIn?: number; direction?: string; source?: unknown } = {};
     const cls = {
       bytesIn: () => ({ get: () => state.bytesIn, set: (value: number) => { state.bytesIn = value; } }),
@@ -176,7 +178,7 @@ describe('openMediaSource', () => {
       'x-forwarded-for': '203.0.113.9',
     });
     await openMediaSource(harness.cls);
-    expect(lastRequestHeaders).toEqual({ accept: 'image/*', 'accept-language': 'en', 'user-agent': 'fig-test' });
+    expect(remote.requestHeaders).toEqual({ accept: 'image/*', 'accept-language': 'en', 'user-agent': 'fig-test' });
   });
 
   it('rejects non-http(s) source URLs with 400', async () => {
@@ -184,8 +186,8 @@ describe('openMediaSource', () => {
     let error: unknown;
     try {
       await openMediaSource(cls);
-    } catch (value) {
-      error = value;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toMatchObject({ response: { code: 'SOURCE_SCHEME_NOT_ALLOWED' } });
   });
@@ -198,8 +200,8 @@ describe('openMediaSource', () => {
       let error: unknown;
     try {
       await openMediaSource(cls);
-    } catch (value) {
-      error = value;
+    } catch (error_) {
+      error = error_;
     }
       expect(error).toMatchObject({ response: { code: 'SOURCE_HOST_NOT_ALLOWED' } });
     },
@@ -219,19 +221,19 @@ describe('openMediaSource', () => {
   });
 
   it('rejects a declared remote content-length over the cap before streaming', async () => {
-    mockResponseHeaders = { 'content-length': '99999999999' };
+    remote.responseHeaders = { 'content-length': '99999999999' };
     try {
       const { cls } = makeGetHarnessWith('https://fixture.local/huge.bin');
       let error: unknown;
     try {
       await openMediaSource(cls);
-    } catch (value) {
-      error = value;
+    } catch (error_) {
+      error = error_;
     }
       expect(error).toMatchObject({ message: expect.stringContaining('exceeds') as string });
-      expect(lastBody?.destroyed).toBe(true);
+      expect(remote.body?.destroyed).toBe(true);
     } finally {
-      mockResponseHeaders = {};
+      remote.responseHeaders = {};
     }
   });
 
@@ -239,15 +241,15 @@ describe('openMediaSource', () => {
     const state: { direction?: string; source?: unknown } = {};
     const cls = {
       bytesIn: () => ({ get: () => {}, set: () => {} }),
-      request: () => ({ headers: { 'content-length': String(25 * 1024 * 1024 + 1) }, method: 'POST', raw: new Readable({ read() { this.push(null); } }) }),
+      request: () => ({ headers: { 'content-length': String(25 * 1024 * 1024 + 1) }, method: 'POST', raw: Readable.from([]) }),
       sourceDirection: () => ({ get: () => state.direction, set: (value: string) => { state.direction = value; } }),
       sourceStream: () => ({ get: () => state.source, set: (value: unknown) => { state.source = value; } }),
     } as never;
     let error: unknown;
     try {
       await openMediaSource(cls);
-    } catch (value) {
-      error = value;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toMatchObject({ message: expect.stringContaining('exceeds') as string });
     expect(state.source).toBeUndefined();
@@ -265,8 +267,8 @@ describe('openMediaSource', () => {
       let error: unknown;
       try {
         await open(offList.cls);
-      } catch (value) {
-        error = value;
+      } catch (error_) {
+        error = error_;
       }
       expect(error).toMatchObject({ response: { code: 'SOURCE_HOST_NOT_ALLOWED' } });
     } finally {
@@ -290,8 +292,8 @@ describe('openMediaSource', () => {
       let error: unknown;
       try {
         await open(badHarness.cls);
-      } catch (value) {
-        error = value;
+      } catch (error_) {
+        error = error_;
       }
       expect(error).toMatchObject({ response: { code: 'SOURCE_HOST_NOT_ALLOWED' } });
     } finally {
@@ -318,8 +320,8 @@ describe('openMediaSource', () => {
       let error: unknown;
       try {
         await collect(capped);
-      } catch (value) {
-        error = value;
+      } catch (error_) {
+        error = error_;
       }
       expect(error).toMatchObject({ message: expect.stringContaining('exceeds') as string });
     } finally {

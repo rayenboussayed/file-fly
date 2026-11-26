@@ -18,8 +18,8 @@ const pack = async (elements: ElementType[]) => {
   return unzipSync(buffer);
 };
 
-const text = (parts: ReturnType<typeof unzipSync>, name = 'word/document.xml') =>
-  Buffer.from(Object.entries(parts).find(([key]) => key === name)?.[1] ?? new Uint8Array()).toString('utf8');
+const text = (parts: ReturnType<typeof unzipSync>) =>
+  Buffer.from(Object.entries(parts).find(([key]) => key === 'word/document.xml')?.[1] ?? new Uint8Array()).toString('utf8');
 
 describe('buildBlock', () => {
   it('builds every paragraph flavor', async () => {

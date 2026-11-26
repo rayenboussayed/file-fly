@@ -21,7 +21,7 @@ encoder keys; formats absent from this map fall back to octet-stream.</p>
 Image routes: processor, metadata, DNA, stats and OCR (binary stream endpoints).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/image/image.controller.ts:43  
+src: packages/backend/src/resources/image/image.controller.ts:45  
 dist: packages/backend/dist/resources/image/image.controller.js:33
 <a name="SHARP_TO_MIME"></a>
 

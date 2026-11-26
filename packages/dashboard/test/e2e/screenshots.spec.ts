@@ -4,7 +4,9 @@ import path from 'node:path';
 
 import { SCREENSHOTS_DIR } from './support/paths.js';
 
-/** Inline stylesheet that freezes every animation/transition so screenshots are stable. */
+/**
+Inline stylesheet that freezes every animation/transition so screenshots are stable.
+ */
 const FREEZE_ANIMATIONS =
   '*,*::before,*::after{animation:none!important;transition:none!important}';
 

@@ -3,10 +3,14 @@ import { bench, describe } from 'vitest';
 
 import { bufferStream } from '@/utils/buffer.js';
 
-/** Bytes per chunk fed to the stream (64 KiB, readableHighWaterMark-ish). */
+/**
+Bytes per chunk fed to the stream (64 KiB, readableHighWaterMark-ish).
+ */
 const CHUNK_BYTES = 64 * 1024;
 
-/** Number of chunks per simulated upload (2 MiB total). */
+/**
+Number of chunks per simulated upload (2 MiB total).
+ */
 const CHUNKS = 32;
 
 /**

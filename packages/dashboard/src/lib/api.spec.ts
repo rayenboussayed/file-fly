@@ -87,8 +87,8 @@ describe('fetchMetrics', () => {
     let error: unknown;
     try {
       await fetchMetrics();
-    } catch (caught) {
-      error = caught;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).status).toBe(500);
@@ -116,8 +116,8 @@ describe('fetchMetrics', () => {
     let error: unknown;
     try {
       await fetchMetrics();
-    } catch (caught) {
-      error = caught;
+    } catch (error_) {
+      error = error_;
     }
     expect(error).toBeInstanceOf(MetricsContractError);
     expect((error as Error).message).not.toContain('203.0.113.7');

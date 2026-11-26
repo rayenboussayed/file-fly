@@ -4,6 +4,16 @@ import { describe, expect, it } from 'vitest';
 
 import { bufferStream, ByteCapTransform, parseJsonBuffer, readWorkerJson } from './buffer.js';
 
+/**
+ * Yields 21 one-MiB chunks to exceed the 20 MiB cap.
+ * @yields A 1 MiB zero-filled chunk.
+ */
+function* chunks(): Generator<Buffer> {
+  for (let index = 0; index < 21; index += 1) {
+    yield Buffer.alloc(1024 * 1024);
+  }
+}
+
 describe('bufferStream', () => {
   it('concatenates a small stream into a single Buffer', async () => {
     const result = await bufferStream(Readable.from([Buffer.from('hello '), 'world']));
@@ -17,22 +27,13 @@ describe('bufferStream', () => {
   });
 
   it('throws PayloadTooLargeException when exceeding a small maxBytes', async () => {
-    await expect(bufferStream(Readable.from([Buffer.from('hello')]), 4)).rejects.toBeInstanceOf(
-      PayloadTooLargeException,
-    );
+    const stream = Readable.from([Buffer.from('hello')]);
+    await expect(bufferStream(stream, 4)).rejects.toBeInstanceOf(PayloadTooLargeException);
   });
 
   it('throws PayloadTooLargeException at the default 20 MiB cap', async () => {
-    /**
-     * Yields 21 one-MiB chunks to exceed the 20 MiB cap.
-     * @yields A 1 MiB zero-filled chunk.
-     */
-    function* chunks(): Generator<Buffer> {
-      for (let i = 0; i < 21; i += 1) {
-        yield Buffer.alloc(1024 * 1024);
-      }
-    }
-    await expect(bufferStream(Readable.from(chunks()))).rejects.toBeInstanceOf(PayloadTooLargeException);
+    const stream = Readable.from(chunks());
+    await expect(bufferStream(stream)).rejects.toBeInstanceOf(PayloadTooLargeException);
   });
 });
 
@@ -61,14 +62,14 @@ describe('parseJsonBuffer', () => {
 
 describe('readWorkerJson', () => {
   it('parses worker stdout and rejects an oversized payload', async () => {
-    await expect(readWorkerJson(Readable.from([Buffer.from('{"ok":true}')]))).resolves.toEqual({
-      ok: true,
-    });
-    await expect(
-      readWorkerJson(Readable.from([Buffer.alloc(8 * 1024 * 1024 + 1)])),
-    ).rejects.toBeInstanceOf(PayloadTooLargeException);
+    const valid = Readable.from([Buffer.from('{"ok":true}')]);
+    await expect(readWorkerJson(valid)).resolves.toEqual({ ok: true });
+    const oversized = Readable.from([Buffer.alloc(8 * 1024 * 1024 + 1)]);
+    await expect(readWorkerJson(oversized)).rejects.toBeInstanceOf(PayloadTooLargeException);
   });
 });
 
-/** Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use. */
+/**
+Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use.
+ */
 export const BUFFER_API_SURFACE = 'Unit coverage for the buffer stream API surface.';

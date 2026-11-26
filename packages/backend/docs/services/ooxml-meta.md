@@ -10,5 +10,5 @@ Extracts normalized metadata from an OOXML package.
 | --- | --- | --- |
 | parts | <code>Map&lt;string, Buffer&lt;ArrayBufferLike&gt;&gt;</code> | The parts returned by [OoxmlReader.readParts](OoxmlReader.readParts). |
 
-src: packages/backend/src/services/ooxml-meta.ts:72  
-dist: packages/backend/dist/services/ooxml-meta.js:32
+src: packages/backend/src/services/ooxml-meta.ts:79  
+dist: packages/backend/dist/services/ooxml-meta.js:29

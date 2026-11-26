@@ -18,18 +18,22 @@ const data: AudioWorkerData = workerData;
  */
 export async function runAudioWorker(inputData: AudioWorkerData = data) {
   switch (inputData.operation) {
-  case 'dna':
+  case 'dna': {
     await dna(inputData);
     break;
-  case 'metadata':
+  }
+  case 'metadata': {
     await metadata(inputData);
     break;
-  case 'processor':
+  }
+  case 'processor': {
     await processMedia(inputData.payload, inputData);
     break;
-  case 'stats':
+  }
+  case 'stats': {
     await stats(inputData);
     break;
+  }
   }
 }
 

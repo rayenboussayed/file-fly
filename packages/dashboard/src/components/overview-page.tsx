@@ -14,11 +14,11 @@ import {
   formatPercent,
 } from '../lib/format.js';
 import { useMetricsQuery } from '../lib/metrics-query.js';
-import { IpTable } from './IpTable.js';
-import { KpiCard } from './KpiCard.js';
-import { metricsGate } from './MetricsGate.js';
-import { RouteTable } from './RouteTable.js';
-import { TrafficCharts } from './TrafficCharts.js';
+import { IpTable } from './ip-table.js';
+import { KpiCard } from './kpi-card.js';
+import { metricsGate } from './metrics-gate.js';
+import { RouteTable } from './route-table.js';
+import { TrafficCharts } from './traffic-charts.js';
 
 const ipComparators = {
   bytesIn: (a: MetricsPerIp, b: MetricsPerIp) => a.bytesIn - b.bytesIn,
@@ -65,7 +65,7 @@ export function OverviewPage() {
   }
 
   const snap = query.data;
-  if (!snap) return null;
+  if (!snap) return;
   const { today, totals } = snap;
   const errorRate =
     totals.requests === 0
@@ -83,7 +83,7 @@ export function OverviewPage() {
         </Text>
         {snap.metricsDisabled ? (
           <Badge label="metrics store disabled" variant="warning" />
-        ) : null}
+        ) : undefined}
       </VStack>
 
       <Grid columns={6} gap={2}>

@@ -5,9 +5,7 @@ import { NormalizedClsService } from './normalized-cls.service.js';
 
 describe('NormalizedClsService', () => {
   it('delegates to cls', () => {
-    const store = new Map<symbol, unknown>();
-    store.set(CLS_REQ, { id: 'request' });
-    store.set(CLS_RES, { id: 'response' });
+    const store = new Map<symbol, unknown>([[CLS_REQ, { id: 'request' }], [CLS_RES, { id: 'response' }]]);
     const cls = {
       get: <T>(key: symbol) => store.get(key) as T,
       set: (key: symbol, value: unknown) => store.set(key, value),

@@ -8,6 +8,7 @@ import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream, readWorkerJson } from '@/utils/buffer.js';
 import { loadPdq } from '@/utils/pdq.js';
+import { compareCodeUnits } from '@/utils/sort.js';
 import { PDQ_WASM_VERSION, SHARP_VERSION } from '@/utils/versions.js';
 
 import type { ImageProcessorType, OcrType } from './schema.js';
@@ -17,7 +18,55 @@ import { TesseractService } from './tesseract.service.js';
 
 const WORKER_ENTRY = workerPath('./worker/index.js', import.meta.url);
 
-/** Image feature service: streams uploads through sharp workers for processing, metadata, DNA, stats and OCR. */
+/**
+ * Normalizes the `lang` query value: splits on `+` or `,`, lowercases,
+ * trims, dedupes, sorts; defaults to `['eng']`, caps at 4 codes.
+ * @param raw - Raw `lang` query parameter (already regex-validated).
+ * @returns Sorted, deduped language codes.
+ */
+const parseLangs = (raw?: string): string[] => {
+  if (!raw) return ['eng'];
+  const langs = [...new Set(
+    raw
+      .split(/[+,]/)
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0),
+  )]
+    .toSorted(compareCodeUnits)
+    .slice(0, 4);
+  return langs.length === 0 ? ['eng'] : langs;
+};
+
+/**
+ * Preprocesses an image for OCR: auto-orient, downscale to at most 2000 px
+ * without enlarging, greyscale, normalize, sharpen; encoded as PNG.
+ * Pixel bombs are rejected via `limitInputPixels`; undecodable or malicious
+ * input surfaces as {@link UnsupportedMediaTypeException} instead of a 500.
+ * @param input - Raw (signature-verified) image bytes.
+ * @param logger - Logger used to record decode failures for operators.
+ * @returns PNG bytes ready for tesseract.
+ */
+const preprocess = async (input: Buffer, logger: Logger): Promise<Buffer> => {
+  try {
+    return await sharp(input, { failOn: 'error', limitInputPixels: 100_000_000 })
+      .rotate()
+      .resize({ fit: 'inside', height: 2000, width: 2000, withoutEnlargement: true })
+      .greyscale()
+      .normalize()
+      .sharpen({ sigma: 1 })
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+  } catch (error) {
+    // Clients see a generic 415 (Nest does not serialize `cause`); log the
+    // sharp/libvips reason for operators.
+    logger.warn(`Image could not be decoded: ${String(error)}`);
+    throw new UnsupportedMediaTypeException('Image could not be decoded', { cause: error });
+  }
+};
+
+/**
+Image feature service: streams uploads through sharp workers for processing, metadata, DNA, stats and OCR.
+ */
 @Injectable()
 export class ImageService {
   private readonly logger = new Logger(ImageService.name);
@@ -78,8 +127,8 @@ export class ImageService {
     }
     // By construction, FileParserInterceptor binds sourceStream before any service method runs.
     const buffer = await bufferStream(this.cls.sourceStream().get() as Readable);
-    const input = await this.preprocess(buffer);
-    return this.tesseract.recognize(input, this.parseLangs(options.payload.lang));
+    const input = await preprocess(buffer, this.logger);
+    return this.tesseract.recognize(input, parseLangs(options.payload.lang));
   }
 
   async processor(
@@ -99,50 +148,5 @@ export class ImageService {
       workerData: { operation: 'stats' },
     });
     return readWorkerJson(stdout);
-  }
-
-  /**
-   * Normalizes the `lang` query value: splits on `+` or `,`, lowercases,
-   * trims, dedupes, sorts; defaults to `['eng']`, caps at 4 codes.
-   * @param raw - Raw `lang` query parameter (already regex-validated).
-   * @returns Sorted, deduped language codes.
-   */
-  private parseLangs(raw?: string): string[] {
-    if (!raw) return ['eng'];
-    const langs = [...new Set(
-      raw
-        .split(/[+,]/)
-        .map((value) => value.trim().toLowerCase())
-        .filter((value) => value.length > 0),
-    )]
-      .toSorted()
-      .slice(0, 4);
-    return langs.length === 0 ? ['eng'] : langs;
-  }
-
-  /**
-   * Preprocesses an image for OCR: auto-orient, downscale to at most 2000 px
-   * without enlarging, greyscale, normalize, sharpen; encoded as PNG.
-   * Pixel bombs are rejected via `limitInputPixels`; undecodable or malicious
-   * input surfaces as {@link UnsupportedMediaTypeException} instead of a 500.
-   * @param input - Raw (signature-verified) image bytes.
-   * @returns PNG bytes ready for tesseract.
-   */
-  private async preprocess(input: Buffer): Promise<Buffer> {
-    try {
-      return await sharp(input, { failOn: 'error', limitInputPixels: 100_000_000 })
-        .rotate()
-        .resize({ fit: 'inside', height: 2000, width: 2000, withoutEnlargement: true })
-        .greyscale()
-        .normalize()
-        .sharpen({ sigma: 1 })
-        .png({ compressionLevel: 9 })
-        .toBuffer();
-    } catch (error) {
-      // Clients see a generic 415 (Nest does not serialize `cause`); log the
-      // sharp/libvips reason for operators.
-      this.logger.warn(`Image could not be decoded: ${String(error)}`);
-      throw new UnsupportedMediaTypeException('Image could not be decoded', { cause: error });
-    }
   }
 }

@@ -41,8 +41,7 @@ const fixturePayload: PptxBuildType = {
   ],
 };
 
-const buildPptxBytes = async (payload: PptxBuildType = fixturePayload) =>
-  buildPresentation(new PptxGenJs(), payload);
+const buildPptxBytes = async () => buildPresentation(new PptxGenJs(), fixturePayload);
 
 const makeService = (
   body: Buffer,
@@ -180,7 +179,7 @@ describe('PptxService.extract', () => {
         ),
         'ppt/_rels/presentation.xml.rels': Buffer.from(
           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-            '<Relationship Id="rIdX" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide9.xml"/>' +
+            '<Relationship Id="rIdX" Type="https://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide9.xml"/>' +
             '</Relationships>',
           'utf8',
         ),
@@ -429,7 +428,7 @@ describe('PptxService validation branches', () => {
           ),
           'ppt/_rels/presentation.xml.rels': Buffer.from(
             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-              `<Relationship Id="rIdX" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="${target}"/>` +
+              `<Relationship Id="rIdX" Type="https://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="${target}"/>` +
               '</Relationships>',
             'utf8',
           ),
@@ -638,7 +637,7 @@ describe('PptxService remaining branches', () => {
         ),
         'ppt/_rels/presentation.xml.rels': Buffer.from(
           '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-            '<Relationship Id="rIdX" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>' +
+            '<Relationship Id="rIdX" Type="https://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>' +
             '</Relationships>',
           'utf8',
         ),

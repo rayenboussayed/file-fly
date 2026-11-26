@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { TokenGate } from './TokenGate.js';
+import { TokenGate } from './token-gate.js';
 
 describe('TokenGate', () => {
   it('renders the 503 explanation without a form', () => {

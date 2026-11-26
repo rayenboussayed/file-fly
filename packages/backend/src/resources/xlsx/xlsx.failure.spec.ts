@@ -18,24 +18,24 @@ vi.mock('xlsx', async () => {
     // A workbook whose SheetNames list a sheet the Sheets map lacks.
     return gate.pathological ? { SheetNames: ['Ghost'], Sheets: {} } : actual.read(buffer, options as never);
   };
-  const write = (...args: Parameters<typeof actual.write>) => {
+  const write = (...arguments_: Parameters<typeof actual.write>) => {
     if (gate.writeThrows) throw new Error('encoder exploded');
-    return actual.write(...args);
+    return actual.write(...arguments_);
   };
-  const utils = {
+  const utilities = {
     ...actual.utils,
-    sheet_to_json: (...args: Parameters<typeof actual.utils.sheet_to_json>) => {
+    sheet_to_json: (...arguments_: Parameters<typeof actual.utils.sheet_to_json>) => {
       if (typeof gate.toJsonThrows === 'string') throw gate.toJsonThrows;
       if (gate.toJsonThrows) throw new Error('decoder exploded');
-      return actual.utils.sheet_to_json(...args);
+      return actual.utils.sheet_to_json(...arguments_);
     },
   };
   // The service default-imports xlsx; override at BOTH binding levels.
   return {
     ...actual,
-    default: { ...(actual as unknown as { default: object }).default, read, utils, write },
+    default: { ...(actual as unknown as { default: object }).default, read, utils: utilities, write },
     read,
-    utils,
+    utils: utilities,
     write,
   };
 });
@@ -45,10 +45,16 @@ import { XlsxService } from './xlsx.service.js';
  
 const fixture = () => fs.readFileSync(path.join('test', 'results', 'fixtures', 'basic.xlsx'));
 
-const makeService = (body: Buffer, contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') => {
+const makeService = (body: Buffer) => {
   const stream = Readable.from([body]);
   const cls = {
-    request: () => ({ headers: { 'content-type': contentType }, method: 'POST', raw: stream }),
+    request: () => ({
+      headers: {
+        'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      },
+      method: 'POST',
+      raw: stream,
+    }),
     sourceDirection: () => ({ set: () => {} }),
     sourceStream: () => ({ get: () => stream, set: () => {} }),
   };

@@ -69,7 +69,8 @@ from the commit history (2026-10-31 .. 2026-11-25).
 
 ### Changed
 
-- Linting now delegates to the pinned `@stackrb/eslint-config@0.1.0` (targets `node` and `react`): Playwright rules are scoped to the dashboard e2e suite so Vitest specs use Vitest rules only; `eslint-plugin-unicorn`'s `unopinionated` preset is layered on for correctness rules; the dashboard keeps two scoped exceptions (`n/no-unsupported-features/node-builtins` off for browser APIs, and `unicorn/filename-case` accepting both kebab-case and PascalCase). The gate stays `eslint . --fix --cache --max-warnings=0` with zero warnings; generated docs, test results and the generated router file stay ignored.
+- ESLint config is now minimal and uses the package's full builtin rules: `nodeVersion` is `>=24.0.0`, the Playwright partial stays scoped to `packages/dashboard/test/e2e` with every rule enabled, and the package's browser target covers dashboard globals and Node feature checks. The only hand-written rule-offs are two narrow file-scoped exceptions for values that cannot change without breaking a contract: `unicorn/no-null` on the Fastify callback, XLSX wire, clamd verdict and worker cache-key tag files, and `security/detect-non-literal-fs-filename` on the code generator CLI. Dashboard components were renamed to kebab-case and the perf Vitest config to `vitest.config.performance.ts` to satisfy filename rules. Generated docs, test results and the generated router file stay ignored; the gate stays `eslint . --fix --cache --max-warnings=0` with zero warnings.
+- Linting now delegates to the pinned `@stackrb/eslint-config@0.1.0` (targets `node` and `react`) instead of the hand-written config, with Playwright rules scoped to the dashboard e2e suite so Vitest specs use Vitest rules only.
 - Second deep refactoring pass: document-family worker entries share one
   standalone-exit guard
   (`ee38781`, `30ca6bc`); the auth header pair has one constant source shared by

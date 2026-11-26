@@ -20,7 +20,9 @@ import { AudioSignatureInterceptor } from './audio-signature.interceptor.js';
 import { AudioService } from './audio.service.js';
 import { AudioProcessorSchema, type AudioProcessorType } from './schema.js';
 
-/** Audio routes: processor, metadata, DNA and stats (binary stream endpoints). */
+/**
+Audio routes: processor, metadata, DNA and stats (binary stream endpoints).
+ */
 @Controller('audio')
 @UseMediaPipeline(AudioSignatureInterceptor)
 export class AudioController {
@@ -31,12 +33,12 @@ export class AudioController {
 
   @Get('dna')
   async dnaGet() {
-    return this.dna();
+    return this.audioService.dna();
   }
 
   @Post('dna')
   async dnaPost() {
-    return this.dna();
+    return this.audioService.dna();
   }
 
   async main(
@@ -68,33 +70,21 @@ export class AudioController {
 
   @Get('metadata')
   async metadataGet() {
-    return this.metadata();
+    return this.audioService.metadata();
   }
 
   @Post('metadata')
   async metadataPost() {
-    return this.metadata();
+    return this.audioService.metadata();
   }
 
   @Get('stats')
   async statsGet() {
-    return this.stats();
+    return this.audioService.stats();
   }
 
   @Post('stats')
   async statsPost() {
-    return this.stats();
-  }
-
-  private async dna() {
-    return this.audioService.dna();
-  }
-
-  private async metadata() {
-    return this.audioService.metadata();
-  }
-
-  private async stats() {
     return this.audioService.stats();
   }
 }

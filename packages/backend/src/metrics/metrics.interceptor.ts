@@ -13,7 +13,9 @@ import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
 import { MetricsService } from './metrics.service.js';
 
-/** Routes excluded from instrumentation to avoid self-observation feedback. */
+/**
+Routes excluded from instrumentation to avoid self-observation feedback.
+ */
 const EXCLUDED_ROUTES = new Set(['/health', '/metrics']);
 
 /**
@@ -23,8 +25,29 @@ const EXCLUDED_ROUTES = new Set(['/health', '/metrics']);
  */
 const headerNumber = (value: number | string | string[] | undefined): number => {
   if (Array.isArray(value)) [value] = value;
-  const parsed = Number.parseInt(String(value ?? '0'), 10);
+  const text = String(value ?? '0').trim();
+  // Keep base-10 parseInt semantics: a numeric prefix is accepted even when the
+  // rest of the header is junk; Number() would turn that same value into NaN.
+  const prefix = /^[+-]?\d+/.exec(text);
+  const parsed = prefix ? Number(prefix[0]) : NaN;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+};
+
+/**
+ * Derives the scan verdict from the data already on CLS and the status code.
+ * @param fileScan - The scan verdict recorded on CLS, when present.
+ * @param isAntiVirusEnabled - Whether the scanner perimeter is active.
+ * @param status - Status code sent to the client.
+ * @returns The verdict to record, or undefined for non-scanner routes.
+ */
+const scanOutcome = (
+  fileScan: undefined | { isInfected: boolean },
+  isAntiVirusEnabled: boolean,
+  status: number,
+): 'blocked' | 'clean' | 'infected' | undefined => {
+  if (fileScan) return fileScan.isInfected ? 'infected' : 'clean';
+  if (!isAntiVirusEnabled) return undefined;
+  return status === 413 || status === 422 ? 'blocked' : undefined;
 };
 
 /**
@@ -70,24 +93,12 @@ export class MetricsInterceptor implements NestInterceptor {
         filesOut: this.cls.bytesOut().get() === undefined ? 0 : 1,
         ip: request.ip,
         route,
-        scan: this.scanOutcome(status),
+        scan: scanOutcome(this.cls.fileScan().get(), this.antiVirus.enabled(), status),
         status,
       });
       this.metrics.inflightDec();
     });
 
     return next.handle();
-  }
-
-  /**
-   * Derives the scan verdict from the data already on CLS and the status code.
-   * @param status - Status code sent to the client.
-   * @returns The verdict to record, or undefined for non-scanner routes.
-   */
-  private scanOutcome(status: number): 'blocked' | 'clean' | 'infected' | undefined {
-    const fileScan = this.cls.fileScan().get();
-    if (fileScan) return fileScan.isInfected ? 'infected' : 'clean';
-    if (!this.antiVirus.enabled()) return undefined;
-    return status === 413 || status === 422 ? 'blocked' : undefined;
   }
 }

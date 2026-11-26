@@ -15,7 +15,7 @@ describe('video worker metadata', () => {
       Object.defineProperty(process, 'stdin', { value: stream, writable: true });
       const { Writable } = await import('node:stream');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stdout = new Writable({ write(_c: any, _e: any, cb: any) { cb(); } });
+      const stdout = new Writable({ write(_c: any, _encoding: any, callback: any) { callback(); } });
       stdout.on('error', () => {});
       Object.defineProperty(process, 'stdout', { value: stdout, writable: true });
       await import('./worker/index.js');

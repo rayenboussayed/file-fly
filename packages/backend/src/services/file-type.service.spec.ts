@@ -35,10 +35,9 @@ describe('FileTypeService', () => {
   });
 
   it('reads and stores a signature', async () => {
-    const chunks = [];
     const stream = new PassThrough();
     const cls = {
-      fileSignature: () => ({ set: (v: unknown) => chunks.push(v) }),
+      fileSignature: () => ({ set: () => {} }),
       request: () => ({ raw: { signal: undefined } }),
     };
     const service = new FileTypeService(cls as never);
@@ -50,7 +49,7 @@ describe('FileTypeService', () => {
     const stream = fs.createReadStream('assets/images/image-0.jpg');
     const stored: unknown[] = [];
     const cls = {
-      fileSignature: () => ({ set: (v: unknown) => stored.push(v) }),
+      fileSignature: () => ({ set: (v: unknown) => { stored.push(v); } }),
       request: () => ({ raw: { signal: undefined } }),
     };
     const service = new FileTypeService(cls as never);
@@ -59,6 +58,15 @@ describe('FileTypeService', () => {
     expect(stored.length).toBe(1);
   });
 });
+/**
+ * Replays the fixture PNG header, then fails mid-read.
+ * @yields The fixture header, then throws.
+ */
+async function* broken() {
+  yield Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  throw new Error('connection reset');
+}
+
 describe('FileTypeService signature download paths', () => {
   it('consumes the whole probe branch to EOF once the signature is known', async () => {
     const cls = { fileSignature: () => ({ set: vi.fn() }) };
@@ -100,14 +108,6 @@ describe('FileTypeService signature download paths', () => {
     const cls = { fileSignature: () => ({ set: vi.fn() }) };
     const service = new FileTypeService(cls as never);
 
-    /**
-     * Replays the fixture header, then fails mid-read.
-     * @yields The fixture header, then throws.
-     */
-    async function* broken() {
-      yield Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-      throw new Error('connection reset');
-    }
     const source = Readable.from(broken());
 
     await expect(service.signature({ stream: source })).rejects.toThrow();
@@ -116,5 +116,7 @@ describe('FileTypeService signature download paths', () => {
   });
 });
 
-/** Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use. */
+/**
+Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use.
+ */
 export const FILE_TYPE_API_SURFACE = 'Unit coverage for the file-type service API surface.';

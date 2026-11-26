@@ -10,7 +10,9 @@ import { PptxGenJs } from '../pptxgenjs.js';
 
 const logger = createWorkerLogger();
 
-/** Worker input: `{ operation: 'build', payload: PptxBuildType }` from WorkerService. */
+/**
+Worker input: `{ operation: 'build', payload: PptxBuildType }` from WorkerService.
+ */
 type WorkerInput = { operation?: string; payload: PptxBuildType };
 
 const data = workerData as WorkerInput;

@@ -27,7 +27,7 @@ flowing and the upload is not stalled by the probe being finished.</p>
 File-type sniffing helpers shared by the signature gates.
 
 **Kind**: global variable  
-src: packages/backend/src/services/file-type.service.ts:10  
+src: packages/backend/src/services/file-type.service.ts:12  
 dist: packages/backend/dist/services/file-type.service.js:14
 
 * [FileTypeService](#FileTypeService)
@@ -48,7 +48,7 @@ file-type cannot sniff csv, so this matches on the declared mime only.
 | --- | --- | --- |
 | mime | <code>string</code> | Detected or declared content type. |
 
-src: packages/backend/src/services/file-type.service.ts:23  
+src: packages/backend/src/services/file-type.service.ts:25  
 dist: packages/backend/dist/services/file-type.service.js:22
 <a name="FileTypeService+isDocument"></a>
 
@@ -62,7 +62,7 @@ Whether the mime is an office or PDF document the document pipeline accepts.
 | --- | --- | --- |
 | mime | <code>string</code> | Detected content type (e.g. from the parser). |
 
-src: packages/backend/src/services/file-type.service.ts:32  
+src: packages/backend/src/services/file-type.service.ts:34  
 dist: packages/backend/dist/services/file-type.service.js:25
 <a name="FileTypeService+isSpreadsheet"></a>
 
@@ -98,7 +98,7 @@ flowing and the upload is not stalled by the probe being finished.
 | --- | --- | --- |
 | node | <code>Readable</code> | The Node readable to wrap (e.g. a probe branch of a tee). |
 
-src: packages/backend/src/services/file-type.service.ts:103  
+src: packages/backend/src/services/file-type.service.ts:102  
 dist: packages/backend/dist/services/file-type.service.js:66
 <a name="nonDestructiveWebStream..drainIterator"></a>
 
@@ -108,5 +108,5 @@ every chunk, so a paused tee unblocks.
 
 **Kind**: inner method of [<code>nonDestructiveWebStream</code>](#nonDestructiveWebStream)  
 **Returns**: <code>Promise&lt;number&gt;</code> - The number of bytes discarded.  
-src: packages/backend/src/services/file-type.service.ts:112  
+src: packages/backend/src/services/file-type.service.ts:111  
 dist: packages/backend/dist/services/file-type.service.js:69

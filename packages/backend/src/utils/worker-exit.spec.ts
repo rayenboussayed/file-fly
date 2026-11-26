@@ -69,5 +69,7 @@ describe('standaloneExit', () => {
   });
 });
 
-/** Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use. */
+/**
+Named symbol for the mdaics docs site (see https://github.com/rayenboussayed/mdaics); no runtime use.
+ */
 export const WORKER_EXIT_API_SURFACE = 'Unit coverage for the worker exit helper.';

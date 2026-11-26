@@ -1,11 +1,16 @@
 /* eslint-disable security/detect-non-literal-fs-filename -- cache paths are built from constants, not user input */
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
+import path from 'node:path';
 import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CACHE_DIR } from '@/constants/fs.js';
+
+/**
+ * Tag the service mixes into the key when workerData carries no operation/inputFormat.
+ */
+const EMPTY_TAG = JSON.stringify({ inputFormat: null, operation: null });
 
 /**
  * Bin entry path for the given key parts, mirroring the service's `keyFor`
@@ -13,11 +18,8 @@ import { CACHE_DIR } from '@/constants/fs.js';
  * @param keyParts - Key parts to join with NUL and hash, as the service's `keyFor` would.
  * @returns The absolute cache file path for those key parts.
  */
-/** Tag the service mixes into the key when workerData carries no operation/inputFormat. */
-const NULL_TAG = JSON.stringify({ inputFormat: null, operation: null });
-
 const binPath = (keyParts: readonly string[]): string =>
-  join(CACHE_DIR, `${createHash('sha256').update(keyParts.join('\0')).digest('hex')}.bin`);
+  path.join(CACHE_DIR, `${createHash('sha256').update(keyParts.join('\0')).digest('hex')}.bin`);
 
 /**
  * Reads a stream to EOF and returns its decoded contents.
@@ -26,7 +28,9 @@ const binPath = (keyParts: readonly string[]): string =>
  */
 const drainToString = async (stream: Readable): Promise<string> => {
   const chunks: Buffer[] = [];
-  stream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+  stream.on('data', (chunk: Buffer) => {
+    chunks.push(Buffer.from(chunk));
+  });
   await new Promise<void>((resolve, reject) => {
     stream.once('end', () => resolve());
     stream.once('error', reject);
@@ -34,42 +38,51 @@ const drainToString = async (stream: Readable): Promise<string> => {
   return Buffer.concat(chunks).toString();
 };
 
-vi.mock('node:worker_threads', () => {
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { EventEmitter } = require('node:events');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Readable, Writable } = require('node:stream');
+vi.mock('node:worker_threads', async () => {
+  const { Readable: WorkerReadable, Writable } = await import('node:stream');
 
-  class Worker extends EventEmitter {
+  type PayloadEvent = Event & { payload?: unknown };
+
+  class Worker extends EventTarget {
     static readonly instances: unknown[] = [];
     static readonly nextExitCodes: number[] = [];
     static readonly nextStderrChunks: Buffer[] = [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stderr: any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stdin: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stdout: any;
+    stderr: InstanceType<typeof WorkerReadable>;
+    stdin: InstanceType<typeof Writable>;
+    stdout: InstanceType<typeof WorkerReadable>;
+
     constructor() {
       super();
-      this.stdout = Readable.from(['cached']);
-      const stderrChunks = (Worker as unknown as { nextStderrChunks: Buffer[] }).nextStderrChunks;
-      this.stderr = new Readable({
-        read() {
-          if (stderrChunks && stderrChunks.length > 0) {
-            for (const chunk of stderrChunks.splice(0)) this.push(chunk);
-          }
-          this.push(null);
+      this.stdout = WorkerReadable.from(['cached']);
+      this.stderr = WorkerReadable.from(Worker.nextStderrChunks.splice(0));
+      this.stdin = new Writable({
+        write(_chunk: unknown, _encoding: unknown, callback: () => void) {
+          callback();
         },
       });
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.stdin = new Writable({ write(_c: any, _e: any, cb: any) { cb(); } });
       Worker.instances.push(this);
       const exitCode = Worker.nextExitCodes.shift() ?? 0;
       queueMicrotask(() => {
-        if (exitCode === -1) this.emit('error', new Error('worker failed to start'));
-        else this.emit('exit', exitCode);
+        const event = new Event(exitCode === -1 ? 'error' : 'exit') as PayloadEvent;
+        event.payload = exitCode === -1 ? new Error('worker failed to start') : exitCode;
+        this.dispatchEvent(event);
       });
+    }
+
+    on(type: string, listener: (payload: unknown) => void): void {
+      this.addEventListener(type, (event: Event) => {
+        listener((event as PayloadEvent).payload);
+      });
+    }
+
+    once(type: string, listener: (payload: unknown) => void): void {
+      this.addEventListener(
+        type,
+        (event: Event) => {
+          listener((event as PayloadEvent).payload);
+        },
+        { once: true },
+      );
     }
 
     terminate() {
@@ -88,33 +101,73 @@ type MockedWorker = { instances: unknown[] };
 const mockedWorkerInstances = (): unknown[] =>
   (Worker as unknown as MockedWorker).instances;
 
+/**
+ * Removes a cache path whether it is a file, a directory, or already gone.
+ * @param target - Cache path to remove.
+ */
+const removeQuietly = async (target: string): Promise<void> => {
+  await fs.rm(target, { force: true, recursive: true });
+};
+
+/**
+ * Builds a CLS stub with an explicit source stream.
+ * @param cacheKey - Cache key returned by the stub.
+ * @param source - Source stream returned by the stub.
+ * @returns A CLS stub for WorkerService.
+ */
+const makeSourceCls = (cacheKey: string, source: Readable | undefined) => ({
+  cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
+  cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
+  request: () => ({ signal: new AbortController().signal }),
+  sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
+} as never);
+
+/**
+ * Builds a CLS stub that counts cache-hit outcomes.
+ * @param cacheKey - Cache key returned by the stub.
+ * @param outcome - Mutable hit counter.
+ * @param outcome.hit - Current hit count.
+ * @returns A CLS stub for WorkerService.
+ */
+const makeOutcomeCls = (cacheKey: string | undefined, outcome: { hit: number }) => ({
+  cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
+  cacheOutcome: () => ({
+    get: () => {},
+    set: (v: unknown) => {
+      if (v === 'hit') outcome.hit += 1;
+    },
+  }),
+  request: () => ({ signal: new AbortController().signal }),
+  sourceStream: () => ({
+    get: () => Readable.from([]),
+    set: (v: unknown) => v,
+  }),
+} as never);
+
+/**
+ * Yields one chunk then fails mid-stream.
+ * @yields The first chunk, then throws.
+ */
+async function* broken() {
+  yield Buffer.from('chunk');
+  throw new Error('connection reset');
+}
+
 describe('WorkerService', () => {
   beforeEach(async () => {
     // The unit config does not override CACHE_DIR; drop this spec's entries from the real one.
     await Promise.all([
-      fs.rm(binPath(['cache-key', './m.js', NULL_TAG]), { force: true }),
-      fs.rm(binPath(['cache-key', './other.js', NULL_TAG]), { force: true }),
-      fs.rm(binPath(['fail-key', './fail.js', NULL_TAG]), { force: true }),
-    ]).then(() => {});
+      fs.rm(binPath(['cache-key', './m.js', EMPTY_TAG]), { force: true }),
+      fs.rm(binPath(['cache-key', './other.js', EMPTY_TAG]), { force: true }),
+      fs.rm(binPath(['fail-key', './fail.js', EMPTY_TAG]), { force: true }),
+    ]);
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
     (Worker as unknown as { nextStderrChunks: Buffer[] }).nextStderrChunks.length = 0;
   });
 
   it('serves cached worker output without re-running the worker, and misses unknown keys', async () => {
-    const makeCls = (cacheKey: string, source: Readable | undefined) => ({
-      cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
-      cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
-      request: () => ({ signal: new AbortController().signal }),
-      sourceStream: () => ({ get: () => source, set: (v: unknown) => v }),
-    } as never);
-
-    /**
-     * Reads a stream to EOF and returns its decoded contents.
-     * @param stream - Stream to consume.
-     * @returns The decoded stream contents.
-     */
-    const service = new WorkerService(makeCls('cache-key', undefined));
+    const service = new WorkerService(makeSourceCls('cache-key', undefined));
     const first = await service.createWorker('./m.js');
     expect(await drainToString(first)).toBe('cached'); // produced by the mocked worker
     expect(mockedWorkerInstances()).toHaveLength(1);
@@ -154,18 +207,18 @@ describe('WorkerService', () => {
     expect(['end', 'error']).toContain(outcome);
     // No entry may be left behind for a failed worker.
      
-    await expect(fs.stat(binPath(['fail-key', './fail.js', NULL_TAG]))).rejects.toThrow();
+    await expect(fs.stat(binPath(['fail-key', './fail.js', EMPTY_TAG]))).rejects.toThrow();
   });
 });
 describe('WorkerService coverage branches', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => {});
+    await removeQuietly(binPath(['base-key', './m.js', EMPTY_TAG]));
      
     await fs.mkdir(CACHE_DIR, { recursive: true });
   });
 
   it('returns a worker without cache key, branch handling, and file branches', async () => {
-    const source = new Readable({ read() { this.push(null); } });
+    const source = Readable.from([]);
     const cls = {
       cacheKey: () => ({ get: () => {}, set: (v: unknown) => v }),
       cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
@@ -175,55 +228,40 @@ describe('WorkerService coverage branches', () => {
     const service = new WorkerService(cls);
     const result = await service.createWorker('./m.js', { workerData: { a: 1 } });
     expect(result).toBeTruthy();
-    await fs.rm(binPath(['base-key', './m.js', NULL_TAG]), { force: true }).catch(() => {});
+    await removeQuietly(binPath(['base-key', './m.js', EMPTY_TAG]));
     // trigger a cache hit using a real entry with deterministic path
-    const cachePath = binPath(['base-key', './m.js', NULL_TAG]);
+    const cachePath = binPath(['base-key', './m.js', EMPTY_TAG]);
  
     await fs.writeFile(cachePath, 'cached');
     const cls2 = {
       cacheKey: () => ({ get: () => 'base-key', set: (v: unknown) => v }),
       cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
-      sourceStream: () => ({ get: () => new Readable({ read() { this.push(null); } }), set: (v: unknown) => v }),
+      sourceStream: () => ({ get: () => Readable.from([]), set: (v: unknown) => v }),
     } as never;
     const service2 = new WorkerService(cls2);
     const cached = await service2.createWorker('./m.js');
     cached.destroy();
-    await fs.rm(cachePath, { force:true }).catch(()=> {});
+    await removeQuietly(cachePath);
   }, 15_000);
 });
 
 describe('WorkerService cache hits and worker errors', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['hit-key', './hit.js', NULL_TAG]), { force: true }).catch(() => {});
+    await removeQuietly(binPath(['hit-key', './hit.js', EMPTY_TAG]));
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
   });
 
-  const makeCls = (cacheKey: string | undefined, outcome = { hit: 0 }) => ({
-    cacheKey: () => ({ get: () => cacheKey, set: (v: unknown) => v }),
-    cacheOutcome: () => ({
-      get: () => {},
-      set: (v: unknown) => {
-        if (v === 'hit') outcome.hit += 1;
-      },
-    }),
-    request: () => ({ signal: new AbortController().signal }),
-    sourceStream: () => ({
-      get: () => new Readable({ read() { this.push(null); } }),
-      set: (v: unknown) => v,
-    }),
-  }) as never;
-
   it('records a hit and refreshes the entry mtime on cache reads', async () => {
-    const pathInCache = binPath(['hit-key', './hit.js', NULL_TAG]);
+    const pathInCache = binPath(['hit-key', './hit.js', EMPTY_TAG]);
     await fs.mkdir(CACHE_DIR, { recursive: true });
     await fs.writeFile(pathInCache, 'cached-bytes');
     const old = new Date(Date.now() - 60 * 60 * 1000);
     await fs.utimes(pathInCache, old, old);
 
     const outcome = { hit: 0 };
-    const cls = makeCls('hit-key', outcome);
+    const cls = makeOutcomeCls('hit-key', outcome);
     const service = new WorkerService(cls);
     const cached = await service.createWorker('./hit.js');
     // Touch is async; drain first so the read path runs to completion.
@@ -237,12 +275,12 @@ describe('WorkerService cache hits and worker errors', () => {
   });
 
   it('surfaces a worker spawn error by destroying the output stream with that error', async () => {
-    const cls = makeCls(undefined);
+    const cls = makeOutcomeCls(undefined, { hit: 0 });
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.push(-1);
     const service = new WorkerService(cls);
     const output = await service.createWorker('./hit.js');
     const error = await new Promise<Error | undefined>((resolve) => {
-      output.once('error', (err: Error) => resolve(err));
+      output.once('error', (error_: Error) => resolve(error_));
       output.once('end', () => resolve(undefined));
       setTimeout(() => resolve(undefined), 2000);
     });
@@ -252,8 +290,8 @@ describe('WorkerService cache hits and worker errors', () => {
 
 describe('WorkerService onError and stderr cap branches', () => {
   beforeEach(async () => {
-    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true }).catch(() => {});
-    await fs.rm(binPath(['onerror-key', './onerror.js', NULL_TAG]), { force: true, recursive: true }).catch(() => {});
+    await removeQuietly(binPath(['onerror-key', './onerror.js', EMPTY_TAG]));
+    await removeQuietly(binPath(['onerror-key', './onerror.js', EMPTY_TAG]));
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
   });
@@ -261,13 +299,13 @@ describe('WorkerService onError and stderr cap branches', () => {
   it('logs and continues when the cache write target is unusable', async () => {
     // Pre-create the cache path as a directory: the cache write fails, the
     // worker still produces output (nothing is served from cache).
-    await fs.mkdir(binPath(['onerror-key', './onerror.js', NULL_TAG]), { recursive: true });
+    await fs.mkdir(binPath(['onerror-key', './onerror.js', EMPTY_TAG]), { recursive: true });
     const cls = {
       cacheKey: () => ({ get: () => 'onerror-key', set: (v: unknown) => v }),
       cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({
-        get: () => new Readable({ read() { this.push(null); } }),
+        get: () => Readable.from([]),
         set: (v: unknown) => v,
       }),
     } as never;
@@ -275,7 +313,9 @@ describe('WorkerService onError and stderr cap branches', () => {
     const output = await service.createWorker('./onerror.js');
     const text = await new Promise<string>((resolve, reject) => {
       const chunks: Buffer[] = [];
-      output.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+      output.on('data', (chunk: Buffer) => {
+        chunks.push(Buffer.from(chunk));
+      });
       output.once('end', () => resolve(Buffer.concat(chunks).toString()));
       output.once('error', reject);
     });
@@ -317,32 +357,34 @@ describe('WorkerService debug-branch assertions', () => {
   beforeEach(async () => {
     mockedWorkerInstances().length = 0;
     (Worker as unknown as { nextExitCodes: number[] }).nextExitCodes.length = 0;
-    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true, recursive: true }).catch(() => {});
-    await fs.rm(binPath(['spy-key', './spy.js', NULL_TAG]), { force: true }).catch(() => {});
+    await removeQuietly(binPath(['spy-key', './spy.js', EMPTY_TAG]));
+    await removeQuietly(binPath(['spy-key', './spy.js', EMPTY_TAG]));
   });
 
   it('logs cache-write failures via the onError debug branch', async () => {
     // Pre-create the cache path as a directory so the StreamCache write fails.
-    await fs.mkdir(binPath(['spy-key', './spy.js', NULL_TAG]), { recursive: true });
+    await fs.mkdir(binPath(['spy-key', './spy.js', EMPTY_TAG]), { recursive: true });
 
     const cls = {
       cacheKey: () => ({ get: () => 'spy-key', set: (v: unknown) => v }),
       cacheOutcome: () => ({ get: () => {}, set: (v: unknown) => v }),
       request: () => ({ signal: new AbortController().signal }),
       sourceStream: () => ({
-        get: () => new Readable({ read() { this.push(null); } }),
+        get: () => Readable.from([]),
         set: (v: unknown) => v,
       }),
     } as never;
 
     const service = new WorkerService(cls);
-    const logger = (service as unknown as { logger: { debug: (msg: string) => void } }).logger;
+    const logger = (service as unknown as { logger: { debug: (message: string) => void } }).logger;
     const debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => {});
 
     const output = await service.createWorker('./spy.js');
     const text = await new Promise<string>((resolve, reject) => {
       const chunks: Buffer[] = [];
-      output.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+      output.on('data', (chunk: Buffer) => {
+        chunks.push(Buffer.from(chunk));
+      });
       output.once('end', () => resolve(Buffer.concat(chunks).toString()));
       output.once('error', reject);
     });
@@ -355,18 +397,10 @@ describe('WorkerService debug-branch assertions', () => {
       expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('cache write failed'));
     });
     // The rollback removed the temp file: the pre-created directory is empty.
-    expect(await fs.readdir(binPath(['spy-key', './spy.js', NULL_TAG]))).toEqual([]);
+    expect(await fs.readdir(binPath(['spy-key', './spy.js', EMPTY_TAG]))).toEqual([]);
   });
 
   it('destroys the stdin branch when the upload source errors mid-stream', async () => {
-    /**
-     * Yields one chunk then fails mid-stream.
-     * @yields The first chunk, then throws.
-     */
-    async function* broken() {
-      yield Buffer.from('chunk');
-      throw new Error('connection reset');
-    }
     const source = Readable.from(broken());
     const cls = {
       cacheKey: () => ({ get: () => {}, set: (v: unknown) => v }),

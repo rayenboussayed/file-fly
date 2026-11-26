@@ -4,7 +4,7 @@
 <dt><a href="#runImageWorker">runImageWorker(inputData)</a> ⇒ <code>Promise&lt;void&gt;</code></dt>
 <dd><p>Dispatches the requested image operation (processor/metadata/stats).</p>
 </dd>
-<dt><a href="#startImageWorker">startImageWorker()</a> ⇒ <code>Promise&lt;any&gt;</code></dt>
+<dt><a href="#startImageWorker">startImageWorker()</a> ⇒ <code>Promise&lt;void&gt;</code></dt>
 <dd><p>Runs the worker job and, only inside a spawned worker thread, finishes the process.</p>
 </dd>
 </dl>
@@ -24,10 +24,10 @@ src: packages/backend/src/resources/image/worker/index.ts:18
 dist: packages/backend/dist/resources/image/worker/index.js:8
 <a name="startImageWorker"></a>
 
-## startImageWorker() ⇒ <code>Promise&lt;any&gt;</code>
+## startImageWorker() ⇒ <code>Promise&lt;void&gt;</code>
 Runs the worker job and, only inside a spawned worker thread, finishes the process.
 
 **Kind**: global function  
-**Returns**: <code>Promise&lt;any&gt;</code> - The job (with exit-code handling attached when running as a worker thread).  
-src: packages/backend/src/resources/image/worker/index.ts:36  
-dist: packages/backend/dist/resources/image/worker/index.js:21
+**Returns**: <code>Promise&lt;void&gt;</code> - The job (with exit-code handling attached when running as a worker thread).  
+src: packages/backend/src/resources/image/worker/index.ts:39  
+dist: packages/backend/dist/resources/image/worker/index.js:24

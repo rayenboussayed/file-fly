@@ -7,7 +7,7 @@ to the standard <code>OTEL_EXPORTER_OTLP_TRACES_ENDPOINT</code>. When neither is
 telemetry stays disabled entirely (the SDK is never constructed, so nothing
 binds the metrics port and e2e/unit boots emit nothing).</p>
 </dd>
-<dt><a href="#otelTracingEnabled">otelTracingEnabled</a></dt>
+<dt><a href="#isOtelTracingEnabled">isOtelTracingEnabled</a></dt>
 <dd><p>Whether OpenTelemetry starts on boot. Endpoint-gated, never implicit.</p>
 </dd>
 <dt><a href="#otelSDK">otelSDK</a></dt>
@@ -32,13 +32,13 @@ binds the metrics port and e2e/unit boots emit nothing).
 **Kind**: global constant  
 src: packages/backend/src/app.tracing.ts:27  
 dist: packages/backend/dist/app.tracing.js:12
-<a name="otelTracingEnabled"></a>
+<a name="isOtelTracingEnabled"></a>
 
-## otelTracingEnabled
+## isOtelTracingEnabled
 Whether OpenTelemetry starts on boot. Endpoint-gated, never implicit.
 
 **Kind**: global constant  
-src: packages/backend/src/app.tracing.ts:32  
+src: packages/backend/src/app.tracing.ts:34  
 dist: packages/backend/dist/app.tracing.js:14
 <a name="otelSDK"></a>
 
@@ -52,5 +52,5 @@ exporter binds its port in its constructor) — start it before
 `main.ts`.
 
 **Kind**: global constant  
-src: packages/backend/src/app.tracing.ts:45  
-dist: packages/backend/dist/app.tracing.js:16
+src: packages/backend/src/app.tracing.ts:49  
+dist: packages/backend/dist/app.tracing.js:17

@@ -1,12 +1,12 @@
 ## Functions
 
 <dl>
-<dt><a href="#defaultEnv">defaultEnv()</a> ⇒ <code>{ CLAMAV_HOST: string; CLAMAV_MAX_BYTES: number; CLAMAV_PORT: number; CLAMAV_TIMEOUT_MS: number; }</code></dt>
+<dt><a href="#defaultEnvironment">defaultEnvironment()</a> ⇒ <code>{ CLAMAV_HOST: string; CLAMAV_MAX_BYTES: number; CLAMAV_PORT: number; CLAMAV_TIMEOUT_MS: number; }</code></dt>
 <dd><p>Default mocked environment, restored before/after every test.</p>
 </dd>
 <dt><a href="#freshScanResult">freshScanResult()</a> ⇒ <code>{ file: any; isInfected: boolean | null; viruses: string[]; }</code></dt>
 <dd></dd>
-<dt><a href="#env">env()</a> ⇒ <code>Record&lt;string, unknown&gt;</code></dt>
+<dt><a href="#environment">environment()</a> ⇒ <code>Record&lt;string, unknown&gt;</code></dt>
 <dd><p>The mocked environment; tests may mutate it, <code>beforeEach</code>/<code>afterEach</code>
 restore the defaults.</p>
 </dd>
@@ -28,9 +28,9 @@ over a stubbed <code>ClsService</code>, isolating the module graph per test.</p>
 </dd>
 </dl>
 
-<a name="defaultEnv"></a>
+<a name="defaultEnvironment"></a>
 
-## defaultEnv() ⇒ <code>{ CLAMAV\_HOST: string; CLAMAV\_MAX\_BYTES: number; CLAMAV\_PORT: number; CLAMAV\_TIMEOUT\_MS: number; }</code>
+## defaultEnvironment() ⇒ <code>{ CLAMAV\_HOST: string; CLAMAV\_MAX\_BYTES: number; CLAMAV\_PORT: number; CLAMAV\_TIMEOUT\_MS: number; }</code>
 Default mocked environment, restored before/after every test.
 
 **Kind**: global function  
@@ -41,16 +41,16 @@ src: packages/backend/src/services/anti-virus.service.spec.ts:11
 ## freshScanResult() ⇒ <code>{ file: any; isInfected: boolean \| null; viruses: string[]; }</code>
 **Kind**: global function  
 **Returns**: <code>{ file: any; isInfected: boolean \| null; viruses: string[]; }</code> - A clean scan verdict, as `_processResult` would produce it.  
-src: packages/backend/src/services/anti-virus.service.spec.ts:19  
-<a name="env"></a>
+src: packages/backend/src/services/anti-virus.service.spec.ts:21  
+<a name="environment"></a>
 
-## env() ⇒ <code>Record&lt;string, unknown&gt;</code>
+## environment() ⇒ <code>Record&lt;string, unknown&gt;</code>
 The mocked environment; tests may mutate it, `beforeEach`/`afterEach`
 restore the defaults.
 
 **Kind**: global function  
 **Returns**: <code>Record&lt;string, unknown&gt;</code> - The stable mocked environment object.  
-src: packages/backend/src/services/anti-virus.service.spec.ts:30  
+src: packages/backend/src/services/anti-virus.service.spec.ts:32  
 <a name="asHttpException"></a>
 
 ## asHttpException(error) ⇒ <code>{ getResponse: () &#x3D;&gt; unknown; getStatus: () &#x3D;&gt; number; }</code>
@@ -63,7 +63,7 @@ Asserts that an error carries the shape of an HTTP exception.
 | --- | --- | --- |
 | error | <code>unknown</code> | The value thrown by the scan. |
 
-src: packages/backend/src/services/anti-virus.service.spec.ts:141  
+src: packages/backend/src/services/anti-virus.service.spec.ts:150  
 <a name="branchOf"></a>
 
 ## branchOf(bytes) ⇒ <code>Readable</code>
@@ -76,7 +76,7 @@ Builds a fresh branch stream carrying the given number of bytes.
 | --- | --- | --- |
 | bytes | <code>number</code> | The payload size in bytes. |
 
-src: packages/backend/src/services/anti-virus.service.spec.ts:163  
+src: packages/backend/src/services/anti-virus.service.spec.ts:172  
 <a name="catchException"></a>
 
 ## catchException(promise) ⇒ <code>Promise&lt;{ getResponse: () &#x3D;&gt; unknown; getStatus: () &#x3D;&gt; number; }&gt;</code>
@@ -89,7 +89,7 @@ Awaits a scan expected to reject and returns the thrown exception.
 | --- | --- | --- |
 | promise | <code>Promise&lt;unknown&gt;</code> | The scan promise. |
 
-src: packages/backend/src/services/anti-virus.service.spec.ts:172  
+src: packages/backend/src/services/anti-virus.service.spec.ts:181  
 <a name="createService"></a>
 
 ## createService() ⇒ <code>Promise&lt;{ cls: { get: &lt;T&gt;(key: symbol) &#x3D;&gt; T; set: (key: symbol, value: unknown) &#x3D;&gt; Map&lt;symbol, unknown&gt;; }; normalizedCls: import(&quot;./normalized-cls.service.js&quot;).NormalizedClsService; service: import(&quot;./anti-virus.service.js&quot;).AntiVirusService; sourceDestroy: import(&quot;vitest&quot;).Mock&lt;import(&quot;@vitest/spy&quot;).Procedure&gt;; store: Map&lt;symbol, unknown&gt;; }&gt;</code>
@@ -98,7 +98,7 @@ over a stubbed `ClsService`, isolating the module graph per test.
 
 **Kind**: global function  
 **Returns**: <code>Promise&lt;{ cls: { get: &lt;T&gt;(key: symbol) &#x3D;&gt; T; set: (key: symbol, value: unknown) &#x3D;&gt; Map&lt;symbol, unknown&gt;; }; normalizedCls: import(&quot;./normalized-cls.service.js&quot;).NormalizedClsService; service: import(&quot;./anti-virus.service.js&quot;).AntiVirusService; sourceDestroy: import(&quot;vitest&quot;).Mock&lt;import(&quot;@vitest/spy&quot;).Procedure&gt;; store: Map&lt;symbol, unknown&gt;; }&gt;</code> - The service, the CLS backing map and the source-stream destroy spy.  
-src: packages/backend/src/services/anti-virus.service.spec.ts:186  
+src: packages/backend/src/services/anti-virus.service.spec.ts:195  
 <a name="stubRequest"></a>
 
 ## stubRequest(store, contentLength)
@@ -111,4 +111,4 @@ Points CLS at a request carrying the given content-length, or deletes it.
 | store | <code>Map&lt;symbol, unknown&gt;</code> | The CLS backing map. |
 | contentLength | <code>string</code> | The header value; `undefined` removes the request stub. |
 
-src: packages/backend/src/services/anti-virus.service.spec.ts:209  
+src: packages/backend/src/services/anti-virus.service.spec.ts:218  

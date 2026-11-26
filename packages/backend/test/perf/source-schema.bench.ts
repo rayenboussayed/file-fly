@@ -2,7 +2,9 @@ import { bench, describe } from 'vitest';
 
 import { SourceSchema } from '@/schema.js';
 
-/** Representative source query for the media fetch routes. */
+/**
+Representative source query for the media fetch routes.
+ */
 const QUERY = {
   source: 'https://fixtures.local/tiny.mp4',
 };

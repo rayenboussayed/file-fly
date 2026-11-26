@@ -27,10 +27,10 @@
 ## Functions
 
 <dl>
-<dt><a href="#resolveFont">resolveFont(ctx, name)</a> ⇒ <code>PDFFont</code></dt>
+<dt><a href="#resolveFont">resolveFont(context, name)</a> ⇒ <code>PDFFont</code></dt>
 <dd><p>Resolves a public font name to the pre-embedded font; missing names are a build error.</p>
 </dd>
-<dt><a href="#isStandardWinAnsiFont">isStandardWinAnsiFont(ctx, name)</a> ⇒ <code>boolean</code></dt>
+<dt><a href="#isStandardWinAnsiFont">isStandardWinAnsiFont(context, name)</a> ⇒ <code>boolean</code></dt>
 <dd><p>Whether the named font is a WinAnsi standard font (not Symbol/ZapfDingbats, not embedded).</p>
 </dd>
 <dt><a href="#assertWinAnsiText">assertWinAnsiText(text, where)</a></dt>
@@ -77,7 +77,7 @@
 Map of the 14 Standard PDF fonts to pdf-lib's StandardFonts enum.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pdf/elements.ts:30  
+src: packages/backend/src/resources/pdf/elements.ts:34  
 dist: packages/backend/dist/resources/pdf/elements.js:13
 <a name="standardValueOf"></a>
 
@@ -91,7 +91,7 @@ Looks up a standard font without prototype-index access.
 | --- | --- | --- |
 | name | <code>string</code> | The public font name. |
 
-src: packages/backend/src/resources/pdf/elements.ts:74  
+src: packages/backend/src/resources/pdf/elements.ts:84  
 dist: packages/backend/dist/resources/pdf/elements.js:37
 <a name="PAGE_SIZES"></a>
 
@@ -99,7 +99,7 @@ dist: packages/backend/dist/resources/pdf/elements.js:37
 Page dimensions in points (1 pt = 1/72 inch).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pdf/elements.ts:122  
+src: packages/backend/src/resources/pdf/elements.ts:134  
 dist: packages/backend/dist/resources/pdf/elements.js:61
 <a name="pageSizeOf"></a>
 
@@ -113,7 +113,7 @@ Page dimensions in points for the given size/orientation, landscape swaps them.
 | --- | --- | --- |
 | page | <code>{ elements: ({ [x: string]: any; text: string; type: &quot;text&quot;; x: number; y: number; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; font?: string; size?: number; w?: number; } \| { [x: string]: any; h: number; type: &quot;rect&quot;; w: number; x: number; y: number; dash?: boolean; strokeWidth?: number; } \| { [x: string]: any; h: number; type: &quot;ellipse&quot;; w: number; x: number; y: number; strokeWidth?: number; } \| { [x: string]: any; type: &quot;line&quot;; x1: number; x2: number; y1: number; y2: number; dash?: boolean; thickness?: number; } \| { data: string; h: number; imageType: &quot;png&quot; \| &quot;jpg&quot;; type: &quot;image&quot;; w: number; x: number; y: number; opacity?: number; } \| { rows: (string \| { [x: string]: any; text: string; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; colSpan?: number; size?: number; })[][]; type: &quot;table&quot;; w: number; x: number; y: number; colWidths?: number[]; header?: boolean; } \| { [x: string]: any; fieldType: &quot;text&quot; \| &quot;checkbox&quot;; type: &quot;field&quot;; x: number; y: number; h?: number; value?: string; w?: number; } \| { [x: string]: any; format: string; type: &quot;pageNumber&quot;; x: number; y: number; font?: string; size?: number; } \| { type: &quot;pageBreak&quot;; })[]; margin: { bottom: number; left: number; right: number; top: number; }; orientation: &quot;portrait&quot; \| &quot;landscape&quot;; size: &quot;a4&quot; \| &quot;a3&quot; \| &quot;a5&quot; \| &quot;letter&quot; \| &quot;legal&quot; \| &quot;tabloid&quot;; }</code> | The validated page payload. |
 
-src: packages/backend/src/resources/pdf/elements.ts:136  
+src: packages/backend/src/resources/pdf/elements.ts:148  
 dist: packages/backend/dist/resources/pdf/elements.js:69
 <a name="drawElement"></a>
 
@@ -125,16 +125,16 @@ Draws one element onto the page (image/table/field handled via the pre-embedded 
 
 | Param | Type | Description |
 | --- | --- | --- |
-| pdfDoc | <code>PDFDocument</code> | The document being built (needed for the AcroForm). |
+| pdfDocument | <code>PDFDocument</code> | The document being built (needed for the AcroForm). |
 | page | <code>PDFPage</code> | The target page. |
 | element | <code>{ [x: string]: any; text: string; type: &quot;text&quot;; x: number; y: number; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; font?: string; size?: number; w?: number; } \| { [x: string]: any; h: number; type: &quot;rect&quot;; w: number; x: number; y: number; dash?: boolean; strokeWidth?: number; } \| { [x: string]: any; h: number; type: &quot;ellipse&quot;; w: number; x: number; y: number; strokeWidth?: number; } \| { [x: string]: any; type: &quot;line&quot;; x1: number; x2: number; y1: number; y2: number; dash?: boolean; thickness?: number; } \| { data: string; h: number; imageType: &quot;png&quot; \| &quot;jpg&quot;; type: &quot;image&quot;; w: number; x: number; y: number; opacity?: number; } \| { rows: (string \| { [x: string]: any; text: string; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; colSpan?: number; size?: number; })[][]; type: &quot;table&quot;; w: number; x: number; y: number; colWidths?: number[]; header?: boolean; } \| { [x: string]: any; fieldType: &quot;text&quot; \| &quot;checkbox&quot;; type: &quot;field&quot;; x: number; y: number; h?: number; value?: string; w?: number; } \| { [x: string]: any; format: string; type: &quot;pageNumber&quot;; x: number; y: number; font?: string; size?: number; }</code> | The validated element descriptor. |
-| ctx | <code>BuilderContext</code> | The pre-embedded font state. |
+| context | <code>BuilderContext</code> | The pre-embedded font state. |
 | images | <code>Map&lt;object, PDFImage&gt;</code> | The pre-embedded images. |
 | totalPages | <code>number</code> | Logical page count, for pageNumber elements. |
 | pageNumber | <code>number</code> | 1-based number of this page, for pageNumber elements. |
 
-src: packages/backend/src/resources/pdf/elements.ts:554  
-dist: packages/backend/dist/resources/pdf/elements.js:306
+src: packages/backend/src/resources/pdf/elements.ts:571  
+dist: packages/backend/dist/resources/pdf/elements.js:315
 <a name="collectFontNames"></a>
 
 ## collectFontNames ⇒ <code>string[]</code>
@@ -147,8 +147,8 @@ Fonts referenced by an element (embedded or standard name).
 | --- | --- | --- |
 | element | <code>{ [x: string]: any; text: string; type: &quot;text&quot;; x: number; y: number; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; font?: string; size?: number; w?: number; } \| { [x: string]: any; h: number; type: &quot;rect&quot;; w: number; x: number; y: number; dash?: boolean; strokeWidth?: number; } \| { [x: string]: any; h: number; type: &quot;ellipse&quot;; w: number; x: number; y: number; strokeWidth?: number; } \| { [x: string]: any; type: &quot;line&quot;; x1: number; x2: number; y1: number; y2: number; dash?: boolean; thickness?: number; } \| { data: string; h: number; imageType: &quot;png&quot; \| &quot;jpg&quot;; type: &quot;image&quot;; w: number; x: number; y: number; opacity?: number; } \| { rows: (string \| { [x: string]: any; text: string; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; colSpan?: number; size?: number; })[][]; type: &quot;table&quot;; w: number; x: number; y: number; colWidths?: number[]; header?: boolean; } \| { [x: string]: any; fieldType: &quot;text&quot; \| &quot;checkbox&quot;; type: &quot;field&quot;; x: number; y: number; h?: number; value?: string; w?: number; } \| { [x: string]: any; format: string; type: &quot;pageNumber&quot;; x: number; y: number; font?: string; size?: number; }</code> | The element to inspect. |
 
-src: packages/backend/src/resources/pdf/elements.ts:607  
-dist: packages/backend/dist/resources/pdf/elements.js:339
+src: packages/backend/src/resources/pdf/elements.ts:633  
+dist: packages/backend/dist/resources/pdf/elements.js:357
 <a name="segmentPages"></a>
 
 ## segmentPages ⇒ <code>{ elements: Array&lt;Exclude&lt;ElementType, { type: &quot;pageBreak&quot;; }&gt;&gt;; page: PdfPageType; }[]</code>
@@ -161,11 +161,11 @@ Splits each page's element list at `pageBreak` elements into physical page segme
 | --- | --- | --- |
 | pages | <code>({ elements: ({ [x: string]: any; text: string; type: &quot;text&quot;; x: number; y: number; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; font?: string; size?: number; w?: number; } \| { [x: string]: any; h: number; type: &quot;rect&quot;; w: number; x: number; y: number; dash?: boolean; strokeWidth?: number; } \| { [x: string]: any; h: number; type: &quot;ellipse&quot;; w: number; x: number; y: number; strokeWidth?: number; } \| { [x: string]: any; type: &quot;line&quot;; x1: number; x2: number; y1: number; y2: number; dash?: boolean; thickness?: number; } \| { data: string; h: number; imageType: &quot;png&quot; \| &quot;jpg&quot;; type: &quot;image&quot;; w: number; x: number; y: number; opacity?: number; } \| { rows: (string \| { [x: string]: any; text: string; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; colSpan?: number; size?: number; })[][]; type: &quot;table&quot;; w: number; x: number; y: number; colWidths?: number[]; header?: boolean; } \| { [x: string]: any; fieldType: &quot;text&quot; \| &quot;checkbox&quot;; type: &quot;field&quot;; x: number; y: number; h?: number; value?: string; w?: number; } \| { [x: string]: any; format: string; type: &quot;pageNumber&quot;; x: number; y: number; font?: string; size?: number; } \| { type: &quot;pageBreak&quot;; })[]; margin: { bottom: number; left: number; right: number; top: number; }; orientation: &quot;portrait&quot; \| &quot;landscape&quot;; size: &quot;a4&quot; \| &quot;a3&quot; \| &quot;a5&quot; \| &quot;letter&quot; \| &quot;legal&quot; \| &quot;tabloid&quot;; } &amp; { elements: ElementType[]; })[]</code> | The validated page payloads from the build request. |
 
-src: packages/backend/src/resources/pdf/elements.ts:624  
-dist: packages/backend/dist/resources/pdf/elements.js:348
+src: packages/backend/src/resources/pdf/elements.ts:652  
+dist: packages/backend/dist/resources/pdf/elements.js:368
 <a name="resolveFont"></a>
 
-## resolveFont(ctx, name) ⇒ <code>PDFFont</code>
+## resolveFont(context, name) ⇒ <code>PDFFont</code>
 Resolves a public font name to the pre-embedded font; missing names are a build error.
 
 **Kind**: global function  
@@ -173,14 +173,14 @@ Resolves a public font name to the pre-embedded font; missing names are a build 
 
 | Param | Type | Description |
 | --- | --- | --- |
-| ctx | <code>BuilderContext</code> | The pre-embedded font state. |
+| context | <code>BuilderContext</code> | The pre-embedded font state. |
 | name | <code>string</code> | The public font name, or undefined for the default. |
 
-src: packages/backend/src/resources/pdf/elements.ts:62  
+src: packages/backend/src/resources/pdf/elements.ts:72  
 dist: packages/backend/dist/resources/pdf/elements.js:29
 <a name="isStandardWinAnsiFont"></a>
 
-## isStandardWinAnsiFont(ctx, name) ⇒ <code>boolean</code>
+## isStandardWinAnsiFont(context, name) ⇒ <code>boolean</code>
 Whether the named font is a WinAnsi standard font (not Symbol/ZapfDingbats, not embedded).
 
 **Kind**: global function  
@@ -188,10 +188,10 @@ Whether the named font is a WinAnsi standard font (not Symbol/ZapfDingbats, not 
 
 | Param | Type | Description |
 | --- | --- | --- |
-| ctx | <code>BuilderContext</code> | The pre-embedded font state. |
+| context | <code>BuilderContext</code> | The pre-embedded font state. |
 | name | <code>string</code> | The public font name. |
 
-src: packages/backend/src/resources/pdf/elements.ts:85  
+src: packages/backend/src/resources/pdf/elements.ts:95  
 dist: packages/backend/dist/resources/pdf/elements.js:39
 <a name="assertWinAnsiText"></a>
 
@@ -205,7 +205,7 @@ Throws 400 when any character is outside the WinAnsi encoding (standard fonts on
 | text | <code>string</code> | The text to check. |
 | where | <code>string</code> | Where in the document the text lives. |
 
-src: packages/backend/src/resources/pdf/elements.ts:93  
+src: packages/backend/src/resources/pdf/elements.ts:103  
 dist: packages/backend/dist/resources/pdf/elements.js:40
 <a name="assertFontEncodes"></a>
 
@@ -221,7 +221,7 @@ Belt-and-braces: any standard font rejects what its own encoding cannot carry.
 | text | <code>string</code> | The text to probe-encode. |
 | where | <code>string</code> | Where in the document the text lives, for error messages. |
 
-src: packages/backend/src/resources/pdf/elements.ts:110  
+src: packages/backend/src/resources/pdf/elements.ts:120  
 dist: packages/backend/dist/resources/pdf/elements.js:50
 <a name="wrapParagraph"></a>
 
@@ -238,7 +238,7 @@ Word-greedy line breaking, respecting the given width at the given size.
 | size | <code>number</code> | Font size in points. |
 | maxWidth | <code>number</code> | Maximum line width in points. |
 
-src: packages/backend/src/resources/pdf/elements.ts:150  
+src: packages/backend/src/resources/pdf/elements.ts:162  
 dist: packages/backend/dist/resources/pdf/elements.js:74
 <a name="wrapLines"></a>
 
@@ -255,8 +255,8 @@ Wraps text on newlines, then on words; empty paragraphs become blank lines.
 | size | <code>number</code> | Font size in points. |
 | maxWidth | <code>number</code> | Maximum line width in points. |
 
-src: packages/backend/src/resources/pdf/elements.ts:175  
-dist: packages/backend/dist/resources/pdf/elements.js:91
+src: packages/backend/src/resources/pdf/elements.ts:188  
+dist: packages/backend/dist/resources/pdf/elements.js:92
 <a name="textOffset"></a>
 
 ## textOffset(align, lineWidth, boxWidth) ⇒ <code>number</code>
@@ -271,8 +271,8 @@ Horizontal offset for a line within a box.
 | lineWidth | <code>number</code> | Measured width of the line in points. |
 | boxWidth | <code>number</code> | Box width in points. |
 
-src: packages/backend/src/resources/pdf/elements.ts:195  
-dist: packages/backend/dist/resources/pdf/elements.js:103
+src: packages/backend/src/resources/pdf/elements.ts:208  
+dist: packages/backend/dist/resources/pdf/elements.js:104
 <a name="cellOf"></a>
 
 ## cellOf(cell) ⇒ <code>{ align: Align; colSpan: number; fill?: string; size: number; text: string; }</code>
@@ -285,8 +285,8 @@ Normalizes a table cell union (string or object) to the internal shape.
 | --- | --- | --- |
 | cell | <code>string \| { [x: string]: any; text: string; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; colSpan?: number; size?: number; }</code> | The raw cell from the validated schema. |
 
-src: packages/backend/src/resources/pdf/elements.ts:240  
-dist: packages/backend/dist/resources/pdf/elements.js:131
+src: packages/backend/src/resources/pdf/elements.ts:253  
+dist: packages/backend/dist/resources/pdf/elements.js:132
 <a name="cellFontOf"></a>
 
 ## cellFontOf(font, headerFont, isHeader) ⇒ <code>PDFFont</code>
@@ -301,8 +301,8 @@ Picks the header font for header rows, the body font otherwise.
 | headerFont | <code>PDFFont</code> | The header font, for the header row. |
 | isHeader | <code>boolean</code> | Whether this cell belongs to the header row. |
 
-src: packages/backend/src/resources/pdf/elements.ts:254  
-dist: packages/backend/dist/resources/pdf/elements.js:134
+src: packages/backend/src/resources/pdf/elements.ts:267  
+dist: packages/backend/dist/resources/pdf/elements.js:135
 <a name="rowHeightOf"></a>
 
 ## rowHeightOf(row, colWidths, font, headerFont, isHeader) ⇒ <code>number</code>
@@ -319,8 +319,8 @@ Measures a table row's height from its tallest cell after wrapping.
 | headerFont | <code>PDFFont</code> | The header font, for the header row. |
 | isHeader | <code>boolean</code> | Whether this is the header row. |
 
-src: packages/backend/src/resources/pdf/elements.ts:266  
-dist: packages/backend/dist/resources/pdf/elements.js:135
+src: packages/backend/src/resources/pdf/elements.ts:279  
+dist: packages/backend/dist/resources/pdf/elements.js:136
 <a name="paintCellText"></a>
 
 ## paintCellText(page, cell, cellX, cursorY, innerWidth, font, headerFont, isHeader)
@@ -339,8 +339,8 @@ Paints one cell's text lines, vertically top-aligned with padding.
 | headerFont | <code>PDFFont</code> | The header font for the header row. |
 | isHeader | <code>boolean</code> | Whether this cell belongs to the header row. |
 
-src: packages/backend/src/resources/pdf/elements.ts:298  
-dist: packages/backend/dist/resources/pdf/elements.js:148
+src: packages/backend/src/resources/pdf/elements.ts:311  
+dist: packages/backend/dist/resources/pdf/elements.js:149
 <a name="paintRow"></a>
 
 ## paintRow(page, row, colWidths, cursorY, rowHeight, startX, font, headerFont, isHeader, topToY)
@@ -361,8 +361,8 @@ Paints one row: cell backgrounds, borders and text.
 | isHeader | <code>boolean</code> | Whether this is the header row. |
 | topToY | <code>(y: number, h: number) &#x3D;&gt; number</code> | The y-from-top to pdf-lib y converter. |
 
-src: packages/backend/src/resources/pdf/elements.ts:333  
-dist: packages/backend/dist/resources/pdf/elements.js:160
+src: packages/backend/src/resources/pdf/elements.ts:346  
+dist: packages/backend/dist/resources/pdf/elements.js:161
 <a name="assertTableEncodable"></a>
 
 ## assertTableEncodable(element, font)
@@ -375,8 +375,8 @@ Validates that every table cell text encodes with the table font (Helvetica WinA
 | element | <code>{ rows: (string \| { [x: string]: any; text: string; align?: &quot;left&quot; \| &quot;center&quot; \| &quot;right&quot;; colSpan?: number; size?: number; })[][]; type: &quot;table&quot;; w: number; x: number; y: number; colWidths?: number[]; header?: boolean; }</code> | The validated table element. |
 | font | <code>PDFFont</code> | The table body font. |
 
-src: packages/backend/src/resources/pdf/elements.ts:497  
-dist: packages/backend/dist/resources/pdf/elements.js:271
+src: packages/backend/src/resources/pdf/elements.ts:514  
+dist: packages/backend/dist/resources/pdf/elements.js:280
 <a name="exhaustiveNever"></a>
 
 ## exhaustiveNever(value) ⇒ <code>never</code>
@@ -392,5 +392,5 @@ Throws for an unrepresentable element; only reachable via a widened union.
 | --- | --- | --- |
 | value | <code>never</code> | The element the check failed on. |
 
-src: packages/backend/src/resources/pdf/elements.ts:598  
-dist: packages/backend/dist/resources/pdf/elements.js:336
+src: packages/backend/src/resources/pdf/elements.ts:624  
+dist: packages/backend/dist/resources/pdf/elements.js:354

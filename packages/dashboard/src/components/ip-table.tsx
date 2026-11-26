@@ -8,19 +8,21 @@ import type { MetricsPerIp } from '../lib/api.js';
 
 import { formatBytes, formatCount } from '../lib/format.js';
 
-/** Props for the per-IP traffic table. */
-export interface IpTableProps {
+/**
+Props for the per-IP traffic table.
+ */
+export interface IpTableProperties {
   data: MetricsPerIp[];
   sortPlugin: TablePlugin<MetricsPerIp>;
 }
 
 /**
  * Renders the sortable per-IP traffic table.
- * @param props - Rows and sort plugin for the table.
+ * @param properties - Rows and sort plugin for the table.
  * @returns The rendered table.
  */
-export function IpTable(props: IpTableProps) {
-  const { data, sortPlugin } = props;
+export function IpTable(properties: IpTableProperties) {
+  const { data, sortPlugin } = properties;
   const columns = useMemo<TableColumn<MetricsPerIp>[]>(
     () => [
       {

@@ -19,7 +19,7 @@ vi.mock('../lib/api', async (importOriginal) => {
   };
 });
 
-import { OverviewPage } from './OverviewPage.js';
+import { OverviewPage } from './overview-page.js';
 
 const snapshot = fixture as never;
 

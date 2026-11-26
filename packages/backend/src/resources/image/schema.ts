@@ -10,7 +10,9 @@ import { trimmed } from '@/utils/zod.js';
 const formatKeys = Object.keys(sharp.format) as Array<keyof FormatEnum>;
 const fitKeys = Object.keys(sharp.fit) as Array<keyof FitEnum>;
 const kernelKeys = Object.keys(sharp.kernel) as Array<keyof KernelEnum>;
-/** resize position accepts sharp's corner/edge names plus everything in sharp.gravity. */
+/**
+resize position accepts sharp's corner/edge names plus everything in sharp.gravity.
+ */
 const positionKeys = [
   'top', 
 'right', 
@@ -25,7 +27,9 @@ const positionKeys = [
 
 const color = z.string().regex(/^#[0-9a-f]{6}$/i);
 
-/** Query parameters for `/image/processor`, `/image/metadata`, `/image/dna` and `/image/stats` uploads. */
+/**
+Query parameters for `/image/processor`, `/image/metadata`, `/image/dna` and `/image/stats` uploads.
+ */
 export const ImageProcessorSchema = SourceSchema.partial().extend({
   background: color.optional(),
   blur: z.coerce.number().int().positive().max(1000).optional(),
@@ -51,7 +55,9 @@ export const ImageProcessorSchema = SourceSchema.partial().extend({
   withoutReduction: z.stringbool().optional(),
 });
 
-/** Validated options for the image processor routes. */
+/**
+Validated options for the image processor routes.
+ */
 export type ImageProcessorType = z.infer<typeof ImageProcessorSchema>;
 
 /**
@@ -70,5 +76,7 @@ export const OcrSchema = SourceSchema.partial().extend({
   lang: trimmed(z.string().regex(LANG_REGEX, 'Invalid language code')).optional(),
 });
 
-/** Query parameters for `POST /image/ocr` (Tesseract OCR). */
+/**
+Query parameters for `POST /image/ocr` (Tesseract OCR).
+ */
 export type OcrType = z.infer<typeof OcrSchema>;

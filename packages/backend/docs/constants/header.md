@@ -29,7 +29,7 @@ dist: packages/backend/dist/constants/header.js:1
 Hint on the /font/subset response: the payload is a minimal sfnt for PDF embedding.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/header.ts:7  
+src: packages/backend/src/constants/header.ts:9  
 dist: packages/backend/dist/constants/header.js:2
 <a name="HEADER_X_AUTH_USERNAME"></a>
 
@@ -37,7 +37,7 @@ dist: packages/backend/dist/constants/header.js:2
 Username header for the basic-auth perimeter.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/header.ts:10  
+src: packages/backend/src/constants/header.ts:14  
 dist: packages/backend/dist/constants/header.js:3
 <a name="HEADER_X_AUTH_PASSWORD"></a>
 
@@ -45,5 +45,5 @@ dist: packages/backend/dist/constants/header.js:3
 Password header for the basic-auth perimeter.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/header.ts:13  
+src: packages/backend/src/constants/header.ts:19  
 dist: packages/backend/dist/constants/header.js:4

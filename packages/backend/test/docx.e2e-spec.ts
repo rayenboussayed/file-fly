@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { binaryParser, bootApp, FIXTURES_DIR } from './helpers.js';
 
-const smallDoc = {
+const smallDocument = {
   metadata: { creator: 'E2E Author', title: 'E2E Fixture' },
   sections: [
     {
@@ -33,7 +33,7 @@ describe('Docx (e2e)', () => {
   it('POST /docx/build answers 201 with a docx payload', async () => {
     const response = await request(app.getHttpServer())
       .post('/docx/build')
-      .send(smallDoc)
+      .send(smallDocument)
       .set('content-type', 'application/json')
       .buffer(true)
       .parse(binaryParser as never);
@@ -72,7 +72,7 @@ describe('Docx (e2e)', () => {
   it('built output round-trips through extract', async () => {
     const built = await request(app.getHttpServer())
       .post('/docx/build')
-      .send(smallDoc)
+      .send(smallDocument)
       .set('content-type', 'application/json')
       .buffer(true)
       .parse(binaryParser as never);
@@ -99,7 +99,7 @@ describe('Docx (e2e)', () => {
   it('built output round-trips through metadata', async () => {
     const built = await request(app.getHttpServer())
       .post('/docx/build')
-      .send(smallDoc)
+      .send(smallDocument)
       .set('content-type', 'application/json')
       .buffer(true)
       .parse(binaryParser as never);

@@ -53,6 +53,18 @@ const importWorker = async (workerData: Record<string, unknown>) => {
   await import('./index.js');
 };
 
+/**
+ * Runs the processor worker with the given payload and collects its output.
+ * @param payload - Video processor options passed to the worker.
+ * @returns The bytes written to stdout by the worker.
+ */
+const runProcessor = async (payload: Record<string, unknown>) => {
+  const chunks = stubStdout();
+  await importWorker({ inputFormat: 'mp4', operation: 'processor', payload });
+  await waitForWorker(15_000);
+  return Buffer.concat(chunks);
+};
+
 describe('video worker', () => {
   beforeEach(() => {
     vi.stubEnv('FILE_FLY_WORKER', '0'); // run in-process; finishWorker is a no-op
@@ -143,8 +155,8 @@ describe('video worker', () => {
     // MP3 starts with an ID3 tag or an MPEG frame sync.
     const magic = out.subarray(0, 3).toString('latin1');
     const second = out.at(1) ?? 0;
-    const frameSync = out.at(0) === 0xff && (second & 0xe0) === 0xe0;
-    expect(magic === 'ID3' || frameSync).toBe(true);
+    const isFrameSync = out.at(0) === 0xff && (second & 0xe0) === 0xe0;
+    expect(magic === 'ID3' || isFrameSync).toBe(true);
   }, 30_000);
 
   it('ignores unknown operations without writing bytes', async () => {
@@ -156,13 +168,6 @@ describe('video worker', () => {
 });
 
 describe('video worker processMedia matrix', () => {
-  const runProcessor = async (payload: Record<string, unknown>) => {
-    const chunks = stubStdout();
-    await importWorker({ inputFormat: 'mp4', operation: 'processor', payload });
-    await waitForWorker(15_000);
-    return Buffer.concat(chunks);
-  };
-
   beforeEach(() => {
     vi.stubEnv('FILE_FLY_WORKER', '0');
     stubStdin();

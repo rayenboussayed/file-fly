@@ -10,16 +10,16 @@ import path from 'node:path';
  */
 function collectValues(argv, startIndex) {
   const collected = [argv.at(startIndex)];
-  let i = startIndex;
+  let index = startIndex;
   while (
-    argv.at(i + 1) &&
-    !argv.at(i + 1).startsWith('--') &&
-    !argv.at(i + 1).startsWith('-')
+    argv.at(index + 1) &&
+    !argv.at(index + 1).startsWith('--') &&
+    !argv.at(index + 1).startsWith('-')
   ) {
-    collected.push(argv.at(i + 1));
-    i += 1;
+    collected.push(argv.at(index + 1));
+    index += 1;
   }
-  return { collected, nextIndex: i };
+  return { collected, nextIndex: index };
 }
 
 /**
@@ -68,7 +68,7 @@ function extractUnion(text, name) {
     .replaceAll(/\/\*[\s\S]*?\*\//g, '')
     .replaceAll(/\/\/[^\n]*/g, '');
 
-  const literals = [...stripped.matchAll(/['"]((?:\\.|[^'"\\])*)['"]/g)];
+  const literals = stripped.matchAll(/['"]((?:\\.|[^'"\\])*)['"]/g).toArray();
   if (literals.length === 0) {
     throw new Error(`Union ${name} contains no string literals`);
   }
@@ -109,16 +109,16 @@ function extractUnion(text, name) {
  */
 function findUnionEnd(text, start) {
   let quote;
-  let escaped = false;
+  let isEscaped = false;
 
-  for (let i = start; i < text.length; i += 1) {
-    if (escaped) {
-      escaped = false;
+  for (let index = start; index < text.length; index += 1) {
+    if (isEscaped) {
+      isEscaped = false;
       continue;
     }
-    const char = text.charAt(i);
+    const char = text.charAt(index);
     if (char === '\\') {
-      escaped = true;
+      isEscaped = true;
       continue;
     }
     if (quote) {
@@ -129,7 +129,7 @@ function findUnionEnd(text, start) {
       quote = char;
       continue;
     }
-    if (char === ';') return i;
+    if (char === ';') return index;
   }
 
   throw new Error('Union declaration did not terminate with a semicolon');
@@ -143,10 +143,10 @@ function findUnionEnd(text, start) {
  */
 function formatArray(name, values) {
   const lines = [];
-  for (let i = 0; i < values.length; i += 16) {
+  for (let index = 0; index < values.length; index += 16) {
     lines.push(
       `  ${values
-        .slice(i, i + 16)
+        .slice(index, index + 16)
         .map((value) => JSON.stringify(value))
         .join(', ')},`,
     );
@@ -200,48 +200,48 @@ function generate(types, unionNames) {
  * @param {string[]} argv Argument list.
  * @returns {{file?: string, types?: string[], unions?: string[], output?: string} | void} Parsed args, or void for help.
  */
-function parseArgs(argv) {
+function parseArguments(argv) {
   if (argv.includes('--help') || argv.includes('-h')) {
     console.log(usage);
     process.exitCode = 0;
     return;
   }
 
-  const args = {};
-  let i = 0;
-  while (i < argv.length) {
-    const arg = argv.at(i);
+  const arguments_ = {};
+  let index = 0;
+  while (index < argv.length) {
+    const argument = argv.at(index);
 
-    const match = arg.match(/^(--|-)(file|types|unions|output|[otf])$/);
+    const match = argument.match(/^(--|-)(file|types|unions|output|[otf])$/);
     if (!match) {
-      throw new Error(`Unknown argument: ${arg}`);
+      throw new Error(`Unknown argument: ${argument}`);
     }
 
     const key = match[2]
       .replace(/^f$/, 'file')
       .replace(/^t$/, 'types')
       .replace(/^o$/, 'output');
-    const value = argv.at(i + 1);
+    const value = argv.at(index + 1);
     if (!value || value.startsWith('--')) {
-      throw new Error(`Missing value for ${arg}`);
+      throw new Error(`Missing value for ${argument}`);
     }
 
     if (key === 'types' || key === 'unions') {
-      const { collected, nextIndex } = collectValues(argv, i + 1);
-      Reflect.set(args, key, collected);
-      i = nextIndex + 1;
+      const { collected, nextIndex } = collectValues(argv, index + 1);
+      Reflect.set(arguments_, key, collected);
+      index = nextIndex + 1;
       continue;
     }
 
-    if (key === 'file' || key === 'output') Reflect.set(args, key, value);
-    i += 2;
+    if (key === 'file' || key === 'output') Reflect.set(arguments_, key, value);
+    index += 2;
   }
 
-  args.file ??= defaultFormatsPath();
-  if (!args.types?.length)
+  arguments_.file ??= defaultFormatsPath();
+  if (!arguments_.types?.length)
     throw new Error('Missing required --types argument(s)');
-  args.unions ??= [];
-  return args;
+  arguments_.unions ??= [];
+  return arguments_;
 }
 
 /**
@@ -254,20 +254,20 @@ function variableName(typeName) {
 }
 
 try {
-  const args = parseArgs(process.argv.slice(2));
-  if (args) {
-    const source = readFileSync(path.resolve(args.file), 'utf8');
+  const arguments_ = parseArguments(process.argv.slice(2));
+  if (arguments_) {
+    const source = readFileSync(path.resolve(arguments_.file), 'utf8');
     const types = Object.fromEntries(
-      args.types.map((type) => [type, extractUnion(source, type)]),
+      arguments_.types.map((type) => [type, extractUnion(source, type)]),
     );
-    const output = generate(types, args.unions);
+    const output = generate(types, arguments_.unions);
     const destination = path.resolve(
-      args.output ?? 'src/constants/av-formats.ts',
+      arguments_.output ?? 'src/constants/av-formats.ts',
     );
 
     mkdirSync(path.dirname(destination), { recursive: true });
     writeFileSync(destination, output);
-    console.log(`Generated ${destination} from ${args.types.join(', ')}`);
+    console.log(`Generated ${destination} from ${arguments_.types.join(', ')}`);
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

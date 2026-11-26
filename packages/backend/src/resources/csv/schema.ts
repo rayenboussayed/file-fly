@@ -2,51 +2,58 @@ import { z } from 'zod';
 
 import { trimmed } from '@/utils/zod.js';
 
+const trimmedText = trimmed(z.string().min(1));
+const trimmedTextMax32 = trimmed(z.string().min(1).max(32));
+const singleCharacterOrFalse = z.union([z.string().length(1), z.literal(false)]);
+const csvColumn = z.union([
+  z.string().min(1),
+  z.object({ header: z.string().optional(), key: z.string().min(1) }).strict(),
+]);
+const csvRecord = z.union([z.record(z.string(), z.unknown()), z.array(z.unknown())]);
+const nullableTrimmedText = trimmedText.nullable();
+
 /**
  * JSON body for `POST /csv/build`: rows in, CSV bytes out.
  * Elements may be row objects or arrays of cell values.
  */
 export const CsvBuildSchema = z
   .object({
-    /** csv-stringify options (names kept as in the library). `escape_formulas` defaults to true. */
+    /**
+    csv-stringify options (names kept as in the library). `escape_formulas` defaults to true.
+     */
     options: z
       .object({
         bom: z.boolean().optional(),
-        columns: z
-          .array(
-            z.union([
-              z.string().min(1),
-              z
-                .object({ header: z.string().optional(), key: z.string().min(1) })
-                .strict(),
-            ]),
-          )
-          .optional(),
-        delimiter: trimmed(z.string().min(1).max(32)).optional(),
+        columns: z.array(csvColumn).optional(),
+        delimiter: trimmedTextMax32.optional(),
         eof: z.boolean().optional(),
         escape: z.string().length(1).optional(),
         escape_formulas: z.boolean().optional(),
         header: z.boolean().optional(),
         header_as_comment: z.boolean().optional(),
-        quote: z.union([z.string().length(1), z.literal(false)]).optional(),
+        quote: singleCharacterOrFalse.optional(),
         quote_record_delimiter: z.boolean().optional(),
         quoted: z.boolean().optional(),
         quoted_empty: z.boolean().optional(),
         quoted_string: z.boolean().optional(),
-        record_delimiter: trimmed(z.string().min(1).max(32)).optional(),
+        record_delimiter: trimmedTextMax32.optional(),
       })
       .strict()
       .optional(),
-    /** Rows to serialize; objects map keys to cells, arrays emit positional cells. */
-    records: z.array(
-      z.union([z.record(z.string(), z.unknown()), z.array(z.unknown())]),
-    ),
+    /**
+    Rows to serialize; objects map keys to cells, arrays emit positional cells.
+     */
+    records: z.array(csvRecord),
   })
   .strict();
-/** Validated body for `POST /csv/build`. */
+/**
+Validated body for `POST /csv/build`.
+ */
 export type CsvBuildType = z.infer<typeof CsvBuildSchema>;
 
-/** csv-parse options shared by `/csv/extract` and `/csv/metadata` (function-valued options excluded). */
+/**
+csv-parse options shared by `/csv/extract` and `/csv/metadata` (function-valued options excluded).
+ */
 const csvParseOptions = z.object({
   bom: z.stringbool().optional(),
   cast: z.stringbool().optional(),
@@ -55,7 +62,7 @@ const csvParseOptions = z.object({
     .union([
       z.stringbool(),
       z.string().min(1).transform((value) => value.split(',').map((part) => part.trim()).filter((part) => part.length > 0)),
-      z.array(trimmed(z.string().min(1)).nullable()).max(1000),
+      z.array(nullableTrimmedText).max(1000),
     ])
     .optional(),
   comment: z.string().length(1).optional(),
@@ -93,7 +100,9 @@ const csvParseOptions = z.object({
  * The raw CSV travels in the request body; everything here is csv-parse options.
  */
 export const CsvExtractSchema = csvParseOptions;
-/** Flat query parameters for `POST /csv/extract`. */
+/**
+Flat query parameters for `POST /csv/extract`.
+ */
 export type CsvExtractType = z.infer<typeof CsvExtractSchema>;
 
 const metadataParseOptions = csvParseOptions.pick({
@@ -123,5 +132,7 @@ const metadataParseOptions = csvParseOptions.pick({
 export const CsvMetadataSchema = metadataParseOptions.extend({
   maxRows: z.coerce.number().int().min(1).max(100_000).default(10_000),
 });
-/** Flat query parameters for `POST /csv/metadata`. */
+/**
+Flat query parameters for `POST /csv/metadata`.
+ */
 export type CsvMetadataType = z.infer<typeof CsvMetadataSchema>;

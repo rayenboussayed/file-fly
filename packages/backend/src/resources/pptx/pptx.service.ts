@@ -16,7 +16,7 @@ import { attr, collectByKey, collectByLocalName, collectRelationships, textOf, x
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream } from '@/utils/buffer.js';
 import { requestMime } from '@/utils/http.js';
-import { hyperlinkUrlOk } from '@/utils/hyperlinks.js';
+import { isHyperlinkUrlOk } from '@/utils/hyperlinks.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
 import { PPTX_MIME, type PptxBuildType } from './schema.js';
@@ -52,8 +52,7 @@ const assertHyperlinkScheme = (record: Record<string, unknown>): void => {
     hyperlink && typeof hyperlink === 'object'
       ? (hyperlink as Record<string, unknown>)['url']
       : undefined;
-  if (typeof url !== 'string') return;
-  if (hyperlinkUrlOk(url)) return;
+  if ((typeof url !== 'string') || isHyperlinkUrlOk(url)) return;
   throw new BadRequestException({
     code: 'PPTX_HYPERLINK_SCHEME_NOT_ALLOWED',
     message: 'hyperlink URLs must use http, https or mailto',
@@ -115,12 +114,16 @@ const validateTableSpans = (table: Record<string, unknown>): void => {
 
 const rowWidth = (row: unknown): number => {
   if (!Array.isArray(row)) return 0;
-  return row.reduce<number>((sum, cell) => {
-    if (!cell || typeof cell !== 'object') return sum + 1;
+  let width = 0;
+  for (const cell of row) {
+    if (!cell || typeof cell !== 'object') {
+      width += 1;
+      continue;
+    }
     const record = cell as Record<string, unknown>;
-    const colSpan = Number(record['colSpan'] ?? (record['options'] as Record<string, unknown> | undefined)?.['colspan'] ?? 1);
-    return sum + colSpan;
-  }, 0);
+    width += Number(record['colSpan'] ?? (record['options'] as Record<string, unknown> | undefined)?.['colspan'] ?? 1);
+  }
+  return width;
 };
 
 /**
@@ -172,12 +175,12 @@ const slideOrder = (parts: Map<string, Buffer>): string[] => {
   const rels = collectRelationships(OoxmlReader.partText(parts, 'ppt/_rels/presentation.xml.rels'));
   return sldIds.map((entry) => {
     const record = entry as Record<string, unknown>;
-    const relId = attr(record, 'r:id');
-    const target = relId === '' ? undefined : rels.get(relId)?.target;
+    const relationshipId = attr(record, 'r:id');
+    const target = relationshipId === '' ? undefined : rels.get(relationshipId)?.target;
     if (target === undefined) {
       throw new BadRequestException({
         code: 'PPTX_SLIDE_MISSING',
-        message: `slide relationship ${relId} is missing or unresolvable`,
+        message: `slide relationship ${relationshipId} is missing or unresolvable`,
       });
     }
     const cleaned = target.replaceAll('\\', '/').replace(/^\/+/, '');
@@ -242,7 +245,9 @@ const collectNotes = (parts: Map<string, Buffer>): string[] => {
     .map((entry) => entry.text);
 };
 
-/** PPTX feature service: builds decks and parses/metadata-inspects uploads. */
+/**
+PPTX feature service: builds decks and parses/metadata-inspects uploads.
+ */
 @Injectable()
 export class PptxService {
   constructor(

@@ -18,7 +18,7 @@
     "lint": "eslint . --fix --cache --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:perf": "vitest bench --run --config ./vitest.config.perf.ts",
+    "test:perf": "vitest bench --run --config ./vitest.config.performance.ts",
     "test:mem": "vitest run --config ./vitest.config.mem.ts",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

@@ -3,25 +3,31 @@ import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
 
 import { ApiError, setMetricsToken } from '../lib/api.js';
-import { TokenGate } from './TokenGate.js';
+import { TokenGate } from './token-gate.js';
 
-/** Props for {@link MetricsErrorState}. */
-export interface MetricsErrorStateProps {
-  /** Error raised by the metrics query. */
+/**
+Props for {@link MetricsErrorState}.
+ */
+export interface MetricsErrorStateProperties {
+  /**
+  Error raised by the metrics query.
+   */
   error: unknown;
-  /** Called after a new token is stored so the query can retry. */
+  /**
+  Called after a new token is stored so the query can retry.
+   */
   onRefetch: () => void;
 }
 
 /**
  * Renders the failure state shared by both metrics pages.
- * @param props - Component props.
- * @param props.error - The query error, checked for an HTTP status.
- * @param props.onRefetch - Retries the query after a token is stored.
+ * @param properties - Component props.
+ * @param properties.error - The query error, checked for an HTTP status.
+ * @param properties.onRefetch - Retries the query after a token is stored.
  * @returns The token gate or a generic error card.
  */
-export function MetricsErrorState(props: MetricsErrorStateProps) {
-  const { error, onRefetch } = props;
+export function MetricsErrorState(properties: MetricsErrorStateProperties) {
+  const { error, onRefetch } = properties;
   const status = error instanceof ApiError ? error.status : 0;
   if (status === 401 || status === 503) {
     return (

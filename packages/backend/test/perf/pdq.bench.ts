@@ -2,7 +2,9 @@ import { bench, describe } from 'vitest';
 
 import { loadPdq } from '@/utils/pdq.js';
 
-/** Pixel dimensions of the synthetic benchmark image (smaller than real photos). */
+/**
+Pixel dimensions of the synthetic benchmark image (smaller than real photos).
+ */
 const WIDTH = 64;
 const HEIGHT = 64;
 
@@ -18,11 +20,11 @@ function diagonalGradient(): Uint8Array {
       seed = (seed * 1_103_515_245 + 12_345) & 0x7f_ff_ff_ff;
       const base = (x * 4 + y * 2) % 256;
       const value = x === y ? 255 - base : (base + (seed % 64)) % 256;
-      const i = (y * WIDTH + x) * 3;
+      const index = (y * WIDTH + x) * 3;
       // eslint-disable-next-line security/detect-object-injection -- index is derived from bounded loop counters into a fixed-size buffer
-      data[i] = value;
-      data[i + 1] = (value + 37) % 256;
-      data[i + 2] = (value + 101) % 256;
+      data[index] = value;
+      data[index + 1] = (value + 37) % 256;
+      data[index + 2] = (value + 101) % 256;
     }
   }
   return data;

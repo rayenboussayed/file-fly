@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 import { EmptyQuerySchema, trimmed } from '@/utils/zod.js';
 
-/** Only the plain PDF mime. */
+/**
+Only the plain PDF mime.
+ */
 export const PDF_MIME = 'application/pdf';
 
 const hexColor = trimmed(z.string().regex(/^[0-9a-f]{6}$/i));
@@ -45,7 +47,9 @@ const textSchema = z
     size: z.number().min(1).max(400).optional(),
     text: z.string().max(200_000),
     type: z.literal('text'),
-    /** Box width in points; required when `align` is not `left` (text wraps to it). */
+    /**
+    Box width in points; required when `align` is not `left` (text wraps to it).
+     */
     w: z.number().min(1).max(10_000).optional(),
     x: points,
     y: points,
@@ -57,7 +61,9 @@ const textSchema = z
 
 const rectSchema = z
   .object({
-    /** Dashed outline. */
+    /**
+    Dashed outline.
+     */
     dash: z.boolean().optional(),
     fill: hexColor.optional(),
     h: z.number().min(0).max(10_000),
@@ -86,7 +92,9 @@ const ellipseSchema = z
 const lineSchema = z
   .object({
     color: hexColor.optional(),
-    /** Dashed line. */
+    /**
+    Dashed line.
+     */
     dash: z.boolean().optional(),
     thickness: z.number().min(0).max(100).optional(),
     type: z.literal('line'),
@@ -114,10 +122,14 @@ const fieldSchema = z
   .object({
     fieldType: z.enum(['text', 'checkbox']),
     h: z.number().min(1).max(10_000).optional(),
-    /** Field name (AcroForm identifier). */
+    /**
+    Field name (AcroForm identifier).
+     */
     name: trimmed(z.string().min(1).max(200).regex(/^[\w. -]+$/)),
     type: z.literal('field'),
-    /** Default value; checkbox: "true" checks it. */
+    /**
+    Default value; checkbox: "true" checks it.
+     */
     value: z.string().max(10_000).optional(),
     w: z.number().min(1).max(10_000).optional(),
     x: points,
@@ -129,7 +141,9 @@ const pageNumberSchema = z
   .object({
     color: hexColor.optional(),
     font: fontSchema.optional(),
-    /** `{n}` placeholder; `{total}` resolves to the last page number. No newlines. */
+    /**
+    `{n}` placeholder; `{total}` resolves to the last page number. No newlines.
+     */
     format: z.string().max(50).regex(/^[^\r\n]*$/, 'format must be a single line').default('{n}'),
     size: z.number().min(1).max(400).optional(),
     type: z.literal('pageNumber'),
@@ -145,7 +159,9 @@ const tableCellSchema = z.union([
       align: z.enum(['left', 'center', 'right']).optional(),
       colSpan: z.number().int().min(1).max(100).optional(),
       fill: hexColor.optional(),
-      /** Cell font size. */
+      /**
+      Cell font size.
+       */
       size: z.number().min(1).max(400).optional(),
       text: z.string().max(50_000),
     })
@@ -154,30 +170,34 @@ const tableCellSchema = z.union([
 
 const tableSchema = z
   .object({
-    /** Column widths in points; omit for equal-width columns. Must match the column count. */
+    /**
+    Column widths in points; omit for equal-width columns. Must match the column count.
+     */
     colWidths: z.array(z.number().min(1).max(10_000)).max(100).optional(),
-    /** Treat the first row as a header (bold, shaded). */
+    /**
+    Treat the first row as a header (bold, shaded).
+     */
     header: z.boolean().optional(),
     rows: z.array(z.array(tableCellSchema).min(1).max(100)).min(1).max(500),
     type: z.literal('table'),
-    /** Content does not paginate; a table taller than the page is clipped off-page. */
+    /**
+    Content does not paginate; a table taller than the page is clipped off-page.
+     */
     w: z.number().min(1).max(10_000),
     x: points,
     y: points,
   })
   .strict()
-  .superRefine((table, ctx) => {
+  .superRefine((table, context) => {
     if (table.colWidths === undefined) return;
-    const columns = table.rows.reduce(
-      (max, row) =>
-        Math.max(
-          max,
-          row.reduce((sum, cell) => sum + (typeof cell === 'string' ? 1 : (cell.colSpan ?? 1)), 0),
-        ),
-      0,
-    );
+    let columns = 0;
+    for (const row of table.rows) {
+      let rowColumns = 0;
+      for (const cell of row) rowColumns += typeof cell === 'string' ? 1 : (cell.colSpan ?? 1);
+      columns = Math.max(columns, rowColumns);
+    }
     if (table.colWidths.length !== columns) {
-      ctx.addIssue({
+      context.addIssue({
         code: 'custom',
         message: `colWidths has ${table.colWidths.length} entries but the table needs ${columns} columns`,
       });
@@ -195,15 +215,21 @@ const elementSchema = z.discriminatedUnion('type', [
   pageNumberSchema,
   z.object({ type: z.literal('pageBreak') }).strict(),
 ]);
-/** A single page element in the build payload. */
+/**
+A single page element in the build payload.
+ */
 export type ElementType = z.infer<typeof elementSchema>;
-/** A table cell in the build payload. */
+/**
+A table cell in the build payload.
+ */
 export type TableCellType = z.infer<typeof tableCellSchema>;
 
 const pageSchema = z
   .object({
     elements: z.array(elementSchema).max(1000),
-    /** Page margins in points (72 = 1 inch). */
+    /**
+    Page margins in points (72 = 1 inch).
+     */
     margin: z
       .object({
         bottom: z.number().min(0).max(2000).default(72),
@@ -218,14 +244,20 @@ const pageSchema = z
   })
   .strict();
 
+const keywordsSchema = z.union([z.string().max(2000), z.array(z.string().min(1)).max(100)]);
+
 const metadataSchema = z
   .object({
     author: z.string().max(300).optional(),
-    /** ISO-8601 timestamp; pdf-lib keeps it (CreationDate only set when absent). */
+    /**
+    ISO-8601 timestamp; pdf-lib keeps it (CreationDate only set when absent).
+     */
     creationDate: z.iso.datetime().optional(),
     creator: z.string().max(300).optional(),
-    /** Comma-separated keywords or an array; written as PDF keywords. */
-    keywords: z.union([z.string().max(2000), z.array(z.string().min(1)).max(100)]).optional(),
+    /**
+    Comma-separated keywords or an array; written as PDF keywords.
+     */
+    keywords: keywordsSchema.optional(),
     language: z.string().max(20).optional(),
     subject: z.string().max(500).optional(),
     title: z.string().max(500).optional(),
@@ -234,41 +266,57 @@ const metadataSchema = z
 
 const embeddedFontSchema = z
   .object({
-    /** Base64-encoded TTF/OTF bytes. */
+    /**
+    Base64-encoded TTF/OTF bytes.
+     */
     data: base64,
-    /** Name referenced by `font` in elements. */
+    /**
+    Name referenced by `font` in elements.
+     */
     name: fontName,
   })
   .strict();
 
-/** Body of `POST /pdf/build`. */
+/**
+Body of `POST /pdf/build`.
+ */
 export const PdfBuildSchema = z
   .object({
-    /** Embedded TTF/OTF fonts, referenced by elements via `font`. WinAnsi preflight is skipped for these. */
+    /**
+    Embedded TTF/OTF fonts, referenced by elements via `font`. WinAnsi preflight is skipped for these.
+     */
     embeddedFonts: z.array(embeddedFontSchema).max(10).optional(),
     metadata: metadataSchema.optional(),
     pages: z.array(pageSchema).min(1).max(200),
   })
   .strict()
-  .superRefine((body, ctx) => {
+  .superRefine((body, context) => {
     const names = new Set<string>();
     for (const page of body.pages) {
       for (const element of page.elements) {
         if (element.type !== 'field') continue;
         if (names.has(element.name)) {
-          ctx.addIssue({ code: 'custom', message: `duplicate field name "${element.name}"` });
+          context.addIssue({ code: 'custom', message: `duplicate field name "${element.name}"` });
           return;
         }
         names.add(element.name);
       }
     }
   });
-/** Validated body for `POST /pdf/build`. */
+/**
+Validated body for `POST /pdf/build`.
+ */
 export type PdfBuildType = z.infer<typeof PdfBuildSchema>;
-/** A page in the build payload. */
+/**
+A page in the build payload.
+ */
 export type PdfPageType = z.infer<typeof pageSchema>;
 
-/** Flat query parameters for `POST /pdf/extract` (empty; rejects junk params). */
+/**
+Flat query parameters for `POST /pdf/extract` (empty; rejects junk params).
+ */
 export const PdfExtractSchema = EmptyQuerySchema;
-/** Flat query parameters for `POST /pdf/metadata` (empty; rejects junk params). */
+/**
+Flat query parameters for `POST /pdf/metadata` (empty; rejects junk params).
+ */
 export const PdfMetadataSchema = EmptyQuerySchema;

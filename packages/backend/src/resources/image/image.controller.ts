@@ -37,7 +37,9 @@ const SHARP_TO_MIME: Partial<Record<keyof FormatEnum, string>> = {
   webp: 'image/webp',
 };
 
-/** Image routes: processor, metadata, DNA, stats and OCR (binary stream endpoints). */
+/**
+Image routes: processor, metadata, DNA, stats and OCR (binary stream endpoints).
+ */
 @Controller('image')
 @UseMediaPipeline(ImageSignatureInterceptor)
 export class ImageController {
@@ -48,12 +50,12 @@ export class ImageController {
 
   @Get('dna')
   async dnaGet() {
-    return this.dna();
+    return this.imageService.dna();
   }
 
   @Post('dna')
   async dnaPost() {
-    return this.dna();
+    return this.imageService.dna();
   }
 
   async main(
@@ -89,51 +91,35 @@ export class ImageController {
 
   @Get('metadata')
   async metadataGet() {
-    return this.metadata();
+    return this.imageService.metadata();
   }
 
   @Post('metadata')
   async metadataPost() {
-    return this.metadata();
+    return this.imageService.metadata();
   }
 
   @Get('ocr')
   async ocrGet(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: OcrSchema }) query: OcrType,
   ) {
-    return this.ocr(query);
+    return this.imageService.ocr({ payload: query });
   }
 
   @Post('ocr')
   async ocrPost(
     @Query({ pipes: [new StandardSchemaValidationPipe()], schema: OcrSchema }) query: OcrType,
   ) {
-    return this.ocr(query);
+    return this.imageService.ocr({ payload: query });
   }
 
   @Get('stats')
   async statsGet() {
-    return this.stats();
+    return this.imageService.stats();
   }
 
   @Post('stats')
   async statsPost() {
-    return this.stats();
-  }
-
-  private async dna() {
-    return this.imageService.dna();
-  }
-
-  private async metadata() {
-    return this.imageService.metadata();
-  }
-
-  private async ocr(query: OcrType) {
-    return this.imageService.ocr({ payload: query });
-  }
-
-  private async stats() {
     return this.imageService.stats();
   }
 }

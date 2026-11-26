@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 import { EmptyQuerySchema, trimmed } from '@/utils/zod.js';
 
-/** Only the plain OOXML presentation mime; templates, macros and other packages are rejected. */
+/**
+Only the plain OOXML presentation mime; templates, macros and other packages are rejected.
+ */
 export const PPTX_MIME =
   'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
@@ -21,7 +23,9 @@ const xmlSafe = (max: number) => z.string().trim().max(max).regex(/^[^<>&"]*$/, 
 const inches = z.number().min(0).max(56);
 const positiveInches = z.number().min(0.01).max(56);
 
-/** A hyperlink attached to a text run. */
+/**
+A hyperlink attached to a text run.
+ */
 const hyperlinkSchema = z
   .object({
     slide: z.number().int().min(1).optional(),
@@ -32,12 +36,23 @@ const hyperlinkSchema = z
     message: 'a hyperlink needs exactly one of url or slide',
   });
 
-/** A text run; every run-level pptxgenjs option is mirrored here. */
+/**
+A text run; every run-level pptxgenjs option is mirrored here.
+ */
+const runBullet = z.union([
+  z.boolean(),
+  z.object({ code: z.string().regex(/^[0-9A-F]{4}$/i, 'hex character code').optional() }).strict(),
+]);
+const textBullet = z.union([
+  z.boolean(),
+  z.object({ code: z.string().min(1).max(4).optional() }).strict(),
+]);
+
 const runSchema = z
   .object({
     bold: z.boolean().optional(),
     breakLine: z.boolean().optional(),
-    bullet: z.union([z.boolean(), z.object({ code: z.string().regex(/^[0-9A-F]{4}$/i, 'hex character code').optional() }).strict()]).optional(),
+    bullet: runBullet.optional(),
     color: hexColor.optional(),
     fontFace: xmlSafe(100).optional(),
     fontSize: z.number().min(1).max(400).optional(),
@@ -53,7 +68,9 @@ const runSchema = z
     underline: z.boolean().optional(),
   })
   .strict();
-/** A text run in the build payload. */
+/**
+A text run in the build payload.
+ */
 export type RunType = z.infer<typeof runSchema>;
 
 const baseElementSchema = z
@@ -65,15 +82,19 @@ const baseElementSchema = z
   })
   .strict();
 
-/** A text box with one or more runs. */
+/**
+A text box with one or more runs.
+ */
 const textSchema = baseElementSchema.extend({
   align: z.enum(['left', 'center', 'right', 'justify']).optional(),
-  bullet: z.union([z.boolean(), z.object({ code: z.string().min(1).max(4).optional() }).strict()]).optional(),
+  bullet: textBullet.optional(),
   fill: z.object({ color: hexColor }).strict().optional(),
   fit: z.enum(['none', 'shrink', 'resize']).optional(),
   indentLevel: z.number().int().min(0).max(8).optional(),
   line: z.object({ color: hexColor, width: z.number().min(0).max(20).optional() }).strict().optional(),
-  /** Spacing in points (spcPts). */
+  /**
+  Spacing in points (spcPts).
+   */
   lineSpacing: z.number().min(1).max(400).optional(),
   margin: z.number().min(0).max(200).optional(),
   rotation: z.number().min(0).max(360).optional(),
@@ -265,7 +286,9 @@ const SHAPES = [
   'wedgeRoundRectCallout',
 ] as const;
 
-/** A shape, optionally with caption text. */
+/**
+A shape, optionally with caption text.
+ */
 const shapeSchema = baseElementSchema.extend({
   fill: z.object({ color: hexColor }).strict().optional(),
   line: z
@@ -297,17 +320,23 @@ const tableCellSchema = z
   })
   .strict();
 
-/** A table with rows of cells. */
+/**
+A table with rows of cells.
+ */
 const tableSchema = baseElementSchema.extend({
   margin: z.number().min(0).max(100).optional(),
   rows: z.array(z.array(tableCellSchema).min(1).max(200)).min(1).max(500),
   type: z.literal('table'),
 });
 
-/** A base64-embedded image. */
+/**
+A base64-embedded image.
+ */
 const imageSchema = baseElementSchema.extend({
   altText: z.string().max(500).optional(),
-  /** Base64-encoded image bytes (no data URI prefix). */
+  /**
+  Base64-encoded image bytes (no data URI prefix).
+   */
   data: z.string().min(1).max(15 * 1024 * 1024).regex(/^[A-Z0-9+/]*={0,2}$/i, 'invalid base64'),
   imageType: z.enum(['png', 'jpg', 'gif', 'bmp']),
   sizing: z
@@ -330,7 +359,9 @@ const chartSeriesSchema = z
   })
   .strict();
 
-/** A chart with one or more series. */
+/**
+A chart with one or more series.
+ */
 const chartSchema = baseElementSchema.extend({
   chartColors: z.array(hexColor).max(32).optional(),
   chartType: z.enum(['bar', 'bar3d', 'line', 'pie', 'doughnut', 'area', 'scatter', 'radar']),
@@ -350,7 +381,9 @@ const elementSchema = z.discriminatedUnion('type', [
   imageSchema,
   chartSchema,
 ]);
-/** A single slide element in the build payload. */
+/**
+A single slide element in the build payload.
+ */
 export type ElementType = z.infer<typeof elementSchema>;
 
 const backgroundSchema = z
@@ -363,7 +396,9 @@ const slideSchema = z
   .object({
     background: backgroundSchema.optional(),
     elements: z.array(elementSchema).max(500),
-    /** Speaker notes; plain text with newlines. */
+    /**
+    Speaker notes; plain text with newlines.
+     */
     notes: z.string().max(20_000).optional(),
   })
   .strict();
@@ -378,10 +413,14 @@ const metadataSchema = z
   })
   .strict();
 
-/** Body of `POST /pptx/build`. */
+/**
+Body of `POST /pptx/build`.
+ */
 export const PptxBuildSchema = z
   .object({
-    /** Built-in or `wide`/`square`; a custom layout via `defineLayout` is a future extension. */
+    /**
+    Built-in or `wide`/`square`; a custom layout via `defineLayout` is a future extension.
+     */
     layout: z.enum(['LAYOUT_16x9', 'LAYOUT_16x10', 'LAYOUT_4x3', 'LAYOUT_WIDE']).default('LAYOUT_16x9'),
     metadata: metadataSchema.optional(),
     slides: z.array(slideSchema).min(1).max(500),
@@ -394,11 +433,17 @@ export const PptxBuildSchema = z
       .optional(),
   })
   .strict();
-/** Validated body for `POST /pptx/build`. */
+/**
+Validated body for `POST /pptx/build`.
+ */
 export type PptxBuildType = z.infer<typeof PptxBuildSchema>;
 
-/** Flat query parameters for `POST /pptx/extract` (empty; rejects junk params). */
+/**
+Flat query parameters for `POST /pptx/extract` (empty; rejects junk params).
+ */
 export const PptxExtractSchema = EmptyQuerySchema;
 
-/** Flat query parameters for `POST /pptx/metadata` (empty; rejects junk params). */
+/**
+Flat query parameters for `POST /pptx/metadata` (empty; rejects junk params).
+ */
 export const PptxMetadataSchema = EmptyQuerySchema;

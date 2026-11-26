@@ -5,14 +5,14 @@ import { PptxBuildSchema } from './schema.js';
 const parse = (chart: unknown) =>
   PptxBuildSchema.safeParse({ layout: 'LAYOUT_16x9', slides: [{ elements: [chart] }] });
 
-describe('PptxBuildSchema scatter refinement', () => {
-  const scatterSeries = (count: number) =>
-    Array.from({ length: count }, (_, index) => ({
-      labels: ['a', 'b'],
-      name: `s${index}`,
-      values: [1, 2],
-    }));
+const scatterSeries = (count: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    labels: ['a', 'b'],
+    name: `s${index}`,
+    values: [1, 2],
+  }));
 
+describe('PptxBuildSchema scatter refinement', () => {
   it('rejects a scatter chart with fewer than two series', () => {
     const result = parse({ chartType: 'scatter', h: 3, series: scatterSeries(1), type: 'chart', w: 4, x: 0, y: 0 });
     expect(result.success).toBe(false);

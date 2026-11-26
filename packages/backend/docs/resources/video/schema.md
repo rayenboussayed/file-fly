@@ -30,7 +30,7 @@ validated, sorted, and capped array of seconds.</p>
 Query parameters for `/video/processor`, `/video/metadata`, `/video/dna` and `/video/stats` uploads.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/video/schema.ts:16  
+src: packages/backend/src/resources/video/schema.ts:18  
 dist: packages/backend/dist/resources/video/schema.js:11
 <a name="ScreenshotSchema"></a>
 
@@ -38,7 +38,7 @@ dist: packages/backend/dist/resources/video/schema.js:11
 Query parameters for `POST /video/screenshot` (extracted JPEG frames as multipart).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/video/schema.ts:53  
+src: packages/backend/src/resources/video/schema.ts:59  
 dist: packages/backend/dist/resources/video/schema.js:37
 <a name="VideoAudioSchema"></a>
 
@@ -50,8 +50,8 @@ Reuses the audio processor options except `codec`, which is derived from
 `format` defaults to `mp3`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/video/schema.ts:83  
-dist: packages/backend/dist/resources/video/schema.js:52
+src: packages/backend/src/resources/video/schema.ts:90  
+dist: packages/backend/dist/resources/video/schema.js:50
 <a name="parseFrames"></a>
 
 ## parseFrames(raw) ⇒ <code>number[]</code>
@@ -65,5 +65,5 @@ validated, sorted, and capped array of seconds.
 | --- | --- | --- |
 | raw | <code>string</code> | Raw comma-separated frame string. |
 
-src: packages/backend/src/resources/video/schema.ts:66  
+src: packages/backend/src/resources/video/schema.ts:74  
 dist: packages/backend/dist/resources/video/schema.js:40

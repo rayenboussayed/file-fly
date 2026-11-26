@@ -16,11 +16,11 @@ function diagonalGradient(): Uint8Array {
       seed = (seed * 1_103_515_245 + 12_345) & 0x7f_ff_ff_ff;
       const base = (x * 4 + y * 2) % 256;
       const value = x === y ? 255 - base : (base + (seed % 64)) % 256;
-      const i = (y * width + x) * 3;
+      const index = (y * width + x) * 3;
       // eslint-disable-next-line security/detect-object-injection -- index is computed from bounded loop counters into a fixed-size buffer
-      data[i] = value;
-      data[i + 1] = (value + 37) % 256;
-      data[i + 2] = (value + 101) % 256;
+      data[index] = value;
+      data[index + 1] = (value + 37) % 256;
+      data[index + 2] = (value + 101) % 256;
     }
   }
   return data;
@@ -50,6 +50,8 @@ describe('loadPdq', () => {
   it('round-trips through toHex/fromHex', async () => {
     const pdq = await loadPdq();
     const { hash } = pdq.hash({ channels: 3, data: diagonalGradient(), height: 64, width: 64 });
-    expect(Buffer.from(pdq.fromHex(pdq.toHex(hash))).equals(Buffer.from(hash))).toBe(true);
+    const original = Buffer.from(hash);
+    const roundTripped = Buffer.from(pdq.fromHex(pdq.toHex(hash)));
+    expect(roundTripped.equals(original)).toBe(true);
   });
 });

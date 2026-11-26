@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import { HEADER_X_FILE_HASH } from '@/constants/header.js';
 import { environment } from '@/environment.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
+import { headerValue } from '@/utils/http.js';
 
 import { FileTypeService } from '../services/file-type.service.js';
 import { forkSource } from '../utils/fork-source.js';
@@ -26,7 +27,52 @@ import { openMediaSource } from '../utils/open-source.js';
 const generateCacheKey = (options: unknown): string =>
   djb2(superjson.stringify(options)).toString();
 
-/** Probes the upload’s file signature, stamps the CLS store (signature, hash, cache key) and publishes the probe. */
+/**
+ * Parses a content-length header with explicit radix. Kept behind a parameter so
+ * parseInt semantics survive: `Number('42abc')` is NaN while
+ * `parseInt('42abc', 10)` is 42, and the cache key depends on that value.
+ * @param value - Raw header value.
+ * @param radix - Numeric base, always 10 at the call site.
+ * @returns The parsed integer.
+ */
+const parseHeaderInteger = (value: string, radix: number): number =>
+  Number.parseInt(value, radix);
+
+/**
+ * Builds and stores the cache key for the scanned upload or download.
+ * @param cls - CLS facade carrying the request, signature and hash.
+ */
+const buildCacheKey = async (cls: NormalizedClsService): Promise<void> => {
+  const request = cls.request();
+  const base = {
+    fileSignature: cls.fileSignature().get(),
+    query: request.query,
+  };
+
+  if (cls.sourceDirection().get() === 'download') {
+    const clientHash = headerValue(request.headers, HEADER_X_FILE_HASH)?.toString().trim();
+    if (clientHash) cls.fileHash().set(clientHash);
+    cls.cacheKey().set(generateCacheKey({ ...base, contentLength: 0, fileHash: '' }));
+    return;
+  }
+
+  const fileHash =
+    headerValue(request.headers, HEADER_X_FILE_HASH)?.toString().trim() ||
+    (await prefixHash(forkSource(cls), environment.FILE_HASH_HEADER_SIZE));
+  cls.fileHash().set(fileHash);
+
+  cls.cacheKey().set(
+    generateCacheKey({
+      ...base,
+      contentLength: parseHeaderInteger(request.headers['content-length'] ?? '0', 10),
+      fileHash,
+    }),
+  );
+};
+
+/**
+Probes the upload’s file signature, stamps the CLS store (signature, hash, cache key) and publishes the probe.
+ */
 @Injectable()
 export class FileParserInterceptor implements NestInterceptor {
   constructor(
@@ -44,47 +90,9 @@ export class FileParserInterceptor implements NestInterceptor {
     await this.fileTypeService.signature({
       stream: forkSource(this.cls),
     });
-    await this.buildCacheKey();
+    await buildCacheKey(this.cls);
 
     return next.handle();
-  }
-
-  private async buildCacheKey() {
-    const request = this.cls.request();
-    const base = {
-      fileSignature: this.cls.fileSignature().get(),
-      query: request.query,
-    };
-
-    if (this.cls.sourceDirection().get() === 'download') {
-       
-      const clientHash = request.headers[HEADER_X_FILE_HASH]?.toString().trim();
-      if (clientHash) this.cls.fileHash().set(clientHash);
-      this.cls
-        .cacheKey()
-        .set(generateCacheKey({ ...base, contentLength: 0, fileHash: '' }));
-      return;
-    }
-
-    const fileHash =
- 
-      (request.headers[HEADER_X_FILE_HASH]?.toString().trim()) ||
-      (await prefixHash(
-        forkSource(this.cls),
-        environment.FILE_HASH_HEADER_SIZE,
-      ));
-    this.cls.fileHash().set(fileHash);
-
-    this.cls.cacheKey().set(
-      generateCacheKey({
-        ...base,
-        contentLength: Number.parseInt(
-          request.headers['content-length'] ?? '0',
-          10,
-        ),
-        fileHash,
-      }),
-    );
   }
 }
 
@@ -103,11 +111,11 @@ export class FileParserInterceptor implements NestInterceptor {
 async function prefixHash(stream: Readable, size: number) {
   const hash = createHash('sha512');
   let length = 0;
-  let resolved = false;
+  let isResolved = false;
   return new Promise<string>((resolve, reject) => {
     const done = () => {
-      if (resolved) return;
-      resolved = true;
+      if (isResolved) return;
+      isResolved = true;
       resolve(hash.digest('base64'));
     };
     stream.on('data', (chunk: Buffer | string | Uint8Array) => {

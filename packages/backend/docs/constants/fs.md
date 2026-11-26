@@ -30,7 +30,7 @@
 Cache root (absolute); processed media output and the undici cache live here.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/fs.ts:6  
+src: packages/backend/src/constants/fs.ts:8  
 dist: packages/backend/dist/constants/fs.js:3
 <a name="CACHE_TTL_MS"></a>
 
@@ -38,7 +38,7 @@ dist: packages/backend/dist/constants/fs.js:3
 Entries not used for this long are evicted.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/fs.ts:11  
+src: packages/backend/src/constants/fs.ts:15  
 dist: packages/backend/dist/constants/fs.js:5
 <a name="CACHE_MAX_BYTES"></a>
 
@@ -46,7 +46,7 @@ dist: packages/backend/dist/constants/fs.js:5
 Soft cap for output entries; the undici store is excluded from the sweep.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/fs.ts:13  
+src: packages/backend/src/constants/fs.ts:19  
 dist: packages/backend/dist/constants/fs.js:6
 <a name="UNDICI_CACHE_FILE"></a>
 
@@ -54,7 +54,7 @@ dist: packages/backend/dist/constants/fs.js:6
 File backing undici's HTTP cache. Its WAL sidecars share this prefix.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/fs.ts:15  
+src: packages/backend/src/constants/fs.ts:23  
 dist: packages/backend/dist/constants/fs.js:7
 <a name="CACHE_SWEEP_INTERVAL_MS"></a>
 
@@ -62,7 +62,7 @@ dist: packages/backend/dist/constants/fs.js:7
 How often the cache janitor sweeps.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/fs.ts:17  
+src: packages/backend/src/constants/fs.ts:27  
 dist: packages/backend/dist/constants/fs.js:8
 <a name="CACHE_TMP_MAX_AGE_MS"></a>
 
@@ -70,7 +70,7 @@ dist: packages/backend/dist/constants/fs.js:8
 Orphaned *.tmp files (crashed writers) older than this are removed.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/fs.ts:19  
+src: packages/backend/src/constants/fs.ts:31  
 dist: packages/backend/dist/constants/fs.js:9
 <a name="TESSERACT_DIR"></a>
 
@@ -78,5 +78,5 @@ dist: packages/backend/dist/constants/fs.js:9
 Directory where tesseract.js stores its (gzipped) language data.
 
 **Kind**: global constant  
-src: packages/backend/src/constants/fs.ts:21  
+src: packages/backend/src/constants/fs.ts:35  
 dist: packages/backend/dist/constants/fs.js:10

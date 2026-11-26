@@ -14,7 +14,9 @@ const logger = createWorkerLogger();
 
 const data: VideoWorkerData = workerData;
 
-/** Dispatches the requested video operation (processor/audio/metadata/dna/stats/screenshot). */
+/**
+Dispatches the requested video operation (processor/audio/metadata/dna/stats/screenshot).
+ */
 async function run() {
   switch (data.operation) {
   case 'audio': {
@@ -22,21 +24,26 @@ async function run() {
     await processAudio(payload, { inputFormat: data.inputFormat, operation: 'processor', payload });
     break;
   }
-  case 'dna':
+  case 'dna': {
     await dna();
     break;
-  case 'metadata':
+  }
+  case 'metadata': {
     await metadata();
     break;
-  case 'processor':
+  }
+  case 'processor': {
     await processMedia(data.payload);
     break;
-  case 'screenshot':
+  }
+  case 'screenshot': {
     await screenshot(data.payload.frames);
     break;
-  case 'stats':
+  }
+  case 'stats': {
     await stats();
     break;
+  }
   }
 }
 

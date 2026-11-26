@@ -1,4 +1,6 @@
-/** URL schemes allowed for hrefs written into generated documents (Word/PowerPoint open these). */
+/**
+URL schemes allowed for hrefs written into generated documents (Word/PowerPoint open these).
+ */
 const ALLOWED_URL_SCHEMES = new Set(['http', 'https', 'mailto']);
 
 /**
@@ -8,7 +10,7 @@ const ALLOWED_URL_SCHEMES = new Set(['http', 'https', 'mailto']);
  * @param url - The absolute URL to check.
  * @returns True for http, https and mailto links.
  */
-export function hyperlinkUrlOk(url: string): boolean {
+export function isHyperlinkUrlOk(url: string): boolean {
   try {
     const protocol = new URL(url).protocol.replace(/:$/, '').toLowerCase();
     return ALLOWED_URL_SCHEMES.has(protocol);

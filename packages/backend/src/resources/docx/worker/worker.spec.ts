@@ -15,16 +15,29 @@ vi.mock('../../../logging/worker-logger.js', () => ({
 }));
 
 /**
+ * A promise with an externally callable resolver. The resolver stays on an
+ * object property instead of being extracted into a bare local: this package
+ * targets ES2023, whose lib has no Promise.withResolvers.
+ * @returns The promise and its resolver.
+ */
+const deferred = <T>() => {
+  const resolvers: { resolve: (value: PromiseLike<T> | T) => void } = {
+    resolve: () => {},
+  };
+  const promise = new Promise<T>((resolve) => {
+    resolvers.resolve = resolve;
+  });
+  return { promise, resolve: resolvers.resolve };
+};
+
+/**
  * Captures the worker's stdout byte channel and resolves as soon as the first
  * write lands, so tests never depend on wall-clock timing.
  * @returns The captured writes and a promise resolving on the first write.
  */
 const captureStdout = () => {
   const writes: Buffer[] = [];
-  let signalWrite!: () => void;
-  const written = new Promise<void>((resolve) => {
-    signalWrite = resolve;
-  });
+  const { promise: written, resolve: signalWrite } = deferred<void>();
   const stdout = new Writable({
     write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
       writes.push(Buffer.from(chunk as Buffer));
@@ -47,7 +60,7 @@ const unzip = async (writes: Buffer[]) => {
   return unzipSync(Buffer.concat(writes));
 };
 
-const smallDoc = {
+const smallDocument = {
   metadata: { creator: 'Fixture Author', title: 'Worker Fixture' },
   numbering: [
     {
@@ -93,7 +106,7 @@ describe('docx worker', () => {
   });
 
   it('builds a valid docx with metadata, headers, list and table', async () => {
-    hoisted.workerData = { operation: 'build', payload: smallDoc };
+    hoisted.workerData = { operation: 'build', payload: smallDocument };
     vi.resetModules();
     const writes: Buffer[] = [];
     const stdout = new Writable({
@@ -120,9 +133,9 @@ describe('docx worker', () => {
     expect(Object.keys(parts)).toEqual(
       expect.arrayContaining(['word/document.xml', 'docProps/core.xml']),
     );
-    const docPart = parts['word/document.xml'];
-    expect(docPart).toBeTruthy();
-    const document = Buffer.from(docPart ?? new Uint8Array()).toString('utf8');
+    const documentPart = parts['word/document.xml'];
+    expect(documentPart).toBeTruthy();
+    const document = Buffer.from(documentPart ?? new Uint8Array()).toString('utf8');
     expect(document).toContain('Fixture Heading');
     expect(document).toContain('Body line one');
     expect(document).toContain('Listed item');
@@ -191,11 +204,8 @@ describe('docx worker', () => {
   }, 30_000);
 
   it('logs an error and emits no document for an unsupported operation', async () => {
-    let signal!: (args: unknown[]) => void;
-    const errored = new Promise<unknown[]>((resolve) => {
-      signal = resolve;
-    });
-    hoisted.error.mockImplementation((...args: unknown[]) => signal(args));
+    const { promise: errored, resolve: signal } = deferred<unknown[]>();
+    hoisted.error.mockImplementation((...arguments_: unknown[]) => signal(arguments_));
     hoisted.workerData = { operation: 'export', payload: { sections: [] } };
     vi.resetModules();
     const { writes } = captureStdout();
@@ -211,11 +221,8 @@ describe('docx worker', () => {
     vi.doMock('../../../services/ooxml-reader.js', () => ({
       OoxmlReader: { readParts: () => new Map([['[Content_Types].xml', Buffer.from('x')]]) },
     }));
-    let signal!: (args: unknown[]) => void;
-    const errored = new Promise<unknown[]>((resolve) => {
-      signal = resolve;
-    });
-    hoisted.error.mockImplementation((...args: unknown[]) => signal(args));
+    const { promise: errored, resolve: signal } = deferred<unknown[]>();
+    hoisted.error.mockImplementation((...arguments_: unknown[]) => signal(arguments_));
     hoisted.workerData = { operation: 'build', payload: { sections: [{ children: [] }] } };
     const { writes } = captureStdout();
     await import('./index.js');

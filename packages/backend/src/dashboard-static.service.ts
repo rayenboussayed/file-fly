@@ -1,4 +1,3 @@
- 
 import fastifyStatic from '@fastify/static';
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';

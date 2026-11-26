@@ -2,7 +2,9 @@ import { bench, describe } from 'vitest';
 
 import { VideoAudioSchema } from '@/resources/video/schema.js';
 
-/** Representative query for the audio extraction route. */
+/**
+Representative query for the audio extraction route.
+ */
 const QUERY = {
   bitrate: '192k',
   channels: '2',

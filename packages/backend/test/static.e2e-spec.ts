@@ -29,7 +29,7 @@ describe('Dashboard static serving (e2e)', () => {
   it('serves built assets but never index.html for missing files', async () => {
     const asset = await request(app.getHttpServer()).get('/assets/app.abc123.js');
     expect(asset.status).toBe(200);
-    expect(asset.text).toContain('globalThis.__fixture=1');
+    expect(asset.text).toContain("Reflect.set(globalThis, '__fixture', 1)");
 
     const missing = await request(app.getHttpServer()).get('/assets/definitely-missing.js').set('accept', 'text/html');
     expect(missing.status).toBe(404);

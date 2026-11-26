@@ -10,14 +10,16 @@ import { buildBlock, buildSectionOptions } from '../elements.js';
 
 const logger = createWorkerLogger();
 
-/** Worker input: `{ operation: 'build', payload: DocxBuildType }` from WorkerService. */
+/**
+Worker input: `{ operation: 'build', payload: DocxBuildType }` from WorkerService.
+ */
 type WorkerInput = { operation?: string; payload: DocxBuildType };
 
 const buildNoteMap = (notes: NonNullable<DocxBuildType['footnotes']> | undefined) =>
   notes === undefined
     ? undefined
     : Object.fromEntries(
-        notes.map((note) => [String(note.id), { children: note.children.flatMap(buildBlock) as Paragraph[] }]),
+        notes.map((note) => [String(note.id), { children: note.children.flatMap((element) => buildBlock(element)) as Paragraph[] }]),
       );
 
 const buildHeaderFooter = (
@@ -48,7 +50,7 @@ if (data.operation === 'build') {
       ? {
           children: payload.comments.map((comment) => ({
             author: comment.author,
-            children: comment.children.flatMap(buildBlock) as Paragraph[],
+            children: comment.children.flatMap((element) => buildBlock(element)) as Paragraph[],
             date: comment.date,
             id: comment.id,
             initials: comment.initials,

@@ -1,1 +1,1 @@
-globalThis.__fixture=1;
+Reflect.set(globalThis, '__fixture', 1);

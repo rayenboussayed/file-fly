@@ -11,7 +11,22 @@ import type { AudioProcessorType } from './schema.js';
 
 const WORKER_ENTRY = workerPath('./worker/index.js', import.meta.url);
 
-/** Audio feature service: streams uploads through workers for processing, metadata, DNA fingerprinting and stats. */
+/**
+ * Resolves the upload's detected signature to an FFmpeg demuxer format,
+ * throwing the route's 415 when the signature is missing or unsupported.
+ * @param cls - Normalized request context carrying the file signature.
+ * @returns The resolved demuxer format name.
+ * @throws {UnsupportedMediaTypeException} When the signature has no demuxer mapping.
+ */
+const requireInputFormat = (cls: NormalizedClsService): string => {
+  const inputFormat = toDemuxerFormat(cls.fileSignature().get());
+  if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported audio input');
+  return inputFormat;
+};
+
+/**
+Audio feature service: streams uploads through workers for processing, metadata, DNA fingerprinting and stats.
+ */
 @Injectable()
 export class AudioService {
   constructor(
@@ -20,7 +35,7 @@ export class AudioService {
   ) {}
 
   async dna(): Promise<unknown> {
-    const inputFormat = this.requireInputFormat();
+    const inputFormat = requireInputFormat(this.cls);
     const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
@@ -31,7 +46,7 @@ export class AudioService {
   }
 
   async metadata(): Promise<unknown> {
-    const inputFormat = this.requireInputFormat();
+    const inputFormat = requireInputFormat(this.cls);
     const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
@@ -44,7 +59,7 @@ export class AudioService {
   async processor(
     options: { payload: AudioProcessorType },
   ): Promise<Readable> {
-    const inputFormat = this.requireInputFormat();
+    const inputFormat = requireInputFormat(this.cls);
     return this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
@@ -55,7 +70,7 @@ export class AudioService {
   }
 
   async stats(): Promise<unknown> {
-    const inputFormat = this.requireInputFormat();
+    const inputFormat = requireInputFormat(this.cls);
     const stdout = await this.workerService.createWorker(WORKER_ENTRY, {
       workerData: {
         inputFormat,
@@ -63,17 +78,5 @@ export class AudioService {
       },
     });
     return readWorkerJson(stdout);
-  }
-
-  /**
-   * Resolves the upload's detected signature to an FFmpeg demuxer format,
-   * throwing the route's 415 when the signature is missing or unsupported.
-   * @returns The resolved demuxer format name.
-   * @throws {UnsupportedMediaTypeException} When the signature has no demuxer mapping.
-   */
-  private requireInputFormat(): string {
-    const inputFormat = toDemuxerFormat(this.cls.fileSignature().get());
-    if (!inputFormat) throw new UnsupportedMediaTypeException('Unsupported audio input');
-    return inputFormat;
   }
 }

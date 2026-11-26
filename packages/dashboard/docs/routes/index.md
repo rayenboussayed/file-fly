@@ -4,4 +4,4 @@
 File-based route for the overview page.
 
 **Kind**: global constant  
-src: packages/dashboard/src/routes/index.tsx:6  
+src: packages/dashboard/src/routes/index.tsx:8  

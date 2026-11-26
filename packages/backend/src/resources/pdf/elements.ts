@@ -18,7 +18,9 @@ const BORDER_COLOR = rgb(0, 0, 0);
 const HEADER_FILL = 'EEEEEE';
 const DEFAULT_COLOR = '000000';
 
-/** Horizontal alignment for text, table cells and page-number rendering. */
+/**
+Horizontal alignment for text, table cells and page-number rendering.
+ */
 type Align = 'center' | 'left' | 'right';
 
 const hexToRgb = (hex: string) => {
@@ -26,7 +28,9 @@ const hexToRgb = (hex: string) => {
   return rgb(((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255);
 };
 
-/** Map of the 14 Standard PDF fonts to pdf-lib's StandardFonts enum. */
+/**
+Map of the 14 Standard PDF fonts to pdf-lib's StandardFonts enum.
+ */
 export const STANDARD: Record<string, (typeof StandardFonts)[keyof typeof StandardFonts]> = {
   Courier: StandardFonts.Courier,
   'Courier-Bold': StandardFonts.CourierBold,
@@ -44,24 +48,30 @@ export const STANDARD: Record<string, (typeof StandardFonts)[keyof typeof Standa
   ZapfDingbats: StandardFonts.ZapfDingbats,
 };
 
-/** Shared state for one build pass: every font and image must be resolved before drawing. */
+/**
+Shared state for one build pass: every font and image must be resolved before drawing.
+ */
 export interface BuilderContext {
   defaultFont: PDFFont;
-  /** Embedded (user-supplied and pre-embedded standard) fonts by public name. */
+  /**
+  Embedded (user-supplied and pre-embedded standard) fonts by public name.
+   */
   fonts: Map<string, PDFFont>;
-  /** Pre-embedded standard fonts (all that are referenced or Helvetica). */
+  /**
+  Pre-embedded standard fonts (all that are referenced or Helvetica).
+   */
   standard: Map<string, PDFFont>;
 }
 
 /**
  * Resolves a public font name to the pre-embedded font; missing names are a build error.
- * @param ctx - The pre-embedded font state.
+ * @param context - The pre-embedded font state.
  * @param name - The public font name, or undefined for the default.
  * @returns The embedded font.
  */
-const resolveFont = (ctx: BuilderContext, name: string | undefined): PDFFont => {
-  if (name === undefined) return ctx.defaultFont;
-  const font = ctx.fonts.get(name) ?? ctx.standard.get(name);
+const resolveFont = (context: BuilderContext, name: string | undefined): PDFFont => {
+  if (name === undefined) return context.defaultFont;
+  const font = context.fonts.get(name) ?? context.standard.get(name);
   if (font) return font;
   throw new BadRequestException({ code: 'PDF_UNKNOWN_FONT', message: `unknown font "${name}"` });
 };
@@ -78,12 +88,12 @@ const NON_WINANSI_STANDARD = new Set(['Symbol', 'ZapfDingbats']);
 
 /**
  * Whether the named font is a WinAnsi standard font (not Symbol/ZapfDingbats, not embedded).
- * @param ctx - The pre-embedded font state.
+ * @param context - The pre-embedded font state.
  * @param name - The public font name.
  * @returns True when the font is a WinAnsi standard font.
  */
-const isStandardWinAnsiFont = (ctx: BuilderContext, name: string | undefined): boolean =>
-  name === undefined || (standardValueOf(name) !== undefined && !ctx.fonts.has(name) && !NON_WINANSI_STANDARD.has(name));
+const isStandardWinAnsiFont = (context: BuilderContext, name: string | undefined): boolean =>
+  name === undefined || (standardValueOf(name) !== undefined && !context.fonts.has(name) && !NON_WINANSI_STANDARD.has(name));
 
 /**
  * Throws 400 when any character is outside the WinAnsi encoding (standard fonts only).
@@ -118,7 +128,9 @@ const assertFontEncodes = (font: PDFFont, fontName: string, text: string, where:
   }
 };
 
-/** Page dimensions in points (1 pt = 1/72 inch). */
+/**
+Page dimensions in points (1 pt = 1/72 inch).
+ */
 const PAGE_SIZES: Record<string, [number, number]> = {
   a3: [841.89, 1190.55],
   a4: [595.28, 841.89],
@@ -153,7 +165,8 @@ const wrapParagraph = (text: string, font: PDFFont, size: number, maxWidth: numb
   let current = '';
   for (const word of words) {
     const candidate = current === '' ? word : `${current} ${word}`;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth || current === '') {
+    const canFit = font.widthOfTextAtSize(candidate, size) <= maxWidth;
+    if (current === '' || canFit) {
       current = candidate;
       continue;
     }
@@ -370,11 +383,13 @@ const buildTable = (
   topToY: (y: number, h: number) => number,
   headerFont?: PDFFont,
 ): void => {
-  const rows = element.rows.map((row) => row.map(cellOf));
-  const columns = rows.reduce(
-    (max, row) => Math.max(max, row.reduce((sum, cell) => sum + cell.colSpan, 0)),
-    0,
-  );
+  const rows = element.rows.map((row) => row.map((cell) => cellOf(cell)));
+  let columns = 0;
+  for (const row of rows) {
+    let rowColumns = 0;
+    for (const cell of row) rowColumns += cell.colSpan;
+    columns = Math.max(columns, rowColumns);
+  }
   const colWidths = element.colWidths ?? Array.from({ length: columns }, () => element.w / columns);
   let cursorY = element.y;
   for (const [rowIndex, row] of rows.entries()) {
@@ -388,11 +403,11 @@ const buildTable = (
 const drawTextElement = (
   page: PDFPage,
   element: Extract<ElementType, { type: 'text' }>,
-  ctx: BuilderContext,
+  context: BuilderContext,
 ): void => {
-  const font = resolveFont(ctx, element.font);
+  const font = resolveFont(context, element.font);
   const size = element.size ?? 12;
-  if (isStandardWinAnsiFont(ctx, element.font)) assertWinAnsiText(element.text, 'text');
+  if (isStandardWinAnsiFont(context, element.font)) assertWinAnsiText(element.text, 'text');
   assertFontEncodes(font, element.font ?? 'Helvetica', element.text, 'text');
   drawTextAligned(page, element.text, {
     align: element.align ?? 'left',
@@ -408,14 +423,16 @@ const drawTextElement = (
 const drawPageNumberElement = (
   page: PDFPage,
   element: Extract<ElementType, { type: 'pageNumber' }>,
-  ctx: BuilderContext,
+  context: BuilderContext,
   totalPages: number,
   pageNumber: number,
 ): void => {
-  const font = resolveFont(ctx, element.font);
+  const font = resolveFont(context, element.font);
   const size = element.size ?? 10;
-  const text = element.format.replaceAll('{n}', String(pageNumber)).replaceAll('{total}', String(totalPages));
-  if (isStandardWinAnsiFont(ctx, element.font)) assertWinAnsiText(text, 'pageNumber');
+  const text = element.format
+    .replaceAll('{n}', () => String(pageNumber))
+    .replaceAll('{total}', () => String(totalPages));
+  if (isStandardWinAnsiFont(context, element.font)) assertWinAnsiText(text, 'pageNumber');
   assertFontEncodes(font, element.font ?? 'Helvetica', text, 'pageNumber');
   page.drawText(text, {
     color: hexToRgb(element.color ?? DEFAULT_COLOR),
@@ -508,24 +525,24 @@ const assertTableEncodable = (
 const drawTableElement = (
   page: PDFPage,
   element: Extract<ElementType, { type: 'table' }>,
-  ctx: BuilderContext,
+  context: BuilderContext,
 ): void => {
-  const tableFont = resolveFont(ctx, undefined);
+  const tableFont = resolveFont(context, undefined);
   assertTableEncodable(element, tableFont);
-  const headerFont = element.header === true ? ctx.standard.get('Helvetica-Bold') ?? resolveFont(ctx, 'Helvetica-Bold') : undefined;
+  const headerFont = element.header === true ? context.standard.get('Helvetica-Bold') ?? resolveFont(context, 'Helvetica-Bold') : undefined;
   buildTable(page, element, tableFont, (y, h) => page.getHeight() - y - h, headerFont);
 };
 
 const drawFieldElement = (
-  pdfDoc: PDFDocument,
+  pdfDocument: PDFDocument,
   page: PDFPage,
   element: Extract<ElementType, { type: 'field' }>,
-  ctx: BuilderContext,
+  context: BuilderContext,
 ): void => {
   const topToY = (y: number, h: number) => page.getHeight() - y - h;
-  const form = pdfDoc.getForm();
+  const form = pdfDocument.getForm();
   if (element.fieldType === 'text') {
-    if (element.value !== undefined) assertFontEncodes(ctx.defaultFont, 'Helvetica', element.value, `field ${element.name}`);
+    if (element.value !== undefined) assertFontEncodes(context.defaultFont, 'Helvetica', element.value, `field ${element.name}`);
     const field = form.createTextField(element.name);
     if (element.value !== undefined) field.setText(element.value);
     const width = element.w ?? 150;
@@ -542,51 +559,60 @@ const drawFieldElement = (
 
 /**
  * Draws one element onto the page (image/table/field handled via the pre-embedded state).
- * @param pdfDoc - The document being built (needed for the AcroForm).
+ * @param pdfDocument - The document being built (needed for the AcroForm).
  * @param page - The target page.
  * @param element - The validated element descriptor.
- * @param ctx - The pre-embedded font state.
+ * @param context - The pre-embedded font state.
  * @param images - The pre-embedded images.
  * @param totalPages - Logical page count, for pageNumber elements.
  * @param pageNumber - 1-based number of this page, for pageNumber elements.
  * @returns Nothing.
  */
 export const drawElement = (
-  pdfDoc: PDFDocument,
+  pdfDocument: PDFDocument,
   page: PDFPage,
   element: Exclude<ElementType, { type: 'pageBreak' }>,
-  ctx: BuilderContext,
+  context: BuilderContext,
   images: Map<object, PDFImage>,
   totalPages: number,
   pageNumber: number,
 ): void => {
   switch (element.type) {
-    case 'ellipse':
+    case 'ellipse': {
       drawEllipseElement(page, element);
       return;
-    case 'field':
-      drawFieldElement(pdfDoc, page, element, ctx);
+    }
+    case 'field': {
+      drawFieldElement(pdfDocument, page, element, context);
       return;
-    case 'image':
+    }
+    case 'image': {
       drawImageElement(page, element, images);
       return;
-    case 'line':
+    }
+    case 'line': {
       drawLineElement(page, element);
       return;
-    case 'pageNumber':
-      drawPageNumberElement(page, element, ctx, totalPages, pageNumber);
+    }
+    case 'pageNumber': {
+      drawPageNumberElement(page, element, context, totalPages, pageNumber);
       return;
-    case 'rect':
+    }
+    case 'rect': {
       drawRectElement(page, element);
       return;
-    case 'table':
-      drawTableElement(page, element, ctx);
+    }
+    case 'table': {
+      drawTableElement(page, element, context);
       return;
-    case 'text':
-      drawTextElement(page, element, ctx);
+    }
+    case 'text': {
+      drawTextElement(page, element, context);
       return;
-    default:
+    }
+    default: {
       return exhaustiveNever(element);
+    }
   }
 };
 
@@ -609,10 +635,12 @@ export const collectFontNames = (
 ): Array<string | undefined> => {
   switch (element.type) {
     case 'pageNumber':
-    case 'text':
+    case 'text': {
       return [element.font];
-    default:
+    }
+    default: {
       return [];
+    }
   }
 };
 

@@ -1,4 +1,3 @@
- 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import fs from 'node:fs';
@@ -154,7 +153,7 @@ describe('Video (e2e)', () => {
     expect(body.algorithm).toBe('vid-pdq');
     expect(body.version).toBe('vid-pdq2fps@1');
     expect(body.fps).toBe(2);
-    expect(Number.isInteger(body.count)).toBe(true);
+    expect(Number.isSafeInteger(body.count)).toBe(true);
     expect(body.count).toBeGreaterThanOrEqual(30);
     expect(body.count).toBeLessThanOrEqual(45);
     expect(body.frames).toHaveLength(body.count);
@@ -190,7 +189,7 @@ describe('Video (e2e)', () => {
     const body = response.body as { algorithm: string; count: number; version: string };
     expect(body.algorithm).toBe('vid-pdq');
     expect(body.version).toBe('vid-pdq2fps@1');
-    expect(Number.isInteger(body.count)).toBe(true);
+    expect(Number.isSafeInteger(body.count)).toBe(true);
     expect(body.count).toBeGreaterThanOrEqual(30);
     expect(body.count).toBeLessThanOrEqual(45);
   });
@@ -238,8 +237,8 @@ describe('Video (e2e)', () => {
     const body = response.body as Buffer;
     expect(body.length).toBeGreaterThan(100);
     const magic = body.subarray(0, 3).toString('latin1');
-    const frameSync = body.at(0) === 0xff && (body.at(1) ?? 0) >= 0xe0;
-    expect(magic === 'ID3' || frameSync).toBe(true);
+    const isFrameSync = body.at(0) === 0xff && (body.at(1) ?? 0) >= 0xe0;
+    expect(magic === 'ID3' || isFrameSync).toBe(true);
   });
 
   it('POST /video/audio accepts an upload', async () => {

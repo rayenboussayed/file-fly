@@ -9,10 +9,13 @@ import { PdfBuildSchema, type PdfBuildType } from './schema.js';
 
 const parse = (body: unknown): PdfBuildType => PdfBuildSchema.parse(body);
 
+const notAnImageData = Buffer.from('definitely not an image').toString('base64');
+const notAFontData = Buffer.from('not a font').toString('base64');
+
 const buildFixture = async (body: unknown) =>
   Buffer.from(await buildPdfDocument(parse(body)));
 
-const smallDoc = parse({
+const smallDocument = parse({
   metadata: { author: 'Fixture Author', title: 'Fixture PDF' },
   pages: [
     {
@@ -38,9 +41,9 @@ const makeService = (body: Buffer, contentType = 'application/pdf') => {
 describe('PdfService.build', () => {
   it('builds a valid PDF with metadata', async () => {
     const service = makeService(Buffer.from('x'));
-    const bytes = await service.build(smallDoc);
+    const bytes = await service.build(smallDocument);
     expect(bytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-    const meta = await makeService(await service.build(smallDoc)).metadata();
+    const meta = await makeService(await service.build(smallDocument)).metadata();
     expect(meta).toMatchObject({
       author: 'Fixture Author',
       format: 'pdf',
@@ -83,8 +86,8 @@ describe('PdfService.build', () => {
       ],
     });
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    const fields = doc.getForm().getFields();
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    const fields = document_.getForm().getFields();
     const textField = fields.find((field) => field.getName() === 'form.name');
     expect(textField?.constructor.name).toBe('PDFTextField');
     expect((textField as unknown as { getText: () => string }).getText()).toBe('prefilled');
@@ -112,7 +115,7 @@ describe('PdfService.build', () => {
             {
               elements: [
                 {
-                  data: Buffer.from('definitely not an image').toString('base64'),
+                  data: notAnImageData,
                   h: 40,
                   imageType: 'png',
                   type: 'image',
@@ -164,7 +167,7 @@ describe('PdfService.build', () => {
 
 describe('PdfService.metadata', () => {
   it('reads back built metadata and page shape', async () => {
-    const bytes = await buildFixture(smallDoc);
+    const bytes = await buildFixture(smallDocument);
     const service = makeService(bytes);
     const meta = await service.metadata();
     expect(meta).toMatchObject({
@@ -211,7 +214,7 @@ describe('PdfService.extract', () => {
     await expect(
       service.build(
         parse({
-          embeddedFonts: [{ data: Buffer.from('not a font').toString('base64'), name: 'Bogus' }],
+          embeddedFonts: [{ data: notAFontData, name: 'Bogus' }],
           pages: [{ elements: [{ text: 'x', type: 'text', x: 72, y: 72 }], size: 'a4' }],
         }),
       ),
@@ -219,7 +222,7 @@ describe('PdfService.extract', () => {
   });
 
   it('extracts text page by page', async () => {
-    const bytes = await buildFixture(smallDoc);
+    const bytes = await buildFixture(smallDocument);
     const service = makeService(bytes);
     const result = await service.extract();
     expect(result.format).toBe('pdf');
@@ -284,7 +287,9 @@ const handCraftedPdf = (
 };
 
 const unreadablePdf = Buffer.from('%PDF-1.4\n@@@###$$$%%%^&*!!notrealpdfbody@@@', 'latin1');
-/** Passes the signature gate (%PDF magic) but pdf-lib cannot parse it at all. */
+/**
+Passes the signature gate (%PDF magic) but pdf-lib cannot parse it at all.
+ */
 const unparseablePdf = Buffer.from('%PDF-1.7\n%\u{E2}\u{E3}\u{CF}\u{D3}\n1 0 obj', 'latin1');
 
 describe('PdfService.build metadata handling', () => {
@@ -310,8 +315,8 @@ describe('PdfService.build metadata handling', () => {
     expect(meta.author).toBeUndefined();
     // /Lang lives on the catalog and pdf-lib cannot read it back; assert the raw value instead.
     const { PDFDocument, PDFName, PDFString } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    expect(doc.catalog.lookupMaybe(PDFName.of('Lang'), PDFString)?.decodeText()).toBe('fr');
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    expect(document_.catalog.lookupMaybe(PDFName.of('Lang'), PDFString)?.decodeText()).toBe('fr');
   });
 
   it('accepts keywords as an array and writes them verbatim', async () => {
@@ -349,7 +354,7 @@ describe('PdfService.build metadata handling', () => {
 
 describe('PdfService.metadata edge cases', () => {
   it('accepts a content-type with parameters', async () => {
-    const bytes = await buildFixture(smallDoc);
+    const bytes = await buildFixture(smallDocument);
     const service = makeService(bytes, 'application/pdf ; charset=binary');
     const meta = await service.metadata();
     expect(meta.format).toBe('pdf');

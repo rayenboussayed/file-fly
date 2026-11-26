@@ -15,7 +15,7 @@ import { attr, collectByKey, collectRelationships, textOf, walkXml, xml } from '
 import { workerPath, WorkerService } from '@/services/worker.service.js';
 import { bufferStream } from '@/utils/buffer.js';
 import { requestMime } from '@/utils/http.js';
-import { hyperlinkUrlOk } from '@/utils/hyperlinks.js';
+import { isHyperlinkUrlOk } from '@/utils/hyperlinks.js';
 import { openMediaSource } from '@/utils/open-source.js';
 
 import { DOCX_MIME, type DocxBuildType } from './schema.js';
@@ -93,7 +93,7 @@ const extractDocumentXml = (
   // which callers handle by their own caps and output shape checks.
   const parsed = xml.parse(documentXml) as Record<string, unknown>;
 
-  const paragraphs = collectByKey(parsed, 'p').map(paragraphOf);
+  const paragraphs = collectByKey(parsed, 'p').map((entry) => paragraphOf(entry));
   const headings: Array<{ level: number; text: string }> = [];
   const lines: string[] = [];
   let lists = 0;
@@ -110,9 +110,13 @@ const extractDocumentXml = (
     const rows = collectByKey(table, 'tr');
     const cells = rows.map((row) =>
       collectByKey(row, 'tc').map((cell) => cellTextOf(cell)),);
+    let columns = 0;
+    for (const row of rows) {
+      columns = Math.max(columns, collectByKey(row, 'tc').length);
+    }
     return {
       cells,
-      columns: rows.reduce<number>((max, row) => Math.max(max, collectByKey(row, 'tc').length), 0),
+      columns,
       rows: rows.length,
     };
   });
@@ -121,8 +125,8 @@ const extractDocumentXml = (
     const record = entry as Record<string, unknown>;
     const id = attr(record, 'id');
     const anchor = attr(record, 'anchor');
-    const rel = relationships.get(id);
-    const url = (rel?.external ? rel.target : undefined) ?? (anchor ? `#${anchor}` : undefined);
+    const relationship = relationships.get(id);
+    const url = (relationship?.external ? relationship.target : undefined) ?? (anchor ? `#${anchor}` : undefined);
     return { text: textOf(record), url };
   });
 
@@ -154,19 +158,22 @@ const assertUniqueIds = (body: DocxBuildType): { commentIds: Set<number>; endnot
   const noteIds = new Set<number>();
   const endnoteIds = new Set<number>();
   const commentIds = new Set<number>();
-  for (const note of body.footnotes ?? []) {
+  const footnotes = body.footnotes ?? [];
+  const endnotes = body.endnotes ?? [];
+  const comments = body.comments ?? [];
+  for (const note of footnotes) {
     if (noteIds.has(note.id)) {
       throw new BadRequestException({ code: 'DOCX_DUPLICATE_NOTE_ID', message: `duplicate footnote id ${note.id}` });
     }
     noteIds.add(note.id);
   }
-  for (const note of body.endnotes ?? []) {
+  for (const note of endnotes) {
     if (endnoteIds.has(note.id)) {
       throw new BadRequestException({ code: 'DOCX_DUPLICATE_NOTE_ID', message: `duplicate endnote id ${note.id}` });
     }
     endnoteIds.add(note.id);
   }
-  for (const comment of body.comments ?? []) {
+  for (const comment of comments) {
     if (commentIds.has(comment.id)) {
       throw new BadRequestException({ code: 'DOCX_DUPLICATE_COMMENT_ID', message: `duplicate comment id ${comment.id}` });
     }
@@ -208,7 +215,7 @@ const assertBuildPayload = (body: DocxBuildType): void => {
   visit(body);
 
   // Note/comment cross-reference validation, one clean pass after shape checks.
-  reportNoteRefs(body, noteIds, endnoteIds, commentIds);
+  reportNoteReferences(body, noteIds, endnoteIds, commentIds);
   for (const table of tables(body)) validateRowSpan(table);
 };
 
@@ -233,7 +240,7 @@ const assertHyperlinkTarget = (record: Record<string, unknown>): void => {
       message: 'hyperlinks require either a url or an anchor',
     });
   }
-  if (record['url'] !== undefined && !hyperlinkUrlOk(String(record['url']))) {
+  if (record['url'] !== undefined && !isHyperlinkUrlOk(String(record['url']))) {
     throw new BadRequestException({
       code: 'DOCX_HYPERLINK_SCHEME_NOT_ALLOWED',
       message: 'hyperlink URLs must use http, https or mailto',
@@ -292,7 +299,7 @@ const validateCellSpan = (row: unknown, rowIndex: number, rowCount: number): voi
  * @param endnoteIds - The declared endnote ids.
  * @param commentIds - The declared comment ids.
  */
-const reportNoteRefs = (
+const reportNoteReferences = (
   body: DocxBuildType,
   noteIds: Set<number>,
   endnoteIds: Set<number>,
@@ -307,7 +314,7 @@ const reportNoteRefs = (
       return;
     }
 
-    checkNoteRef(value as Record<string, unknown>, noteIds, endnoteIds, commentIds);
+    checkNoteReference(value as Record<string, unknown>, noteIds, endnoteIds, commentIds);
     for (const child of Object.values(value as Record<string, unknown>)) visit(child);
   };
   visit(body);
@@ -320,7 +327,7 @@ const reportNoteRefs = (
  * @param endnoteIds - The declared endnote ids.
  * @param commentIds - The declared comment ids.
  */
-const checkNoteRef = (
+const checkNoteReference = (
   record: Record<string, unknown>,
   noteIds: Set<number>,
   endnoteIds: Set<number>,
@@ -337,7 +344,9 @@ const checkNoteRef = (
   }
 };
 
-/** DOCX feature service: builds documents and parses/metadata-inspects uploads. */
+/**
+DOCX feature service: builds documents and parses/metadata-inspects uploads.
+ */
 @Injectable()
 export class DocxService {
   constructor(

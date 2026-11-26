@@ -12,7 +12,9 @@ import { DatabaseSync } from 'node:sqlite';
 
 import { environment, isProduction } from '@/environment.js';
 
-/** Current schema version; kept in sync with the DDL below. */
+/**
+Current schema version; kept in sync with the DDL below.
+ */
 const SCHEMA_VERSION = 1;
 
 /**
@@ -58,7 +60,9 @@ CREATE INDEX IF NOT EXISTS idx_metric_counter_ip_bucket ON metric_counter_ip (bu
 CREATE INDEX IF NOT EXISTS idx_metric_hist_bucket ON metric_hist (bucket);
 `;
 
-/** Per-IP counters over the retained window. */
+/**
+Per-IP counters over the retained window.
+ */
 export interface MetricsPerIp {
   bytesIn: number;
   bytesOut: number;
@@ -68,31 +72,55 @@ export interface MetricsPerIp {
   requests: number;
 }
 
-/** One recorded request, already normalized by the interceptor. */
+/**
+One recorded request, already normalized by the interceptor.
+ */
 export interface MetricsRecord {
-  /** Bytes received for the request (upload body or downloaded source). */
+  /**
+  Bytes received for the request (upload body or downloaded source).
+   */
   bytesIn: number;
-  /** Bytes written to the client. */
+  /**
+  Bytes written to the client.
+   */
   bytesOut: number;
-  /** Cache outcome for media routes, when one occurred. */
+  /**
+  Cache outcome for media routes, when one occurred.
+   */
   cacheOutcome?: 'hit' | 'miss';
-  /** Wall-clock duration from handler entry to response close. */
+  /**
+  Wall-clock duration from handler entry to response close.
+   */
   durationMs: number;
-  /** 1 when the request carried a media file (upload or remote fetch). */
+  /**
+  1 when the request carried a media file (upload or remote fetch).
+   */
   filesIn: 0 | 1;
-  /** 1 when the response streamed a file out of the service. */
+  /**
+  1 when the response streamed a file out of the service.
+   */
   filesOut: 0 | 1;
-  /** Client IP as seen by Fastify (socket unless `TRUST_PROXY=true`). */
+  /**
+  Client IP as seen by Fastify (socket unless `TRUST_PROXY=true`).
+   */
   ip: string;
-  /** Route template (e.g. `/image`), or `unmatched` outside routing. */
+  /**
+  Route template (e.g. `/image`), or `unmatched` outside routing.
+   */
   route: string;
-  /** Verification outcome, when one occurred. */
+  /**
+  Verification outcome, when one occurred.
+   */
   scan?: 'blocked' | 'clean' | 'infected';
-  /** HTTP status code sent to the client. */
+  /**
+  HTTP status code sent to the client.
+   */
   status: number;
 }
 
-/** Per-route statistics with latency percentiles over the retained window. */
+/**
+Per-route statistics with latency percentiles over the retained window.
+ */
 export interface MetricsRouteStat {
   avgMs: number;
   bytesOut: number;
@@ -104,9 +132,13 @@ export interface MetricsRouteStat {
   route: string;
 }
 
-/** One hourly data point for the last 24 hours. */
+/**
+One hourly data point for the last 24 hours.
+ */
 export interface MetricsSeriesPoint {
-  /** ISO hour bucket (`YYYY-MM-DDTHH`). */
+  /**
+  ISO hour bucket (`YYYY-MM-DDTHH`).
+   */
   bucket: string;
   bytesIn: number;
   bytesOut: number;
@@ -114,55 +146,89 @@ export interface MetricsSeriesPoint {
   requests: number;
 }
 
-/** Constructor options; every field defaults to the environment schema in production. */
+/**
+Constructor options; every field defaults to the environment schema in production.
+ */
 export interface MetricsServiceOptions {
-  /** Database path, or `:memory:`. Defaults to `<METRICS_DIR>/metrics.db`. */
+  /**
+  Database path, or `:memory:`. Defaults to `<METRICS_DIR>/metrics.db`.
+   */
   dbPath?: string;
-  /** Flush interval in milliseconds. `0` disables the interval (tests). Defaults to `METRICS_FLUSH_INTERVAL_MS`. */
+  /**
+  Flush interval in milliseconds. `0` disables the interval (tests). Defaults to `METRICS_FLUSH_INTERVAL_MS`.
+   */
   flushIntervalMs?: number;
-  /** Retention in days for all buckets. `0` disables sweeps; defaults to `METRICS_RETENTION_DAYS`. */
+  /**
+  Retention in days for all buckets. `0` disables sweeps; defaults to `METRICS_RETENTION_DAYS`.
+   */
   retentionDays?: number;
 }
 
-/** Everything the dashboard renders, in one payload. */
+/**
+Everything the dashboard renders, in one payload.
+ */
 export interface MetricsSnapshot {
   generatedAt: string;
-  /** Currently open requests, tracked live (never persisted). */
+  /**
+  Currently open requests, tracked live (never persisted).
+   */
   inFlight: number;
-  /** One point per hour for the last 24 hours, zero-filled. */
+  /**
+  One point per hour for the last 24 hours, zero-filled.
+   */
   last24h: MetricsSeriesPoint[];
-  /** True when the SQLite store failed to open; all persisted counters read zero. */
+  /**
+  True when the SQLite store failed to open; all persisted counters read zero.
+   */
   metricsDisabled: boolean;
-  /** Top 50 IPs by bytes out over the retained window. */
+  /**
+  Top 50 IPs by bytes out over the retained window.
+   */
   perIp: MetricsPerIp[];
-  /** Per-route statistics over the retained window. */
+  /**
+  Per-route statistics over the retained window.
+   */
   perRoute: MetricsRouteStat[];
-  /** Current calendar day (UTC). */
+  /**
+  Current calendar day (UTC).
+   */
   today: MetricsTotals;
-  /** Retained window (default 35 days). */
+  /**
+  Retained window (default 35 days).
+   */
   totals: MetricsTotals;
   uptimeSeconds: number;
 }
 
-/** Aggregated counters for one time window. */
+/**
+Aggregated counters for one time window.
+ */
 export interface MetricsTotals {
-  /** Mean response time in milliseconds. */
+  /**
+  Mean response time in milliseconds.
+   */
   avgMs: number;
   bytesIn: number;
   bytesOut: number;
   cacheHitRate: number;
   cacheHits: number;
   cacheMisses: number;
-  /** 4xx responses. */
+  /**
+  4xx responses.
+   */
   clientErrors: number;
   filesIn: number;
   filesOut: number;
-  /** Total completed requests. */
+  /**
+  Total completed requests.
+   */
   requests: number;
   scanBlocked: number;
   scanClean: number;
   scanInfected: number;
-  /** 5xx responses. */
+  /**
+  5xx responses.
+   */
   serverErrors: number;
 }
 
@@ -194,7 +260,9 @@ const isoDay = (date: Date): string => date.toISOString().slice(0, 10);
 const hourAgo = (hours: number): string => isoHour(new Date(Date.now() - hours * 3_600_000));
 const dayAgo = (days: number): string => isoDay(new Date(Date.now() - days * 86_400_000));
 
-/** Bounded delta buffers: a persistently failing store drops counts rather than grow memory without limit. */
+/**
+Bounded delta buffers: a persistently failing store drops counts rather than grow memory without limit.
+ */
 const MAX_DELTA_KEYS = 10_000;
 
 const zeroTotals = (): MetricsTotals => ({
@@ -214,8 +282,10 @@ const zeroTotals = (): MetricsTotals => ({
   serverErrors: 0,
 });
 
-/** Parameter type accepted by `StatementSync.all()`, derived from `DatabaseSync`. */
-type SqlParam = ReturnType<DatabaseSync['prepare']>['all'] extends (
+/**
+Parameter type accepted by `StatementSync.all()`, derived from `DatabaseSync`.
+ */
+type SqlParameter = ReturnType<DatabaseSync['prepare']>['all'] extends (
   namedParameters: Record<string, infer _N>,
   ...anonymousParameters: infer A
 ) => unknown
@@ -272,23 +342,23 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
    * Drains all pending deltas into a single transaction.
    */
   flush(): void {
-    const db = this.db;
-    if (!db) return;
+    const database = this.db;
+    if (!database) return;
     if (this.deltaRoute.size === 0 && this.deltaIp.size === 0 && this.deltaHist.size === 0) return;
 
-    let began = false;
+    let isBegan = false;
     try {
-      db.exec('BEGIN IMMEDIATE');
-      began = true;
+      database.exec('BEGIN IMMEDIATE');
+      isBegan = true;
       if (!this.statements) {
         this.statements = {
-          hist: db.prepare(
+          hist: database.prepare(
             'INSERT INTO metric_hist (route, bucket, le, count) VALUES (?, ?, ?, ?) ON CONFLICT(route, bucket, le) DO UPDATE SET count = count + excluded.count',
           ),
-          ip: db.prepare(
+          ip: database.prepare(
             'INSERT INTO metric_counter_ip (name, ip, bucket, count, bytes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name, ip, bucket) DO UPDATE SET count = count + excluded.count, bytes = bytes + excluded.bytes',
           ),
-          route: db.prepare(
+          route: database.prepare(
             'INSERT INTO metric_counter (name, route, bucket, count, bytes) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name, route, bucket) DO UPDATE SET count = count + excluded.count, bytes = bytes + excluded.bytes',
           ),
         };
@@ -297,12 +367,12 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
       for (const row of this.deltaRoute.values()) upsertRoute.run(row.name, row.route, row.bucket, row.count, row.bytes);
       for (const row of this.deltaIp.values()) upsertIp.run(row.name, row.ip, row.bucket, row.count, row.bytes);
       for (const row of this.deltaHist.values()) upsertHist.run(row.route, row.bucket, row.le, row.count);
-      db.exec('COMMIT');
+      database.exec('COMMIT');
       this.deltaRoute.clear();
       this.deltaIp.clear();
       this.deltaHist.clear();
     } catch (error) {
-      if (began) db.exec('ROLLBACK');
+      if (isBegan) database.exec('ROLLBACK');
       // Deltas are kept so the next flush can retry them.
       this.logger.error(`metrics flush failed: ${String(error)}`);
       throw error;
@@ -395,14 +465,14 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
       totals: zeroTotals(),
       uptimeSeconds: process.uptime(),
     };
-    const db = this.db;
-    if (!db) return base;
+    const database = this.db;
+    if (!database) return base;
 
-    base.totals = this.totals(db, '1970-01-01T00');
-    base.today = this.totals(db, `${isoDay(new Date())}T00`);
-    base.last24h = this.series24h(db);
-    base.perIp = this.perIp(db);
-    base.perRoute = this.perRoute(db);
+    base.totals = this.totals(database, '1970-01-01T00');
+    base.today = this.totals(database, `${isoDay(new Date())}T00`);
+    base.last24h = this.series24h(database);
+    base.perIp = this.perIp(database);
+    base.perRoute = this.perRoute(database);
     return base;
   }
 
@@ -411,18 +481,18 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
    * @param retentionDays - Days to keep; rows older than this are deleted.
    */
   sweep(retentionDays = this.retentionDays): void {
-    const db = this.db;
-    if (!db || retentionDays <= 0) return;
-    db.prepare('DELETE FROM metric_counter WHERE bucket < ?').run(hourAgo(retentionDays * 24));
-    db.prepare('DELETE FROM metric_counter_ip WHERE bucket < ?').run(dayAgo(retentionDays));
-    db.prepare('DELETE FROM metric_hist WHERE bucket < ?').run(hourAgo(retentionDays * 24));
+    const database = this.db;
+    if (!database || retentionDays <= 0) return;
+    database.prepare('DELETE FROM metric_counter WHERE bucket < ?').run(hourAgo(retentionDays * 24));
+    database.prepare('DELETE FROM metric_counter_ip WHERE bucket < ?').run(dayAgo(retentionDays));
+    database.prepare('DELETE FROM metric_hist WHERE bucket < ?').run(hourAgo(retentionDays * 24));
   }
 
-  private applyHistograms(
-    db: DatabaseSync,
+  protected applyHistograms(
+    database: DatabaseSync,
     byRoute: Map<string, MetricsRouteStat & { durationCount: number; durationMs: number; }>,
   ): void {
-    const rows = allRows<{ count: number; le: number; route: string; }>(db, 'SELECT route, le, SUM(count) count FROM metric_hist GROUP BY route, le');
+    const rows = allRows<{ count: number; le: number; route: string; }>(database, 'SELECT route, le, SUM(count) count FROM metric_hist GROUP BY route, le');
     const hist = new Map<string, Map<number, number>>();
     const add = (route: string, le: number, count: number) => {
       const bucket = hist.get(route) ?? new Map<number, number>();
@@ -433,31 +503,44 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     for (const row of this.deltaHist.values()) add(row.route, row.le, row.count);
     for (const [route, stat] of byRoute) {
       const leCounts = hist.get(route) ?? new Map<number, number>();
-      const total = [...leCounts.values()].reduce((sum, count) => sum + count, 0);
+      let total = 0;
+      for (const count of leCounts.values()) total += count;
       stat.p50 = this.percentile(leCounts, total, 0.5);
       stat.p95 = this.percentile(leCounts, total, 0.95);
       stat.p99 = this.percentile(leCounts, total, 0.99);
     }
   }
 
-  private applyRow(totals: MetricsTotals, name: string, count: number, bytes: number): void {
+  protected applyRow(totals: MetricsTotals, name: string, count: number, bytes: number): void {
     switch (name) {
-      case 'bytes_in': totals.bytesIn += bytes; break;
-      case 'bytes_out': totals.bytesOut += bytes; break;
-      case 'cache_hit': totals.cacheHits += count; break;
-      case 'cache_miss': totals.cacheMisses += count; break;
-      case 'client_errors': totals.clientErrors += count; break;
-      case 'file_in': totals.filesIn += count; break;
-      case 'file_out': totals.filesOut += count; break;
-      case 'requests': totals.requests += count; break;
-      case 'scan_blocked': totals.scanBlocked += count; break;
-      case 'scan_clean': totals.scanClean += count; break;
-      case 'scan_infected': totals.scanInfected += count; break;
-      case 'server_errors': totals.serverErrors += count; break;
+      case 'bytes_in': { totals.bytesIn += bytes; break;
+      }
+      case 'bytes_out': { totals.bytesOut += bytes; break;
+      }
+      case 'cache_hit': { totals.cacheHits += count; break;
+      }
+      case 'cache_miss': { totals.cacheMisses += count; break;
+      }
+      case 'client_errors': { totals.clientErrors += count; break;
+      }
+      case 'file_in': { totals.filesIn += count; break;
+      }
+      case 'file_out': { totals.filesOut += count; break;
+      }
+      case 'requests': { totals.requests += count; break;
+      }
+      case 'scan_blocked': { totals.scanBlocked += count; break;
+      }
+      case 'scan_clean': { totals.scanClean += count; break;
+      }
+      case 'scan_infected': { totals.scanInfected += count; break;
+      }
+      case 'server_errors': { totals.serverErrors += count; break;
+      }
     }
   }
 
-  private bumpHist(route: string, durationMs: number, bucket: string): void {
+  protected bumpHist(route: string, durationMs: number, bucket: string): void {
     const le = HISTOGRAM_LE.find((bound) => durationMs / 1000 <= bound) ?? 999_999;
     const key = `${route}|${bucket}|${le}`;
     if (this.deltaHist.size >= MAX_DELTA_KEYS && !this.deltaHist.has(key)) {
@@ -469,7 +552,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     this.deltaHist.set(key, current);
   }
 
-  private bumpIp(name: string, ip: string, bytes: number, count: number, bucket: string): void {
+  protected bumpIp(name: string, ip: string, bytes: number, count: number, bucket: string): void {
     const key = `${name}|${ip}|${bucket}`;
     if (this.deltaIp.size >= MAX_DELTA_KEYS && !this.deltaIp.has(key)) {
       this.deltaIp.clear();
@@ -481,7 +564,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     this.deltaIp.set(key, current);
   }
 
-  private bumpPair(
+  protected bumpPair(
     name: string,
     route: string,
     ip: string,
@@ -494,7 +577,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     this.bumpIp(name, ip, bytes, count, dayBucket);
   }
 
-  private bumpRoute(name: string, route: string, bytes: number, count: number, bucket: string): void {
+  protected bumpRoute(name: string, route: string, bytes: number, count: number, bucket: string): void {
     const key = `${name}|${route}|${bucket}`;
     if (this.deltaRoute.size >= MAX_DELTA_KEYS && !this.deltaRoute.has(key)) {
       this.deltaRoute.clear();
@@ -506,13 +589,13 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     this.deltaRoute.set(key, current);
   }
 
-  private close(): void {
+  protected close(): void {
     this.db?.close();
     this.db = undefined;
     this.statements = undefined;
   }
 
-  private open(): void {
+  protected open(): void {
     if (this.dbPath === ':memory:') {
       this.db = new DatabaseSync(':memory:');
     } else {
@@ -542,20 +625,21 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     }
   }
 
-  private percentile(leCounts: Map<number, number>, total: number, quantile: number): number {
+  protected percentile(leCounts: Map<number, number>, total: number, quantile: number): number {
     if (total === 0) return 0;
     const target = Math.ceil(total * quantile);
     let cumulative = 0;
-    for (const [le, count] of [...leCounts].toSorted((a, b) => a[0] - b[0])) {
+    const sortedBuckets = [...leCounts].toSorted((a, b) => a[0] - b[0]);
+    for (const [le, count] of sortedBuckets) {
       cumulative += count;
       if (cumulative >= target) return Math.round(Math.min(le, 10) * 1000);
     }
     return 10_000;
   }
 
-  private perIp(db: DatabaseSync): MetricsPerIp[] {
+  protected perIp(database: DatabaseSync): MetricsPerIp[] {
     const topIps = allRows<{ ip: string }>(
-      db,
+      database,
       "SELECT ip FROM metric_counter_ip WHERE name = 'bytes_out' GROUP BY ip ORDER BY SUM(bytes) DESC LIMIT 50",
     );
     const candidates = new Set<string>(topIps.map((row) => row.ip));
@@ -564,7 +648,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     const filter = [...candidates].map(() => '?').join(',');
     // eslint-disable-next-line deslint/no-sql-injection -- the interpolated segment is placeholder marks only (?,?,…); every value binds via parameters
     const sql = `SELECT ip, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter_ip WHERE ip IN (${filter}) GROUP BY ip, name`;
-    const rows = allRows<{ bytes: number; count: number; ip: string; name: string; }>(db, sql, ...candidates);
+    const rows = allRows<{ bytes: number; count: number; ip: string; name: string; }>(database, sql, ...candidates);
     const byIp = new Map<string, MetricsPerIp>();
     const ensure = (ip: string): MetricsPerIp => {
       const current = byIp.get(ip) ?? { bytesIn: 0, bytesOut: 0, filesIn: 0, filesOut: 0, ip, requests: 0 };
@@ -598,12 +682,15 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     };
     for (const row of rows) assign(row.name, row, ensure(row.ip));
     for (const row of this.deltaIp.values()) assign(row.name, row, ensure(row.ip));
-    return [...byIp.values()].toSorted((a, b) => b.bytesOut - a.bytesOut).slice(0, 50);
+    return [...byIp]
+      .map(([, entry]) => entry)
+      .toSorted((a, b) => b.bytesOut - a.bytesOut)
+      .slice(0, 50);
   }
 
-  private perRoute(db: DatabaseSync): MetricsRouteStat[] {
+  protected perRoute(database: DatabaseSync): MetricsRouteStat[] {
     const rows = allRows<{ bytes: number; count: number; name: string; route: string; }>(
-      db,
+      database,
       'SELECT route, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE name IN (\'requests\', \'bytes_out\', \'client_errors\', \'server_errors\', \'duration\') GROUP BY route, name',
     );
     const byRoute = new Map<string, MetricsRouteStat & { durationCount: number; durationMs: number; }>();
@@ -638,13 +725,15 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     };
     for (const row of rows) assign(row.name, row, ensure(row.route));
     for (const row of this.deltaRoute.values()) assign(row.name, row, ensure(row.route));
-    this.applyHistograms(db, byRoute);
-    return [...byRoute.values()]
-      .map(({ durationCount, durationMs, ...stat }) => ({ ...stat, avgMs: durationCount === 0 ? 0 : durationMs / durationCount }))
-      .toSorted((a, b) => b.requests - a.requests);
+    this.applyHistograms(database, byRoute);
+    const results: MetricsRouteStat[] = [];
+    for (const { durationCount, durationMs, ...stat } of byRoute.values()) {
+      results.push({ ...stat, avgMs: durationCount === 0 ? 0 : durationMs / durationCount });
+    }
+    return results.toSorted((a, b) => b.requests - a.requests);
   }
 
-  private safeFlush(): void {
+  protected safeFlush(): void {
     try {
       this.flush();
     } catch (error) {
@@ -653,7 +742,7 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     }
   }
 
-  private safeSweep(): void {
+  protected safeSweep(): void {
     try {
       this.sweep();
     } catch (error) {
@@ -661,10 +750,10 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     }
   }
 
-  private series24h(db: DatabaseSync): MetricsSeriesPoint[] {
+  protected series24h(database: DatabaseSync): MetricsSeriesPoint[] {
     const from = hourAgo(24);
     const rows = allRows<{ bucket: string; bytes: number; count: number; name: string; }>(
-      db,
+      database,
       'SELECT bucket, name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE bucket >= ? AND name IN (\'requests\', \'bytes_in\', \'bytes_out\', \'client_errors\', \'server_errors\') GROUP BY bucket, name',
       from,
     );
@@ -688,7 +777,8 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
       point.requests += count;
       break;
       }
-      default: point.errors += count;
+      default: { point.errors += count;
+      }
       }
     };
     for (const row of rows) assign(row.bucket, row.name, row.count, row.bytes);
@@ -703,8 +793,8 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
     return points.toSorted((a, b) => a.bucket.localeCompare(b.bucket));
   }
 
-  private totals(db: DatabaseSync, fromHour: string): MetricsTotals {
-    const rows = allRows<{ bytes: number; count: number; name: string; }>(db, 'SELECT name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE bucket >= ? GROUP BY name', fromHour);
+  protected totals(database: DatabaseSync, fromHour: string): MetricsTotals {
+    const rows = allRows<{ bytes: number; count: number; name: string; }>(database, 'SELECT name, SUM(count) count, SUM(bytes) bytes FROM metric_counter WHERE bucket >= ? GROUP BY name', fromHour);
     const totals = zeroTotals();
     let durationMs = 0;
     const visit = (row: { bytes: number; count: number; name: string; }) => {
@@ -727,12 +817,12 @@ export class MetricsService implements OnApplicationBootstrap, OnApplicationShut
  * node:sqlite types `StatementSync.all()` as `Record<string, SQLOutputValue>[]`,
  * which is not assignable to a row-specific shape without an intermediate
  * `unknown`, so the single cast below is unavoidable.
- * @param db - Open SQLite database.
+ * @param database - Open SQLite database.
  * @param sql - SQL text to prepare (passed through verbatim).
- * @param params - Bound parameters for the statement.
+ * @param parameters - Bound parameters for the statement.
  * @returns All result rows as `T[]`.
  */
-function allRows<T>(db: DatabaseSync, sql: string, ...params: SqlParam[]): T[] {
+function allRows<T>(database: DatabaseSync, sql: string, ...parameters: SqlParameter[]): T[] {
   // node:sqlite's result type is not row-specific; this is the one unavoidable cast.
-  return db.prepare(sql).all(...params) as unknown as T[];
+  return database.prepare(sql).all(...parameters) as unknown as T[];
 }

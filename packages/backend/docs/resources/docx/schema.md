@@ -83,151 +83,151 @@
 Endnote id; renders an endnote reference at this position.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:27  
-dist: packages/backend/dist/resources/docx/schema.js:15
+src: packages/backend/src/resources/docx/schema.ts:46  
+dist: packages/backend/dist/resources/docx/schema.js:22
 <a name="footnote"></a>
 
 ## footnote
 Footnote id; renders a footnote reference at this position.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:29  
-dist: packages/backend/dist/resources/docx/schema.js:16
+src: packages/backend/src/resources/docx/schema.ts:50  
+dist: packages/backend/dist/resources/docx/schema.js:23
 <a name="superScript"></a>
 
 ## superScript
 Superscript (mutually exclusive with subscript).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:39  
-dist: packages/backend/dist/resources/docx/schema.js:25
+src: packages/backend/src/resources/docx/schema.ts:62  
+dist: packages/backend/dist/resources/docx/schema.js:32
 <a name="after"></a>
 
 ## after
 Space before in points.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:63  
-dist: packages/backend/dist/resources/docx/schema.js:45
+src: packages/backend/src/resources/docx/schema.ts:82  
+dist: packages/backend/dist/resources/docx/schema.js:44
 <a name="before"></a>
 
 ## before
 Space after in points.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:65  
-dist: packages/backend/dist/resources/docx/schema.js:46
+src: packages/backend/src/resources/docx/schema.ts:86  
+dist: packages/backend/dist/resources/docx/schema.js:45
 <a name="line"></a>
 
 ## line
 Exact line rule (atLeast/exact exactly/auto).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:67  
-dist: packages/backend/dist/resources/docx/schema.js:47
+src: packages/backend/src/resources/docx/schema.ts:90  
+dist: packages/backend/dist/resources/docx/schema.js:46
 <a name="position"></a>
 
 ## position
 Position in twentieths of a point (same unit as Word tab positions).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:93  
-dist: packages/backend/dist/resources/docx/schema.js:69
+src: packages/backend/src/resources/docx/schema.ts:118  
+dist: packages/backend/dist/resources/docx/schema.js:68
 <a name="size"></a>
 
 ## size
 Size in eighths of a point (Word sz).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:105  
-dist: packages/backend/dist/resources/docx/schema.js:78
+src: packages/backend/src/resources/docx/schema.ts:132  
+dist: packages/backend/dist/resources/docx/schema.js:77
 <a name="headerRow"></a>
 
 ## headerRow
 Repeats the first row across pages.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:154  
-dist: packages/backend/dist/resources/docx/schema.js:121
+src: packages/backend/src/resources/docx/schema.ts:183  
+dist: packages/backend/dist/resources/docx/schema.js:120
 <a name="data"></a>
 
 ## data
 Base64-encoded image bytes (no data URI prefix).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:166  
-dist: packages/backend/dist/resources/docx/schema.js:131
+src: packages/backend/src/resources/docx/schema.ts:197  
+dist: packages/backend/dist/resources/docx/schema.js:130
 <a name="fallback"></a>
 
 ## fallback
 Required for `imageType: 'svg'`; a raster fallback for processors that cannot draw SVG.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:168  
-dist: packages/backend/dist/resources/docx/schema.js:132
+src: packages/backend/src/resources/docx/schema.ts:201  
+dist: packages/backend/dist/resources/docx/schema.js:131
 <a name="anchor"></a>
 
 ## anchor
 Anchor of an in-document bookmark; wins over url when both set.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:185  
-dist: packages/backend/dist/resources/docx/schema.js:147
+src: packages/backend/src/resources/docx/schema.ts:220  
+dist: packages/backend/dist/resources/docx/schema.js:146
 <a name="levels"></a>
 
 ## levels
 Heading depth to include (1-6).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:195  
-dist: packages/backend/dist/resources/docx/schema.js:155
+src: packages/backend/src/resources/docx/schema.ts:232  
+dist: packages/backend/dist/resources/docx/schema.js:154
 <a name="title"></a>
 
 ## title
 The alias (title) of the inserted table of contents.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:197  
-dist: packages/backend/dist/resources/docx/schema.js:156
+src: packages/backend/src/resources/docx/schema.ts:236  
+dist: packages/backend/dist/resources/docx/schema.js:155
 <a name="comments"></a>
 
 ## comments
 Comments; each is appended at the end of the document with an id reference.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:340  
-dist: packages/backend/dist/resources/docx/schema.js:282
+src: packages/backend/src/resources/docx/schema.ts:403  
+dist: packages/backend/dist/resources/docx/schema.js:295
 <a name="endnotes"></a>
 
 ## endnotes
 Endnote definitions keyed by the ids referenced from runs.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:342  
-dist: packages/backend/dist/resources/docx/schema.js:283
+src: packages/backend/src/resources/docx/schema.ts:407  
+dist: packages/backend/dist/resources/docx/schema.js:296
 <a name="footnotes"></a>
 
 ## footnotes
 Footnote definitions keyed by the ids referenced from runs.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:344  
-dist: packages/backend/dist/resources/docx/schema.js:284
+src: packages/backend/src/resources/docx/schema.ts:411  
+dist: packages/backend/dist/resources/docx/schema.js:297
 <a name="numbering"></a>
 
 ## numbering
 Numbering definitions referenced from paragraph elements.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/docx/schema.ts:347  
-dist: packages/backend/dist/resources/docx/schema.js:286
+src: packages/backend/src/resources/docx/schema.ts:416  
+dist: packages/backend/dist/resources/docx/schema.js:299
 <a name="DOCX_MIME"></a>
 
 ## DOCX\_MIME
 Only the plain OOXML word mime; templates, macros and other packages are rejected.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/docx/schema.ts:8  
+src: packages/backend/src/resources/docx/schema.ts:10  
 dist: packages/backend/dist/resources/docx/schema.js:4
 <a name="DocxExtractSchema"></a>
 
@@ -235,7 +235,7 @@ dist: packages/backend/dist/resources/docx/schema.js:4
 Flat query parameters for `POST /docx/extract` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/docx/schema.ts:12  
+src: packages/backend/src/resources/docx/schema.ts:16  
 dist: packages/backend/dist/resources/docx/schema.js:5
 <a name="DocxMetadataSchema"></a>
 
@@ -243,7 +243,7 @@ dist: packages/backend/dist/resources/docx/schema.js:5
 Flat query parameters for `POST /docx/metadata` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/docx/schema.ts:15  
+src: packages/backend/src/resources/docx/schema.ts:21  
 dist: packages/backend/dist/resources/docx/schema.js:6
 <a name="runSchema"></a>
 
@@ -251,13 +251,13 @@ dist: packages/backend/dist/resources/docx/schema.js:6
 A formatted text run; every TextRun option is mirrored here.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/docx/schema.ts:19  
-dist: packages/backend/dist/resources/docx/schema.js:8
+src: packages/backend/src/resources/docx/schema.ts:36  
+dist: packages/backend/dist/resources/docx/schema.js:15
 <a name="DocxBuildSchema"></a>
 
 ## DocxBuildSchema
 Body of `POST /docx/build`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/docx/schema.ts:337  
-dist: packages/backend/dist/resources/docx/schema.js:280
+src: packages/backend/src/resources/docx/schema.ts:398  
+dist: packages/backend/dist/resources/docx/schema.js:293

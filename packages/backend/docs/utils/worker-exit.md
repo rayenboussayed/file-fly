@@ -43,5 +43,5 @@ variable unset.
 | --- | --- | --- |
 | code | <code>number</code> | Exit code for the worker process. |
 
-src: packages/backend/src/utils/worker-exit.ts:21  
-dist: packages/backend/dist/utils/worker-exit.js:6
+src: packages/backend/src/utils/worker-exit.ts:24  
+dist: packages/backend/dist/utils/worker-exit.js:7

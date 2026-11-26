@@ -9,6 +9,16 @@ import { FONT_MIMES, type FontMetaType, isFontMime } from './schema.js';
 const fontBuffer = () =>
   fs.readFileSync('assets/fonts/DejaVuSans.ttf');
 
+/**
+ * Reads a font fixture by name from the test assets directory.
+ * @param name - Fixture filename inside assets/fonts.
+ * @returns The fixture bytes.
+ */
+const fixture = (name: string) => {
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- name is a test constant
+  return fs.readFileSync(path.join('assets', 'fonts', name));
+};
+
 const makeService = (body: Buffer, contentType = 'font/ttf') => {
   const stream = Readable.from([body]);
   const cls = {
@@ -134,11 +144,6 @@ describe('FontService.subset', () => {
 });
 
 describe('FontService collections and containers', () => {
-  const fixture = (name: string) => {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- name is a test constant
-    return fs.readFileSync(path.join('assets', 'fonts', name));
-  };
-
   it('opens a TTC and selects members by PostScript name', async () => {
     const sans = await makeService(fixture('tiny.ttc'), 'font/collection').metadata({ font: 'TinySans' });
     expect(sans.format).toBe('collection');
@@ -198,11 +203,6 @@ describe('FontService collections and containers', () => {
 });
 
 describe('FontService edge cases', () => {
-  const fixture = (name: string) => {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- name is a test constant
-    return fs.readFileSync(path.join('assets', 'fonts', name));
-  };
-
   it('rejects a member name on a standalone font with 400', async () => {
     await expect(
       makeService(fixture('tiny.ttf'), 'font/ttf').metadata({ font: 'TinySans' }),
@@ -241,11 +241,6 @@ describe('FontService.shape direction=auto', () => {
 });
 
 describe('FontService empty collections and no-OS/2', () => {
-  const fixture = (name: string) => {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- name is a test constant
-    return fs.readFileSync(path.join('assets', 'fonts', name));
-  };
-
   it('rejects an empty collection with 400 FONT_UNREADABLE', async () => {
     await expect(
       makeService(fixture('tiny-empty.ttc'), 'font/collection').metadata({}),

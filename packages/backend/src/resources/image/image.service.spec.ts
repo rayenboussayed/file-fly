@@ -6,7 +6,9 @@ import type { ImageOcrResult } from './type.js';
 
 import { ImageService } from './image.service.js';
 
-/** 1x1 white PNG, decodes with the production preprocess pipeline. */
+/**
+1x1 white PNG, decodes with the production preprocess pipeline.
+ */
 const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=',
   'base64',

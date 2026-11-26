@@ -36,8 +36,8 @@ export async function processMedia(payload: VideoProcessorType) {
     throw new Error(`Streaming output does not support format: ${format}`);
   }
 
-  const videoTranscoding = hasVideoTranscoding(payload);
-  const audioTranscoding = hasAudioTranscoding(payload);
+  const isVideoTranscoding = hasVideoTranscoding(payload);
+  const isAudioTranscoding = hasAudioTranscoding(payload);
 
   // node-av tolerates the socket as a Readable; stdin is always piped in the worker.
   await using input = await Demuxer.open(process.stdin as never, {
@@ -59,14 +59,14 @@ export async function processMedia(payload: VideoProcessorType) {
   }
 
   const logger = createWorkerLogger();
-  const videoClip = videoTranscoding && videoStream;
+  const videoClip = isVideoTranscoding && videoStream;
   // WebM supports only VP8/VP9/AV1 video and Vorbis/Opus audio; a passthrough
   // AAC/x264/other audio would fail at the muxer with no useful message.
-  const webmAudioForced = format === 'webm' && audioStream && !audioTranscoding;
+  const webmAudioForced = format === 'webm' && audioStream && !isAudioTranscoding;
   if (webmAudioForced) {
     logger.warn('webm container requires opus or vorbis audio; transcoding audio to opus');
   }
-  const audioClip = (audioTranscoding && audioStream) || webmAudioForced;
+  const audioClip = (isAudioTranscoding && audioStream) || webmAudioForced;
 
   if (!videoClip && !audioClip) {
     const control = pipeline(input, output);

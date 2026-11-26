@@ -1,3 +1,5 @@
+const fixed = (value: number) => value.toFixed(value >= 10 ? 0 : 1);
+
 /**
  * Formats a byte count with binary (1024) units.
  * @param bytes - Size in bytes; non-finite or negative values format as `0 B`.
@@ -6,7 +8,6 @@
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
   if (bytes < 1024) return `${bytes} B`;
-  const fixed = (value: number) => value.toFixed(value >= 10 ? 0 : 1);
   if (bytes < 1024 ** 2) return `${fixed(bytes / 1024)} KB`;
   if (bytes < 1024 ** 3) return `${fixed(bytes / 1024 ** 2)} MB`;
   if (bytes < 1024 ** 4) return `${fixed(bytes / 1024 ** 3)} GB`;

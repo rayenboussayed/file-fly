@@ -16,7 +16,9 @@ import { openMediaSource } from '@/utils/open-source.js';
 
 import { SPREADSHEET_MIME, type XlsxBuildType, type XlsxExtractType, type XlsxMetadataType, type XlsxSheetType } from './schema.js';
 
-/** Maximum number of row records `/xlsx/extract` returns (defense-in-depth with the maxCells census). */
+/**
+Maximum number of row records `/xlsx/extract` returns (defense-in-depth with the maxCells census).
+ */
 const MAX_RECORDS = 1_000_000;
 
 /**
@@ -31,7 +33,9 @@ const assertXlsxSignature = async (buffer: Buffer): Promise<void> => {
   }
 };
 
-/** Total uncompressed byte ceiling for xlsx archives; ~3.5x tighter than the shared cap. */
+/**
+Total uncompressed byte ceiling for xlsx archives; ~3.5x tighter than the shared cap.
+ */
 const XLSX_TOTAL_UNCOMPRESSED = 64 * 1024 * 1024;
 
 /**
@@ -119,7 +123,8 @@ const UNSAFE_FORMULA = [
 const assertSafeCells = (sheets: XlsxSheetType[]): void => {
   for (const sheet of sheets) {
     for (const row of sheet.rows) {
-      for (const cell of Array.isArray(row) ? row : Object.values(row)) {
+      const cells = Array.isArray(row) ? row : Object.values(row);
+      for (const cell of cells) {
         assertSafeCell(cell);
       }
     }
@@ -197,7 +202,9 @@ const sheetIndex = (names: string[], sheet: string | undefined): number => {
   return asNumber;
 };
 
-/** XLSX feature service: builds workbooks and parses/metadata-inspects uploads. */
+/**
+XLSX feature service: builds workbooks and parses/metadata-inspects uploads.
+ */
 @Injectable()
 export class XlsxService {
   constructor(private readonly cls: NormalizedClsService) {}
@@ -228,16 +235,16 @@ export class XlsxService {
         });
       }
       if (body.workbook?.WBProps) {
-        workbook.Workbook = workbook.Workbook ?? {};
+        workbook.Workbook ??= {};
         workbook.Workbook.WBProps = { ...workbook.Workbook.WBProps, ...body.workbook.WBProps };
       }
       if (body.workbook?.Names) {
         for (const entry of body.workbook.Names) assertSafeFormula(entry.Ref);
-        workbook.Workbook = workbook.Workbook ?? {};
+        workbook.Workbook ??= {};
         workbook.Workbook.Names = body.workbook.Names;
       }
       if (visibility.some((value) => value !== 0)) {
-        workbook.Workbook = workbook.Workbook ?? {};
+        workbook.Workbook ??= {};
         // book_append_sheet only fills SheetNames/Sheets; the visibility array tracks creation order.
         workbook.Workbook.Sheets = visibility.map((Hidden) => ({ Hidden }));
       }
@@ -322,9 +329,9 @@ export class XlsxService {
     }
     // SheetNames and Workbook.Sheets[] share creation order; zip them in one pass.
     // (Sheets themselves stay keyed by name via findSheet; this zip only carries visibility.)
-    const sheetProps = (workbook.Workbook?.Sheets ?? [])[Symbol.iterator]();
+    const sheetProperties = (workbook.Workbook?.Sheets ?? [])[Symbol.iterator]();
     const parts = workbook.SheetNames.map((name) => ({
-      hidden: sheetProps.next().value?.Hidden ?? 0,
+      hidden: sheetProperties.next().value?.Hidden ?? 0,
       name,
     }));
 
@@ -400,7 +407,7 @@ const buildSheet = (sheet: XlsxSheetType): XLSX.WorkSheet => {
     if (Array.isArray(row)) aoa.push(row);
     else objects.push(values2cells(row, sheet.columns));
   }
-  if (aoa.length !== 0 && objects.length !== 0) {
+  if (aoa.length > 0 && objects.length > 0) {
     throw new BadRequestException({
       code: 'XLSX_MIXED_ROW_KINDS',
       message: 'rows must be all arrays or all objects, not mixed',
@@ -432,7 +439,7 @@ const values2cells = (
   const allowed = columns ? new Set(columns) : undefined;
   const clean: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(row)) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (['__proto__', 'constructor', 'prototype'].includes(key)) continue;
     if (allowed && !allowed.has(key)) continue;
     // Proto keys are filtered above; dynamic assignment is the point of the helper.
     // eslint-disable-next-line security/detect-object-injection

@@ -45,7 +45,7 @@ exact <code>true</code>/<code>false</code> strings count as boolean (csv-parse d
 Error thrown when a record cap is exceeded; maps to 413 at the boundary.
 
 **Kind**: global class  
-src: packages/backend/src/resources/csv/csv.service.ts:25  
+src: packages/backend/src/resources/csv/csv.service.ts:29  
 dist: packages/backend/dist/resources/csv/csv.service.js:20
 <a name="CsvService"></a>
 
@@ -53,7 +53,7 @@ dist: packages/backend/dist/resources/csv/csv.service.js:20
 CSV feature service: builds CSV from rows and parses/metadata-inspects uploads.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/csv/csv.service.ts:68  
+src: packages/backend/src/resources/csv/csv.service.ts:74  
 dist: packages/backend/dist/resources/csv/csv.service.js:44
 
 * [CsvService](#CsvService)
@@ -74,7 +74,7 @@ Builds the CSV response stream for `POST /csv/build`.
 | --- | --- | --- |
 | body | <code>{ records: (Record&lt;string, unknown&gt; \| unknown[])[]; options?: { [x: string]: any; bom?: boolean; columns?: (string \| { key: string; header?: string; })[]; eof?: boolean; escape?: string; escape\_formulas?: boolean; header?: boolean; header\_as\_comment?: boolean; quote?: string \| false; quote\_record\_delimiter?: boolean; quoted?: boolean; quoted\_empty?: boolean; quoted\_string?: boolean; }; }</code> | Validated build payload (rows plus csv-stringify options). |
 
-src: packages/backend/src/resources/csv/csv.service.ts:77  
+src: packages/backend/src/resources/csv/csv.service.ts:83  
 dist: packages/backend/dist/resources/csv/csv.service.js:49
 <a name="CsvService+extract"></a>
 
@@ -91,7 +91,7 @@ The first record is treated as data (no header semantics here).
 | --- | --- | --- |
 | query | <code>{ [x: string]: any; bom?: boolean; cast?: boolean; cast\_date?: boolean; columns?: boolean \| string[] \| any[]; comment?: string; comment\_no\_infix?: boolean; delimiter\_auto?: boolean; encoding?: &quot;ascii&quot; \| &quot;utf8&quot; \| &quot;utf16le&quot; \| &quot;ucs2&quot; \| &quot;base64&quot; \| &quot;latin1&quot; \| &quot;binary&quot; \| &quot;hex&quot;; escape?: string; from?: number; from\_line?: number; group\_columns\_by\_name?: boolean; ignore\_last\_delimiters?: boolean; ltrim?: boolean; max\_record\_size?: number; quote?: string \| false; relax\_column\_count?: boolean; relax\_column\_count\_less?: boolean; relax\_column\_count\_more?: boolean; relax\_quotes?: boolean; rtrim?: boolean; skip\_empty\_lines?: boolean; skip\_records\_with\_empty\_values?: boolean; skip\_records\_with\_error?: boolean; to?: number; to\_line?: number; trim?: boolean; }</code> | Validated, flat csv-parse options (file travels in the body). |
 
-src: packages/backend/src/resources/csv/csv.service.ts:90  
+src: packages/backend/src/resources/csv/csv.service.ts:96  
 dist: packages/backend/dist/resources/csv/csv.service.js:52
 <a name="CsvService+metadata"></a>
 
@@ -110,7 +110,7 @@ winning value back).
 | --- | --- | --- |
 | query | <code>{ [x: string]: any; maxRows: number; trim?: boolean; bom?: boolean; escape?: string; quote?: string \| false; cast\_date?: boolean; comment?: string; comment\_no\_infix?: boolean; delimiter\_auto?: boolean; encoding?: &quot;ascii&quot; \| &quot;utf8&quot; \| &quot;utf16le&quot; \| &quot;ucs2&quot; \| &quot;base64&quot; \| &quot;latin1&quot; \| &quot;binary&quot; \| &quot;hex&quot;; max\_record\_size?: number; relax\_column\_count?: boolean; relax\_column\_count\_less?: boolean; relax\_column\_count\_more?: boolean; relax\_quotes?: boolean; skip\_empty\_lines?: boolean; }</code> | Validated, flat csv-parse options plus `maxRows`. |
 
-src: packages/backend/src/resources/csv/csv.service.ts:118  
+src: packages/backend/src/resources/csv/csv.service.ts:124  
 dist: packages/backend/dist/resources/csv/csv.service.js:70
 <a name="MAX_RECORDS"></a>
 
@@ -118,7 +118,7 @@ dist: packages/backend/dist/resources/csv/csv.service.js:70
 Hard cap on parsed records; beyond it the response would exhaust memory.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/csv/csv.service.ts:22  
+src: packages/backend/src/resources/csv/csv.service.ts:24  
 dist: packages/backend/dist/resources/csv/csv.service.js:19
 <a name="toBadRequest"></a>
 
@@ -132,7 +132,7 @@ Maps a csv-parse/csv-stringify failure to a 400 with the library's error code.
 | --- | --- | --- |
 | error | <code>unknown</code> | The library error (carries `code` and `message`). |
 
-src: packages/backend/src/resources/csv/csv.service.ts:32  
+src: packages/backend/src/resources/csv/csv.service.ts:36  
 dist: packages/backend/dist/resources/csv/csv.service.js:22
 <a name="readBody"></a>
 
@@ -152,7 +152,7 @@ Only `text/csv` and `application/octet-stream` bodies are accepted.
 | --- | --- | --- |
 | cls | <code>NormalizedClsService</code> | The normalized request context (source stream accessors). |
 
-src: packages/backend/src/resources/csv/csv.service.ts:52  
+src: packages/backend/src/resources/csv/csv.service.ts:56  
 dist: packages/backend/dist/resources/csv/csv.service.js:32
 <a name="kindOf"></a>
 
@@ -167,5 +167,5 @@ exact `true`/`false` strings count as boolean (csv-parse does not cast them).
 | --- | --- | --- |
 | value | <code>unknown</code> | One cast field value. |
 
-src: packages/backend/src/resources/csv/csv.service.ts:172  
-dist: packages/backend/dist/resources/csv/csv.service.js:121
+src: packages/backend/src/resources/csv/csv.service.ts:180  
+dist: packages/backend/dist/resources/csv/csv.service.js:122

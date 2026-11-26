@@ -8,7 +8,33 @@ import {
 import { UseMediaPipeline } from '@/interceptors/pipeline.decorator.js';
 import { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
-/** Root routes: signature and antivirus verdicts for scanned payloads. */
+/**
+ * Reads the file signature from CLS.
+ * @param normalizedCls - CLS facade carrying the scanned request's signature.
+ * @returns The file signature's extension and MIME type.
+ * @throws ServiceUnavailableException When no file signature is available in CLS.
+ */
+const signatureOf = (normalizedCls: NormalizedClsService) => {
+  const signature = normalizedCls.fileSignature().get();
+  if (!signature) throw new ServiceUnavailableException('File signature not available');
+  return { ext: signature.ext, mime: signature.mime };
+};
+
+/**
+ * Reads the antivirus scan result from CLS.
+ * @param normalizedCls - CLS facade carrying the scan verdict.
+ * @returns Whether the file is infected and the list of detected viruses.
+ * @throws ServiceUnavailableException When no scan result is available in CLS (antivirus not configured).
+ */
+const virusScanOf = (normalizedCls: NormalizedClsService) => {
+  const result = normalizedCls.fileScan().get();
+  if (!result) throw new ServiceUnavailableException('Antivirus is not configured');
+  return { isInfected: result.isInfected, viruses: result.viruses };
+};
+
+/**
+ Root routes: signature and antivirus verdicts for scanned payloads.
+ */
 @Controller()
 export class AppController {
   constructor(
@@ -22,7 +48,7 @@ export class AppController {
   @Get('signature')
   @UseMediaPipeline()
   signatureGet() {
-    return this.signature();
+    return signatureOf(this.normalizedCls);
   }
 
   /**
@@ -32,7 +58,7 @@ export class AppController {
   @Post('signature')
   @UseMediaPipeline()
   signaturePost() {
-    return this.signature();
+    return signatureOf(this.normalizedCls);
   }
 
   /**
@@ -42,7 +68,7 @@ export class AppController {
   @Get('virus-scan')
   @UseMediaPipeline()
   virusScanGet() {
-    return this.virusScan();
+    return virusScanOf(this.normalizedCls);
   }
 
   /**
@@ -52,28 +78,6 @@ export class AppController {
   @Post('virus-scan')
   @UseMediaPipeline()
   virusScanPost() {
-    return this.virusScan();
-  }
-
-  /**
-   * Reads the file signature from CLS.
-   * @returns The file signature's extension and MIME type.
-   * @throws ServiceUnavailableException When no file signature is available in CLS.
-   */
-  private signature() {
-    const signature = this.normalizedCls.fileSignature().get();
-    if (!signature) throw new ServiceUnavailableException('File signature not available');
-    return { ext: signature.ext, mime: signature.mime };
-  }
-
-  /**
-   * Reads the antivirus scan result from CLS.
-   * @returns Whether the file is infected and the list of detected viruses.
-   * @throws ServiceUnavailableException When no scan result is available in CLS (antivirus not configured).
-   */
-  private virusScan() {
-    const result = this.normalizedCls.fileScan().get();
-    if (!result) throw new ServiceUnavailableException('Antivirus is not configured');
-    return { isInfected: result.isInfected, viruses: result.viruses };
+    return virusScanOf(this.normalizedCls);
   }
 }

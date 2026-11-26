@@ -34,7 +34,7 @@ describe('pipeToReply success memory', () => {
     await settleHeap();
     const before = process.memoryUsage();
 
-    for (let i = 0; i < ITERATIONS; i += 1) {
+    for (let index = 0; index < ITERATIONS; index += 1) {
       const source = fakeSource();
       await pipeToReply(source, { raw: succeedingRaw() } as never);
       expect(source.readableEnded).toBe(true);

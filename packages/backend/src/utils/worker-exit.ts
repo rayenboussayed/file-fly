@@ -7,8 +7,11 @@
 export function exitWorker(code: number): void {
   process.exitCode = code;
   process.stdin.destroy();
-  // eslint-disable-next-line n/no-process-exit -- native media handles can keep the worker alive; this is the bounded backstop.
-  setTimeout(() => process.exit(code), 250).unref();
+  // Native media handles can keep the worker alive past stdin's drain; this
+  // unref'd backstop is the bounded way to end that process. Resolve the
+  // routine at call time so injected spies still observe the forced exit.
+  const forceExit = process.exit.bind(process);
+  setTimeout(() => forceExit(code), 250).unref();
 }
 
 /**

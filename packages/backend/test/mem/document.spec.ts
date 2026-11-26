@@ -6,7 +6,9 @@ import { buildPdfDocument } from '@/resources/pdf/builder.js';
 
 import { settleHeap } from './helpers.js';
 
-/** Iterations in the measured loop; enough pressure to trip weak GC accounting. */
+/**
+Iterations in the measured loop; enough pressure to trip weak GC accounting.
+ */
 const ITERATIONS = 6;
 
 /**
@@ -41,7 +43,7 @@ describe('pdf build memory', () => {
     await settleHeap();
     const before = process.memoryUsage();
 
-    for (let i = 0; i < ITERATIONS; i += 1) {
+    for (let index = 0; index < ITERATIONS; index += 1) {
       const bytes = await buildPdfDocument(makePayload());
       expect(bytes.length).toBeGreaterThan(1024);
     }

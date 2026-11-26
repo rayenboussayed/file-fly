@@ -18,12 +18,14 @@ import { MetricsService, type MetricsSnapshot } from './metrics.service.js';
  * @param expected - The token the server requires.
  * @returns True when both strings are byte-equal.
  */
-const bearerMatches = (actual: string | undefined, expected: string): boolean => {
+const isBearerTokenMatch = (actual: string | undefined, expected: string): boolean => {
   const expectedHeader = `Bearer ${expected}`;
   return actual === undefined || actual.length !== expectedHeader.length ? false : timingSafeEqual(Buffer.from(actual), Buffer.from(expectedHeader));
 };
 
-/** Read-only metrics and liveness endpoints for the dashboard. */
+/**
+Read-only metrics and liveness endpoints for the dashboard.
+ */
 @ApiTags('metrics')
 @Controller()
 export class MetricsController {
@@ -56,7 +58,7 @@ export class MetricsController {
   metricsGet(@Headers('authorization') authorization?: string): MetricsSnapshot {
     const token = environment.METRICS_TOKEN;
     if (token) {
-      if (!bearerMatches(authorization, token)) {
+      if (!isBearerTokenMatch(authorization, token)) {
         throw new UnauthorizedException('Invalid metrics token');
       }
     } else if (isProduction) {

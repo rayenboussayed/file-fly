@@ -41,5 +41,5 @@ dist: packages/backend/dist/resources/image/worker/inspect.js:9
 Reads image statistics from stdin via sharp and writes them as JSON to stdout.
 
 **Kind**: global function  
-src: packages/backend/src/resources/image/worker/inspect.ts:32  
-dist: packages/backend/dist/resources/image/worker/inspect.js:17
+src: packages/backend/src/resources/image/worker/inspect.ts:33  
+dist: packages/backend/dist/resources/image/worker/inspect.js:18

@@ -165,16 +165,16 @@ describe('ModelService primitive modes', () => {
       [0, 0], // POINTS
       [1, 0], // LINES
     ] as const) {
-      const doc = new Document();
-      const buffer = doc.createBuffer();
+      const document_ = new Document();
+      const buffer = document_.createBuffer();
       const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0]);
-      const accessor = doc.createAccessor('positions').setType('VEC3').setBuffer(buffer).setArray(positions);
-      const prim = doc.createPrimitive().setAttribute('POSITION', accessor).setMode(mode);
-      const mesh = doc.createMesh('Mesh').addPrimitive(prim);
-      doc.createNode('Node').setMesh(mesh);
-      doc.createScene('Scene').addChild(doc.getRoot().listNodes()[0]!);
+      const accessor = document_.createAccessor('positions').setType('VEC3').setBuffer(buffer).setArray(positions);
+      const prim = document_.createPrimitive().setAttribute('POSITION', accessor).setMode(mode);
+      const mesh = document_.createMesh('Mesh').addPrimitive(prim);
+      document_.createNode('Node').setMesh(mesh);
+      document_.createScene('Scene').addChild(document_.getRoot().listNodes()[0]!);
       const io = new NodeIO();
-      const bytes = await io.writeBinary(doc);
+      const bytes = await io.writeBinary(document_);
 
       const { service } = makeService(Buffer.from(bytes));
       const meta = await service.metadata();
@@ -186,56 +186,56 @@ describe('ModelService primitive modes', () => {
 describe('ModelService with animated/skinned documents and adversarial graphs', () => {
   it('extracts animations and skins from a document that has them', async () => {
     const { Document, NodeIO } = await import('@gltf-transform/core');
-    const doc = new Document();
-    const buffer = doc.createBuffer();
+    const document_ = new Document();
+    const buffer = document_.createBuffer();
 
-    const positionAccessor = doc.createAccessor('positions')
+    const positionAccessor = document_.createAccessor('positions')
       .setType('VEC3')
       .setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]))
       .setBuffer(buffer);
-    const jointsAccessor = doc.createAccessor('joints')
+    const jointsAccessor = document_.createAccessor('joints')
       .setType('VEC4')
       .setNormalized(false)
       .setArray(new Uint16Array([0, 0, 0, 0]))
       .setBuffer(buffer);
-    const weightsAccessor = doc.createAccessor('weights')
+    const weightsAccessor = document_.createAccessor('weights')
       .setType('VEC4')
       .setArray(new Float32Array([1, 0, 0, 0]))
       .setBuffer(buffer);
-    const ibmAccessor = doc.createAccessor('ibm')
+    const ibmAccessor = document_.createAccessor('ibm')
       .setType('MAT4')
       .setArray(new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]))
       .setBuffer(buffer);
-    const mesh = doc.createMesh('SkinnedMesh').addPrimitive(
-      doc.createPrimitive()
+    const mesh = document_.createMesh('SkinnedMesh').addPrimitive(
+      document_.createPrimitive()
         .setAttribute('POSITION', positionAccessor)
         .setAttribute('JOINTS_0', jointsAccessor)
         .setAttribute('WEIGHTS_0', weightsAccessor),
     );
 
-    const jointNode = doc.createNode('Joint');
-    const scene = doc.createScene('Scene');
-    const skin = doc.createSkin('Skin').addJoint(jointNode).setInverseBindMatrices(ibmAccessor);
+    const jointNode = document_.createNode('Joint');
+    const scene = document_.createScene('Scene');
+    const skin = document_.createSkin('Skin').addJoint(jointNode).setInverseBindMatrices(ibmAccessor);
 
-    const skinnedNode = doc.createNode('Animated').setMesh(mesh).setSkin(skin).setTranslation([0, 0, 0]);
+    const skinnedNode = document_.createNode('Animated').setMesh(mesh).setSkin(skin).setTranslation([0, 0, 0]);
     scene.addChild(skinnedNode).addChild(jointNode);
 
-    const times = doc.createAccessor('times').setType('SCALAR').setArray(new Float32Array([0, 1])).setBuffer(buffer);
-    const translations = doc.createAccessor('translations')
+    const times = document_.createAccessor('times').setType('SCALAR').setArray(new Float32Array([0, 1])).setBuffer(buffer);
+    const translations = document_.createAccessor('translations')
       .setType('VEC3')
       .setArray(new Float32Array([0, 0, 0, 10, 0, 0]))
       .setBuffer(buffer);
-    const sampler = doc.createAnimationSampler()
+    const sampler = document_.createAnimationSampler()
       .setInput(times)
       .setOutput(translations)
       .setInterpolation('LINEAR');
-    const channel = doc.createAnimationChannel()
+    const channel = document_.createAnimationChannel()
       .setTargetNode(jointNode)
       .setTargetPath('translation')
       .setSampler(sampler);
-    doc.createAnimation('Slide').addChannel(channel).addSampler(sampler);
+    document_.createAnimation('Slide').addChannel(channel).addSampler(sampler);
 
-    const bytes = await new NodeIO().writeBinary(doc);
+    const bytes = await new NodeIO().writeBinary(document_);
     const { service } = makeService(Buffer.from(bytes));
     const extract = await service.extract();
     expect(extract.animations).toEqual([
@@ -247,8 +247,8 @@ describe('ModelService with animated/skinned documents and adversarial graphs', 
   it('answers 400 MODEL_TOO_COMPLEX against scene fan-out', async () => {
     // Many scenes re-walk the same subtree; the emitted JSON explodes.
     const nodes = [];
-    for (let i = 0; i < 200; i += 1) {
-      nodes.push(i < 199 ? { children: [i + 1], name: `n${i}` } : { name: `n${i}` });
+    for (let index = 0; index < 200; index += 1) {
+      nodes.push(index < 199 ? { children: [index + 1], name: `n${index}` } : { name: `n${index}` });
     }
     // Each scene re-walks the depth-capped chain (33 emissions); 400 scenes exceed the 10 000-node cap.
     const json = {
@@ -283,15 +283,15 @@ describe('ModelService with animated/skinned documents and adversarial graphs', 
 describe('ModelService metadata and mime coverage', () => {
   it('reports dequantized bounds for KHR_mesh_quantization accessors', async () => {
     const { Document, NodeIO } = await import('@gltf-transform/core');
-    const doc = new Document();
-    const buffer = doc.createBuffer();
+    const document_ = new Document();
+    const buffer = document_.createBuffer();
     // Asymmetric quantized positions: dequantized min/max differ from raw ints.
     const positions = new Uint16Array([32_768, 16_384, 0, 65_535, 32_768, 0]);
-    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setNormalized(true).setBuffer(buffer);
-    const mesh = doc.createMesh('mesh').addPrimitive(doc.createPrimitive().setAttribute('POSITION', accessor));
-    doc.createNode('node').setMesh(mesh);
-    doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
-    const bytes = await new NodeIO().writeBinary(doc);
+    const accessor = document_.createAccessor('positions').setType('VEC3').setArray(positions).setNormalized(true).setBuffer(buffer);
+    const mesh = document_.createMesh('mesh').addPrimitive(document_.createPrimitive().setAttribute('POSITION', accessor));
+    document_.createNode('node').setMesh(mesh);
+    document_.createScene('scene').addChild(document_.getRoot().listNodes()[0]!);
+    const bytes = await new NodeIO().writeBinary(document_);
 
     const { service } = makeService(Buffer.from(bytes));
     const meta = await service.metadata();
@@ -305,14 +305,14 @@ describe('ModelService metadata and mime coverage', () => {
 
   it('reports no bounds when no primitive carries POSITION', async () => {
     const { Document, NodeIO } = await import('@gltf-transform/core');
-    const doc = new Document();
-    const buffer = doc.createBuffer();
+    const document_ = new Document();
+    const buffer = document_.createBuffer();
     const texcoords = new Float32Array([0, 0, 1, 0]);
-    const accessor = doc.createAccessor('texcoords').setType('VEC2').setArray(texcoords).setBuffer(buffer);
-    const mesh = doc.createMesh('mesh').addPrimitive(doc.createPrimitive().setAttribute('TEXCOORD_0', accessor));
-    doc.createNode('node').setMesh(mesh);
-    doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
-    const bytes = await new NodeIO().writeBinary(doc);
+    const accessor = document_.createAccessor('texcoords').setType('VEC2').setArray(texcoords).setBuffer(buffer);
+    const mesh = document_.createMesh('mesh').addPrimitive(document_.createPrimitive().setAttribute('TEXCOORD_0', accessor));
+    document_.createNode('node').setMesh(mesh);
+    document_.createScene('scene').addChild(document_.getRoot().listNodes()[0]!);
+    const bytes = await new NodeIO().writeBinary(document_);
 
     const { service } = makeService(Buffer.from(bytes));
     const meta = await service.metadata();
@@ -333,20 +333,20 @@ describe('ModelService metadata and mime coverage', () => {
 
   it('falls back to "unnamed" and tolerates textures without image bytes', async () => {
     const { Document, NodeIO } = await import('@gltf-transform/core');
-    const doc = new Document();
-    const buffer = doc.createBuffer();
+    const document_ = new Document();
+    const buffer = document_.createBuffer();
     const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
-    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+    const accessor = document_.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
     // Unnamed node and mesh on purpose.
-    const texture = doc.createTexture().setMimeType('image/png').setImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
-    const material = doc.createMaterial().setBaseColorTexture(texture);
-    const mesh = doc.createMesh().addPrimitive(
-      doc.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material),
+    const texture = document_.createTexture().setMimeType('image/png').setImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47]));
+    const material = document_.createMaterial().setBaseColorTexture(texture);
+    const mesh = document_.createMesh().addPrimitive(
+      document_.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material),
     );
-    const node = doc.createNode().setMesh(mesh);
-    const scene = doc.createScene();
+    const node = document_.createNode().setMesh(mesh);
+    const scene = document_.createScene();
     scene.addChild(node);
-    const bytes = await new NodeIO().writeBinary(doc);
+    const bytes = await new NodeIO().writeBinary(document_);
 
     const { service } = makeService(Buffer.from(bytes));
     const extract = await service.extract();
@@ -365,16 +365,16 @@ describe('ModelService metadata and mime coverage', () => {
       ['image/png', 'data:image/png'],
       ['image/jpeg', 'data:image/jpeg'],
     ] as const) {
-      const doc = new Document();
-      const buffer = doc.createBuffer();
+      const document_ = new Document();
+      const buffer = document_.createBuffer();
       const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
-      const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
-      const texture = doc.createTexture('slot').setImage(new Uint8Array([0x00, 0x01, 0x02])).setMimeType(mime);
-      const material = doc.createMaterial('m').setBaseColorTexture(texture);
-      doc.createMesh('mesh').addPrimitive(doc.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material));
-      doc.createNode('node').setMesh(doc.getRoot().listMeshes()[0]!);
-      doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
-      const bytes = await new NodeIO().writeBinary(doc);
+      const accessor = document_.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+      const texture = document_.createTexture('slot').setImage(new Uint8Array([0x00, 0x01, 0x02])).setMimeType(mime);
+      const material = document_.createMaterial('m').setBaseColorTexture(texture);
+      document_.createMesh('mesh').addPrimitive(document_.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material));
+      document_.createNode('node').setMesh(document_.getRoot().listMeshes()[0]!);
+      document_.createScene('scene').addChild(document_.getRoot().listNodes()[0]!);
+      const bytes = await new NodeIO().writeBinary(document_);
 
       const { service } = makeService(Buffer.from(bytes));
       const out = await service.convert({ to: 'gltf' });
@@ -403,18 +403,18 @@ describe('ModelService read-body and mime fallbacks', () => {
 
   it('falls back to application/octet-stream for unknown resource extensions', async () => {
     const { Document, NodeIO } = await import('@gltf-transform/core');
-    const doc = new Document();
-    const buffer = doc.createBuffer();
+    const document_ = new Document();
+    const buffer = document_.createBuffer();
     const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
-    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
-    const texture = doc.createTexture('vector').setImage(new Uint8Array([0x3c, 0x3f])).setMimeType('image/svg+xml');
-    const material = doc.createMaterial('m').setBaseColorTexture(texture);
-    doc.createMesh('mesh').addPrimitive(
-      doc.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material),
+    const accessor = document_.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+    const texture = document_.createTexture('vector').setImage(new Uint8Array([0x3c, 0x3f])).setMimeType('image/svg+xml');
+    const material = document_.createMaterial('m').setBaseColorTexture(texture);
+    document_.createMesh('mesh').addPrimitive(
+      document_.createPrimitive().setAttribute('POSITION', accessor).setMaterial(material),
     );
-    doc.createNode('node').setMesh(doc.getRoot().listMeshes()[0]!);
-    doc.createScene('scene').addChild(doc.getRoot().listNodes()[0]!);
-    const bytes = await new NodeIO().writeBinary(doc);
+    document_.createNode('node').setMesh(document_.getRoot().listMeshes()[0]!);
+    document_.createScene('scene').addChild(document_.getRoot().listNodes()[0]!);
+    const bytes = await new NodeIO().writeBinary(document_);
 
     const { service } = makeService(Buffer.from(bytes));
     const out = await service.convert({ to: 'gltf' });
@@ -424,34 +424,34 @@ describe('ModelService read-body and mime fallbacks', () => {
 
   it('reports unnamed animations and skins as unnamed', async () => {
     const { Document, NodeIO } = await import('@gltf-transform/core');
-    const doc = new Document();
-    const buffer = doc.createBuffer();
-    const positionAccessor = doc.createAccessor('positions')
+    const document_ = new Document();
+    const buffer = document_.createBuffer();
+    const positionAccessor = document_.createAccessor('positions')
       .setType('VEC3')
       .setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]))
       .setBuffer(buffer);
-    const ibmAccessor = doc.createAccessor('ibm')
+    const ibmAccessor = document_.createAccessor('ibm')
       .setType('MAT4')
       .setArray(new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]))
       .setBuffer(buffer);
-    const times = doc.createAccessor('times').setType('SCALAR').setArray(new Float32Array([0, 1])).setBuffer(buffer);
-    const translations = doc.createAccessor('translations')
+    const times = document_.createAccessor('times').setType('SCALAR').setArray(new Float32Array([0, 1])).setBuffer(buffer);
+    const translations = document_.createAccessor('translations')
       .setType('VEC3')
       .setArray(new Float32Array([0, 0, 0, 5, 0, 0]))
       .setBuffer(buffer);
-    const mesh = doc.createMesh().addPrimitive(doc.createPrimitive().setAttribute('POSITION', positionAccessor));
-    const jointNode = doc.createNode();
-    const skinnedNode = doc.createNode().setMesh(mesh);
-    const skin = doc.createSkin().addJoint(jointNode).setInverseBindMatrices(ibmAccessor);
+    const mesh = document_.createMesh().addPrimitive(document_.createPrimitive().setAttribute('POSITION', positionAccessor));
+    const jointNode = document_.createNode();
+    const skinnedNode = document_.createNode().setMesh(mesh);
+    const skin = document_.createSkin().addJoint(jointNode).setInverseBindMatrices(ibmAccessor);
     skinnedNode.setSkin(skin);
-    const scene = doc.createScene();
+    const scene = document_.createScene();
     scene.addChild(skinnedNode).addChild(jointNode);
     // Unnamed animation and unnamed channel/sampler sources.
-    const sampler = doc.createAnimationSampler().setInput(times).setOutput(translations).setInterpolation('LINEAR');
-    const channel = doc.createAnimationChannel().setTargetNode(jointNode).setTargetPath('translation').setSampler(sampler);
-    doc.createAnimation().addChannel(channel).addSampler(sampler);
+    const sampler = document_.createAnimationSampler().setInput(times).setOutput(translations).setInterpolation('LINEAR');
+    const channel = document_.createAnimationChannel().setTargetNode(jointNode).setTargetPath('translation').setSampler(sampler);
+    document_.createAnimation().addChannel(channel).addSampler(sampler);
 
-    const bytes = await new NodeIO().writeBinary(doc);
+    const bytes = await new NodeIO().writeBinary(document_);
     const { service } = makeService(Buffer.from(bytes));
     const extract = await service.extract();
     expect(extract.animations).toEqual([expect.objectContaining({ name: 'unnamed' })]);
@@ -478,29 +478,29 @@ describe('ModelService optimize pipeline arms', () => {
 describe('ModelService deep scene graphs', () => {
   it('marks depth truncation at level 32 with childrenTruncated', async () => {
     const { Document, NodeIO } = await import('@gltf-transform/core');
-    const doc = new Document();
-    const buffer = doc.createBuffer();
+    const document_ = new Document();
+    const buffer = document_.createBuffer();
     const positions = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
-    const accessor = doc.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
-    const mesh = doc.createMesh('deep').addPrimitive(
-      doc.createPrimitive().setAttribute('POSITION', accessor),
+    const accessor = document_.createAccessor('positions').setType('VEC3').setArray(positions).setBuffer(buffer);
+    const mesh = document_.createMesh('deep').addPrimitive(
+      document_.createPrimitive().setAttribute('POSITION', accessor),
     );
-    let parent = doc.createNode('n0').setMesh(mesh);
-    const scene = doc.createScene('deep');
+    let parent = document_.createNode('n0').setMesh(mesh);
+    const scene = document_.createScene('deep');
     scene.addChild(parent);
     for (let index = 1; index < 40; index += 1) {
-      const child = doc.createNode(`n${index}`);
+      const child = document_.createNode(`n${index}`);
       parent.addChild(child);
       parent = child;
     }
-    const bytes = await new NodeIO().writeBinary(doc);
+    const bytes = await new NodeIO().writeBinary(document_);
 
     const { service } = makeService(Buffer.from(bytes));
     const extract = await service.extract();
     // descend into the chain until depth 33 (root is depth 1): the 33rd flag appears there
     // the scene root is depth 0; node n32 sits at depth 32 and carries the truncation marker
     let node = extract.scenes[0]?.nodes[0];
-    for (let depth = 0; depth < 32 && node !== undefined; depth += 1) {
+    for (let depth = 0; node !== undefined && depth < 32; depth += 1) {
       node = (node.children as Array<Record<string, unknown>> | undefined)?.[0] as typeof node;
     }
     expect(node?.childrenTruncated).toBe(1);

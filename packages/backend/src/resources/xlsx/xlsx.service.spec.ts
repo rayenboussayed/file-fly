@@ -18,7 +18,7 @@ const CONTENT_TYPES =
 
 const RELS =
   '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-  '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+  '<Relationship Id="rId1" Type="https://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
   '</Relationships>';
 
 const WORKBOOK =
@@ -94,6 +94,17 @@ const roundTrip = async (body: Parameters<XlsxService['build']>[0]) => {
   const service = serviceFor(Buffer.from('x'));
   const bytes = await service.build(body);
   return XLSX.read(bytes, { cellDates: true, cellNF: true, cellStyles: true });
+};
+
+const build = async (rows: BuildRows) => {
+  const workbook = await roundTrip({ sheets: [{ rows }] });
+  return XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+};
+
+const metaFor = async (rows: BuildRows) => {
+  const workbook = await roundTrip({ sheets: [{ rows }] });
+  const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
+  return serviceFor(bytes).metadata({ maxCells: 1000 });
 };
 
 describe('XlsxService.build', () => {
@@ -373,11 +384,6 @@ describe('XlsxService.build', () => {
 });
 
 describe('XlsxService.extract', () => {
-  const build = async (rows: BuildRows) => {
-    const workbook = await roundTrip({ sheets: [{ rows }] });
-    return XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
-  };
-
   it('extracts object rows with first row as header by default', async () => {
     const bytes = await build([{ a: 1, b: 'x' }]);
     const service = serviceFor(bytes);
@@ -419,12 +425,6 @@ describe('XlsxService.extract', () => {
 });
 
 describe('XlsxService.metadata', () => {
-  const metaFor = async (rows: BuildRows) => {
-    const workbook = await roundTrip({ sheets: [{ rows }] });
-    const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
-    return serviceFor(bytes).metadata({ maxCells: 1000 });
-  };
-
   it('reports dimensions, counts and the type census', async () => {
     const meta = await metaFor([
       ['a', 'b'],
@@ -492,7 +492,7 @@ describe('XlsxService.metadata advanced arms', () => {
         },
       ],
     });
-    workbook.Workbook = workbook.Workbook ?? {};
+    workbook.Workbook ??= {};
     workbook.Workbook.Names = [{ Name: 'MyName', Ref: 'People!$A$1' }];
     const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
     const meta = await serviceFor(bytes).metadata({ maxCells: 1000 });

@@ -1,4 +1,3 @@
- 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import request from 'supertest';

@@ -4,7 +4,7 @@ import { parseFrames } from './schema.js';
 
 describe('parseFrames', () => {
   it('deduplicates, sorts, and caps at 50', () => {
-    const raw = Array.from({ length: 60 }, (_, i) => i).join(',');
+    const raw = Array.from({ length: 60 }, (_, index) => index).join(',');
     const result = parseFrames(raw);
     expect(result).toHaveLength(50);
     expect(result[0]).toBe(0);

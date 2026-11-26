@@ -83,10 +83,10 @@ describe('buildPinoHttpOptions', () => {
 
   it('serializes requests without query string or headers', () => {
     const options = buildPinoHttpOptions({ isProduction: true });
-    const req = options.serializers?.['req'] as (
+    const request = options.serializers?.['req'] as (
       request: { headers: Record<string, string>; id: string; method: string; url?: string; },
     ) => Record<string, unknown>;
-    const serialized = req({
+    const serialized = request({
       headers: { authorization: 'Bearer secret', cookie: 'session=secret' },
       id: 'req-1',
       method: 'POST',
@@ -97,10 +97,10 @@ describe('buildPinoHttpOptions', () => {
 
   it('serializes responses with only the status code', () => {
     const options = buildPinoHttpOptions({ isProduction: true });
-    const res = options.serializers?.['res'] as (
+    const responseSerializer = options.serializers?.['res'] as (
       response: { headers: Record<string, string>; statusCode: number; },
     ) => Record<string, unknown>;
-    expect(res({ headers: { 'set-cookie': 'x' }, statusCode: 201 })).toEqual({
+    expect(responseSerializer({ headers: { 'set-cookie': 'x' }, statusCode: 201 })).toEqual({
       statusCode: 201,
     });
   });

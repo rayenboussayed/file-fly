@@ -7,7 +7,9 @@ import { TopNav, TopNavHeading } from '@astryxdesign/core/TopNav';
 import { VStack } from '@astryxdesign/core/VStack';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 
-/** Router context: the React Query client (shared fetch cache for the app). */
+/**
+Router context: the React Query client (shared fetch cache for the app).
+ */
 export interface RouterContext {
   queryClient: QueryClient;
 }

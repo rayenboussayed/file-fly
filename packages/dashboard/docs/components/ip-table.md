@@ -1,6 +1,6 @@
 <a name="IpTable"></a>
 
-## IpTable(props) ⇒ <code>import(&quot;react&quot;).JSX.Element</code>
+## IpTable(properties) ⇒ <code>import(&quot;react&quot;).JSX.Element</code>
 Renders the sortable per-IP traffic table.
 
 **Kind**: global function  
@@ -8,6 +8,6 @@ Renders the sortable per-IP traffic table.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| props | <code>IpTableProps</code> | Rows and sort plugin for the table. |
+| properties | <code>IpTableProperties</code> | Rows and sort plugin for the table. |
 
-src: packages/dashboard/src/components/IpTable.tsx:22  
+src: packages/dashboard/src/components/ip-table.tsx:24  

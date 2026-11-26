@@ -20,7 +20,7 @@
 1x1 white PNG, decodes with the production preprocess pipeline.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/image/image.service.spec.ts:10  
+src: packages/backend/src/resources/image/image.service.spec.ts:12  
 <a name="makeService"></a>
 
 ## makeService(signature, source, isImage) ⇒ <code>{ recognizeCalls: [Buffer&lt;ArrayBufferLike&gt;, string[]][]; service: ImageService; workerService: { createWorker: import(&quot;vitest&quot;).Mock&lt;() &#x3D;&gt; Promise&lt;Readable&gt;&gt;; }; }</code>
@@ -35,4 +35,4 @@ Builds an ImageService with stubbed dependencies.
 | source | <code>() &#x3D;&gt; Readable</code> |  | Factory opening a fresh input stream per call. |
 | isImage | <code>boolean</code> | <code>true</code> | Whether the stubbed file-type check passes. |
 
-src: packages/backend/src/resources/image/image.service.spec.ts:30  
+src: packages/backend/src/resources/image/image.service.spec.ts:32  

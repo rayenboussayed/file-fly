@@ -4,13 +4,19 @@ import type { FastifyInstance, FastifyReply, FastifyRequest, onRequestHookHandle
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 
+import { headerValue } from '@/utils/http.js';
+
 import { HEADER_X_AUTH_PASSWORD, HEADER_X_AUTH_USERNAME } from './constants/header.js';
 import { environment } from './environment.js';
 
-/** Logger for the basic-auth perimeter; one boot line, never per-request. */
+/**
+Logger for the basic-auth perimeter; one boot line, never per-request.
+ */
 const logger = new Logger('BasicAuth');
 
-/** Realm reported in the challenge emitted by the package's guard. */
+/**
+Realm reported in the challenge emitted by the package's guard.
+ */
 const REALM = 'file-fly';
 
 /**
@@ -21,30 +27,16 @@ const REALM = 'file-fly';
  */
 const STANDARD_HEADER_DISABLED = '';
 
-// The package appends AUTH_NAME/AUTH_PASS from the host environment to explicit
-// credentials and uses AUTH_REALM for its challenge. Removing those keys keeps
-// the repo's pair authoritative even when the perimeter is disabled.
-delete process.env.AUTH_NAME;
-delete process.env.AUTH_PASS;
-delete process.env.AUTH_REALM;
-
-/** Credentials narrowed to required strings once the both-or-neither rule passes. */
+/**
+Credentials narrowed to required strings once the both-or-neither rule passes.
+ */
 const AUTH_CREDENTIALS = (() => {
   const name = environment.AUTH_USERNAME;
   const pass = environment.AUTH_PASSWORD;
-  return resolveBasicAuthEnabled(name, pass)
+  return isBasicAuthPairComplete(name, pass)
     ? { name: String(name), pass: String(pass) }
     : undefined;
 })();
-
-/**
- * Whether the perimeter is active. The environment schema enforces both-or-neither
- * at boot, so a configured pair is always complete.
- * @returns True when `AUTH_USERNAME` and `AUTH_PASSWORD` are both set.
- */
-export function basicAuthEnabled(): boolean {
-  return AUTH_CREDENTIALS !== undefined;
-}
 
 /**
  * Whether the request targets the liveness probe. `/health` (with or without a
@@ -69,6 +61,7 @@ export function isHealthPath(url: string | undefined): boolean {
  * @param instance - The Fastify instance to decorate, passed by the bootstrap.
  */
 export async function registerBasicAuth(instance: FastifyInstance): Promise<void> {
+  scrubHostAuthEnvironment();
   if (AUTH_CREDENTIALS === undefined) {
     logger.warn('AUTH_USERNAME/AUTH_PASSWORD are not set; basic auth is disabled');
     return;
@@ -79,43 +72,22 @@ export async function registerBasicAuth(instance: FastifyInstance): Promise<void
       next();
       return;
     }
-    const missingPair = !hasCredentialPair(request);
+    const isMissingPair = !hasCredentialPair(request);
     const context = new ExecutionContextHost([request, reply], Object, Object);
     try {
       if (!guard.canActivate(context)) {
-        rejectRequest(reply, missingPair);
+        rejectRequest(reply, isMissingPair);
         return;
       }
     } catch (error) {
       if (!(error instanceof UnauthorizedException)) throw error;
-      rejectRequest(reply, missingPair);
+      rejectRequest(reply, isMissingPair);
       return;
     }
     next();
   };
   instance.addHook('onRequest', perimeter);
   logger.log('Basic auth perimeter enabled for all routes except /health');
-}
-
-/**
- * Pure decision for the both-or-neither rule.
- * @param username - The configured `AUTH_USERNAME`, if any.
- * @param password - The configured `AUTH_PASSWORD`, if any.
- * @returns True when both are non-empty; false when both are absent; throws otherwise.
- * @throws Error Exactly one of the two credentials is set.
- */
-export function resolveBasicAuthEnabled(
-  username: string | undefined,
-  password: string | undefined,
-): boolean {
-  const hasUser = username !== undefined && username.trim().length > 0;
-  const hasPassword = password !== undefined && password.trim().length > 0;
-  if (hasUser !== hasPassword) {
-    throw new Error(
-      'AUTH_USERNAME and AUTH_PASSWORD must be set together (basic auth is enabled only when both are set)',
-    );
-  }
-  return hasUser;
 }
 
 /**
@@ -145,14 +117,44 @@ async function createGuard(credentials: { name: string; pass: string }) {
  * @returns True when both header values are non-empty strings.
  */
 function hasCredentialPair(request: FastifyRequest): boolean {
-  const usernameValue = request.headers[HEADER_X_AUTH_USERNAME];
-  const passwordValue = request.headers[HEADER_X_AUTH_PASSWORD];
+  const usernameValue = headerValue(request.headers, HEADER_X_AUTH_USERNAME);
+  const passwordValue = headerValue(request.headers, HEADER_X_AUTH_PASSWORD);
   const username = readHeader(usernameValue);
   const password = readHeader(passwordValue);
   return (
     username !== undefined && username.length > 0 &&
     password !== undefined && password.length > 0
   );
+}
+
+/**
+ * Whether the perimeter is active. The environment schema enforces both-or-neither
+ * at boot, so a configured pair is always complete.
+ * @returns True when `AUTH_USERNAME` and `AUTH_PASSWORD` are both set.
+ */
+function isBasicAuthEnabled(): boolean {
+  return AUTH_CREDENTIALS !== undefined;
+}
+
+/**
+ * Pure decision for the both-or-neither rule.
+ * @param username - The configured `AUTH_USERNAME`, if any.
+ * @param password - The configured `AUTH_PASSWORD`, if any.
+ * @returns True when both are non-empty; false when both are absent; throws otherwise.
+ * @throws Error Exactly one of the two credentials is set.
+ */
+function isBasicAuthPairComplete(
+  username: string | undefined,
+  password: string | undefined,
+): boolean {
+  const hasUser = username !== undefined && username.trim().length > 0;
+  const hasPassword = password !== undefined && password.trim().length > 0;
+  if (hasUser !== hasPassword) {
+    throw new Error(
+      'AUTH_USERNAME and AUTH_PASSWORD must be set together (basic auth is enabled only when both are set)',
+    );
+  }
+  return hasUser;
 }
 
 /**
@@ -168,16 +170,30 @@ function readHeader(value: string | string[] | undefined): string | undefined {
 /**
  * Sends a 401 with the challenge set by the guard and the repo's existing body.
  * @param reply - The Fastify reply to complete.
- * @param missingPair - Whether the request had no complete x-auth pair.
+ * @param isMissingPair - Whether the request had no complete x-auth pair.
  * @returns The sent reply.
  */
-function rejectRequest(reply: FastifyReply, missingPair: boolean): FastifyReply {
+function rejectRequest(reply: FastifyReply, isMissingPair: boolean): FastifyReply {
   const challenge = reply.getHeader('www-authenticate');
   if (challenge !== undefined) {
     reply.header('www-authenticate', challenge);
   }
-  const body = missingPair
+  const body = isMissingPair
     ? { message: 'Missing or bad formatted authorization header', statusCode: 401 }
     : { error: 'Unauthorized', message: 'Invalid credentials', statusCode: 401 };
   return reply.code(401).send(body);
 }
+
+/**
+ * Removes the host keys the package would append to explicit credentials and use
+ * for its challenge. Pulled out of the module scope so importing this module has no
+ * global side effects; it runs before the package is dynamically imported.
+ */
+function scrubHostAuthEnvironment() {
+  delete process.env.AUTH_NAME;
+  delete process.env.AUTH_PASS;
+  delete process.env.AUTH_REALM;
+}
+
+export { isBasicAuthEnabled as basicAuthEnabled };
+export { isBasicAuthPairComplete as resolveBasicAuthEnabled };

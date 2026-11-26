@@ -69,7 +69,7 @@ self-destructs past the cap for unsized uploads and chunked downloads.</p>
 Headers safe to forward to the remote origin; everything else is dropped.
 
 **Kind**: global constant  
-src: packages/backend/src/utils/open-source.ts:12  
+src: packages/backend/src/utils/open-source.ts:14  
 dist: packages/backend/dist/utils/open-source.js:7
 <a name="REFUSED_HOSTNAMES"></a>
 
@@ -77,7 +77,7 @@ dist: packages/backend/dist/utils/open-source.js:7
 Hostnames always refused, regardless of EGRESS_ALLOWLIST.
 
 **Kind**: global constant  
-src: packages/backend/src/utils/open-source.ts:15  
+src: packages/backend/src/utils/open-source.ts:19  
 dist: packages/backend/dist/utils/open-source.js:8
 <a name="EGRESS_ALLOWLIST"></a>
 
@@ -85,7 +85,7 @@ dist: packages/backend/dist/utils/open-source.js:8
 Hostnames from EGRESS_ALLOWLIST, lowercased; empty = allowlist inactive.
 
 **Kind**: global constant  
-src: packages/backend/src/utils/open-source.ts:94  
+src: packages/backend/src/utils/open-source.ts:100  
 dist: packages/backend/dist/utils/open-source.js:48
 <a name="ipv4Octets"></a>
 
@@ -99,7 +99,7 @@ Parses a bare IPv4 literal into its octets, or undefined for anything else.
 | --- | --- | --- |
 | host | <code>string</code> | Lowercased bare host (no brackets). |
 
-src: packages/backend/src/utils/open-source.ts:22  
+src: packages/backend/src/utils/open-source.ts:26  
 dist: packages/backend/dist/utils/open-source.js:9
 <a name="isPrivateIpv4"></a>
 
@@ -113,7 +113,7 @@ Whether an IPv4 literal sits in a loopback, private, link-local or CGNAT range.
 | --- | --- | --- |
 | octets | <code>[number, number, number, number]</code> | The four octets of the literal. |
 
-src: packages/backend/src/utils/open-source.ts:34  
+src: packages/backend/src/utils/open-source.ts:38  
 dist: packages/backend/dist/utils/open-source.js:16
 <a name="octetsFromHextets"></a>
 
@@ -128,7 +128,7 @@ Turns two hextets holding an embedded IPv4 address into octets.
 | highHex | <code>string</code> | The high 16 bits in hexadecimal. |
 | lowHex | <code>string</code> | The low 16 bits in hexadecimal. |
 
-src: packages/backend/src/utils/open-source.ts:54  
+src: packages/backend/src/utils/open-source.ts:58  
 dist: packages/backend/dist/utils/open-source.js:27
 <a name="ipv4EmbeddedOctets"></a>
 
@@ -145,7 +145,7 @@ embeds the address in the first two hextets after the prefix).
 | --- | --- | --- |
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
-src: packages/backend/src/utils/open-source.ts:72  
+src: packages/backend/src/utils/open-source.ts:76  
 dist: packages/backend/dist/utils/open-source.js:34
 <a name="isPrivateIpv6"></a>
 
@@ -160,7 +160,7 @@ or embeds a private IPv4 address in a recognized IPv4-embedding prefix.
 | --- | --- | --- |
 | host | <code>string</code> | Lowercased bare host without brackets. |
 
-src: packages/backend/src/utils/open-source.ts:85  
+src: packages/backend/src/utils/open-source.ts:89  
 dist: packages/backend/dist/utils/open-source.js:41
 <a name="assertEgressAllowed"></a>
 
@@ -183,7 +183,7 @@ such deployments.
 | --- | --- | --- |
 | url | <code>URL</code> | The parsed source URL. |
 
-src: packages/backend/src/utils/open-source.ts:109  
+src: packages/backend/src/utils/open-source.ts:114  
 dist: packages/backend/dist/utils/open-source.js:49
 <a name="openMediaSource"></a>
 
@@ -216,5 +216,5 @@ self-destructs past the cap for unsized uploads and chunked downloads.
 | --- | --- | --- |
 | cls | <code>NormalizedClsService</code> | The normalized CLS service carrying the current request context. |
 
-src: packages/backend/src/utils/open-source.ts:172  
+src: packages/backend/src/utils/open-source.ts:177  
 dist: packages/backend/dist/utils/open-source.js:81

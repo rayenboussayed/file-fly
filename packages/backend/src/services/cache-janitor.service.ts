@@ -21,10 +21,30 @@ interface Entry {
   size: number;
 }
 
-/** Sidecars such as `-wal` and `-shm` share the store's file name as a prefix. */
+/**
+Sidecars such as `-wal` and `-shm` share the store's file name as a prefix.
+ */
 const UNDICI_CACHE_PREFIX = UNDICI_CACHE_FILE;
 
-/** Continuous cache maintenance: TTL, size cap (least-recently-used first), orphan cleanup. */
+/**
+ * Removes one cache entry, reporting failures without aborting the sweep.
+ * @param file - Absolute path of the entry to remove.
+ * @param logger - Logger used to report a failed removal.
+ * @returns True when the entry was removed (or already absent).
+ */
+const isCacheEntryRemoved = async (file: string, logger: Logger): Promise<boolean> => {
+  try {
+    await fs.promises.rm(file, { force: true });
+    return true;
+  } catch (error) {
+    logger.warn(`cannot remove ${file}: ${String(error)}`);
+    return false;
+  }
+};
+
+/**
+Continuous cache maintenance: TTL, size cap (least-recently-used first), orphan cleanup.
+ */
 @Injectable()
 export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
   private readonly logger = new Logger(CacheJanitorService.name);
@@ -39,15 +59,15 @@ export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
     await fs.promises.mkdir(CACHE_DIR, { recursive: true });
     try {
       await this.sweep();
-    } catch (e) {
-      this.logger.error(e);
+    } catch (error) {
+      this.logger.error(error);
     }
     this.timer = setInterval(() => {
       void (async () => {
         try {
           await this.sweep();
-        } catch (e) {
-          this.logger.error(e);
+        } catch (error) {
+          this.logger.error(error);
         }
       })();
     }, CACHE_SWEEP_INTERVAL_MS);
@@ -64,7 +84,8 @@ export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
       const now = Date.now();
       const live: Entry[] = [];
 
-      const names = (await fs.promises.readdir(CACHE_DIR)).filter(
+      const entries = await fs.promises.readdir(CACHE_DIR);
+      const names = entries.filter(
         (name) => !name.startsWith(UNDICI_CACHE_PREFIX),
       );
       for (const name of names) {
@@ -78,30 +99,20 @@ export class CacheJanitorService implements OnModuleDestroy, OnModuleInit {
           ? CACHE_TMP_MAX_AGE_MS
           : ttlMs;
         if (age > limit) {
-          await this.remove(file);
+          await isCacheEntryRemoved(file, this.logger);
         } else if (!name.endsWith('.tmp')) {
           live.push({ file, mtimeMs: stat.mtimeMs, size: stat.size });
         }
       }
 
-      let total = live.reduce((sum, e) => sum + e.size, 0);
+      let total = live.reduce((sum, item) => sum + item.size, 0);
       live.sort((a, b) => a.mtimeMs - b.mtimeMs);
       for (const entry of live) {
         if (total <= maxBytes) break;
-        if (await this.remove(entry.file)) total -= entry.size;
+        if (await isCacheEntryRemoved(entry.file, this.logger)) total -= entry.size;
       }
     } finally {
       this.sweeping = false;
-    }
-  }
-
-  private async remove(file: string) {
-    try {
-      await fs.promises.rm(file, { force: true });
-      return true;
-    } catch (error) {
-      this.logger.warn(`cannot remove ${file}: ${String(error)}`);
-      return false;
     }
   }
 }

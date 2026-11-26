@@ -1,16 +1,28 @@
+## Members
+
+<dl>
+<dt><a href="#VideoService">VideoService</a></dt>
+<dd><p>Video feature service: streams uploads through workers for processing, metadata, DNA fingerprinting, stats and screenshots.</p>
+</dd>
+</dl>
+
+## Functions
+
+<dl>
+<dt><a href="#requireInputFormat">requireInputFormat(cls)</a> ⇒ <code>string</code></dt>
+<dd><p>Resolves the upload&#39;s detected signature to an FFmpeg demuxer format,
+throwing the route&#39;s 415 when the signature is missing or unsupported.</p>
+</dd>
+</dl>
+
 <a name="VideoService"></a>
 
 ## VideoService
 Video feature service: streams uploads through workers for processing, metadata, DNA fingerprinting, stats and screenshots.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/video/video.service.ts:19  
-dist: packages/backend/dist/resources/video/video.service.js:18
-
-* [VideoService](#VideoService)
-    * [.audio(options)](#VideoService+audio) ⇒ <code>Promise&lt;Readable&gt;</code>
-    * [.requireInputFormat()](#VideoService+requireInputFormat) ⇒ <code>string</code>
-
+src: packages/backend/src/resources/video/video.service.ts:34  
+dist: packages/backend/dist/resources/video/video.service.js:24
 <a name="VideoService+audio"></a>
 
 ### videoService.audio(options) ⇒ <code>Promise&lt;Readable&gt;</code>
@@ -28,19 +40,24 @@ Extracts the audio stream from a video upload.
 | options | <code>{ payload: VideoAudioType; }</code> | Audio extraction options. |
 | options.payload |  | Validated query options for the audio route. |
 
-src: packages/backend/src/resources/video/video.service.ts:33  
-dist: packages/backend/dist/resources/video/video.service.js:27
-<a name="VideoService+requireInputFormat"></a>
+src: packages/backend/src/resources/video/video.service.ts:48  
+dist: packages/backend/dist/resources/video/video.service.js:33
+<a name="requireInputFormat"></a>
 
-### videoService.requireInputFormat() ⇒ <code>string</code>
+## requireInputFormat(cls) ⇒ <code>string</code>
 Resolves the upload's detected signature to an FFmpeg demuxer format,
 throwing the route's 415 when the signature is missing or unsupported.
 
-**Kind**: instance method of [<code>VideoService</code>](#VideoService)  
+**Kind**: global function  
 **Returns**: <code>string</code> - The resolved demuxer format name.  
 **Throws**:
 
 - <code>UnsupportedMediaTypeException</code> When the signature has no demuxer mapping.
 
-src: packages/backend/src/resources/video/video.service.ts:113  
-dist: packages/backend/dist/resources/video/video.service.js:91
+
+| Param | Type | Description |
+| --- | --- | --- |
+| cls | <code>NormalizedClsService</code> | Normalized request context carrying the file signature. |
+
+src: packages/backend/src/resources/video/video.service.ts:24  
+dist: packages/backend/dist/resources/video/video.service.js:18

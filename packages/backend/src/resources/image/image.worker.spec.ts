@@ -1,6 +1,6 @@
 import { Readable, Writable } from 'node:stream';
 import sharp from 'sharp';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // The worker module runs startImageWorker() at import time; with no operation
 // in workerData the dispatch is a deterministic no-op. Tests below call
@@ -10,23 +10,22 @@ vi.mock('node:worker_threads', () => ({ workerData: {} }));
 import { runImageWorker } from './worker/index.js';
 
 /**
- * A tiny synthetic JPEG (64x48, blue with a white 16x16 square): large enough
- * for every sharp operation in the worker, small enough to keep the suite fast
- * and deterministic.
+ * Creates a tiny synthetic JPEG (64x48, blue with a white 16x16 square): large
+ * enough for every sharp operation in the worker, small enough to keep the
+ * suite fast and deterministic.
+ * @returns The encoded JPEG bytes.
  */
-let tinyJpeg: Buffer;
-
-beforeAll(async () => {
+const createTinyJpeg = async (): Promise<Buffer> => {
   const square = await sharp({
     create: { background: { b: 255, g: 255, r: 255 }, channels: 3, height: 16, width: 16 },
   }).jpeg().toBuffer();
-  tinyJpeg = await sharp({
+  return sharp({
     create: { background: { b: 200, g: 120, r: 20 }, channels: 3, height: 48, width: 64 },
   })
     .composite([{ input: square, left: 8, top: 8 }])
     .jpeg()
     .toBuffer();
-});
+};
 
 /**
  * A capturing stdout Writable: `writes` accumulates chunks, `finished` resolves on `end`.
@@ -53,7 +52,7 @@ const capturingStdout = () => {
  * @returns The captured stdout chunks.
  */
 const run = async (data: Record<string, unknown>) => {
-  Object.defineProperty(process, 'stdin', { value: Readable.from(tinyJpeg), writable: true });
+  Object.defineProperty(process, 'stdin', { value: Readable.from(await createTinyJpeg()), writable: true });
   const cap = capturingStdout();
   Object.defineProperty(process, 'stdout', { value: cap.stdout, writable: true });
   await runImageWorker(data as never);

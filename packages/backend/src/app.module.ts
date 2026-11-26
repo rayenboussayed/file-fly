@@ -28,10 +28,14 @@ import { CacheJanitorService } from './services/cache-janitor.service.js';
 import { WorkerService } from './services/worker.service.js';
 import { SharedServicesModule } from './shared-services.module.js';
 
-/** Flushes pending spans and host metrics when Nest closes on SIGTERM; a no-op when telemetry is disabled. */
+/**
+Flushes pending spans and host metrics when Nest closes on SIGTERM; a no-op when telemetry is disabled.
+ */
 @Injectable()
 class OtelShutdownService implements OnApplicationShutdown {
-  /** @returns Settles once the OpenTelemetry SDK has flushed and released resources. */
+  /**
+  @returns Settles once the OpenTelemetry SDK has flushed and released resources.
+   */
   async onApplicationShutdown(): Promise<void> {
     if (otelTracingEnabled && otelSDK) {
       await otelSDK.shutdown();
@@ -39,7 +43,9 @@ class OtelShutdownService implements OnApplicationShutdown {
   }
 }
 
-/** Root module: imports every feature module, global metrics/logging and the static dashboard. */
+/**
+Root module: imports every feature module, global metrics/logging and the static dashboard.
+ */
 @Module({
   controllers: [AppController],
   imports: [

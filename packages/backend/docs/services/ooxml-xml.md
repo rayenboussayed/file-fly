@@ -11,9 +11,6 @@ kept, tag values are not coerced.</p>
 must not collide (presentation.xml&#39;s sldId list). Attribute keys keep their
 full names (<code>@_r:id</code>, <code>@_id</code>).</p>
 </dd>
-<dt><a href="#attr">attr</a> ⇒ <code>string</code></dt>
-<dd><p>Reads an attribute (namespace prefixes are stripped before parse).</p>
-</dd>
 <dt><a href="#walkXml">walkXml</a></dt>
 <dd><p>Depth-first walk of a parsed XML tree; visits every key/value pair.</p>
 </dd>
@@ -34,6 +31,9 @@ full names (<code>@_r:id</code>, <code>@_id</code>).</p>
 ## Functions
 
 <dl>
+<dt><a href="#attributeOf">attributeOf(value, name)</a> ⇒ <code>string</code></dt>
+<dd><p>Reads an attribute (namespace prefixes are stripped before parse).</p>
+</dd>
 <dt><a href="#textValue">textValue(value)</a> ⇒ <code>string</code></dt>
 <dd><p>A &lt;w:t&gt;/&lt;a:t&gt; node may be a plain string or { &#39;#text&#39;: string } when attributes are kept.</p>
 </dd>
@@ -59,21 +59,6 @@ full names (`@_r:id`, `@_id`).
 **Kind**: global constant  
 src: packages/backend/src/services/ooxml-xml.ts:21  
 dist: packages/backend/dist/services/ooxml-xml.js:9
-<a name="attr"></a>
-
-## attr ⇒ <code>string</code>
-Reads an attribute (namespace prefixes are stripped before parse).
-
-**Kind**: global constant  
-**Returns**: <code>string</code> - The attribute string, or ''.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| value | <code>unknown</code> | The parsed element (or attribute holder). |
-| name | <code>string</code> | The attribute name without its `@_` prefix. |
-
-src: packages/backend/src/services/ooxml-xml.ts:35  
-dist: packages/backend/dist/services/ooxml-xml.js:16
 <a name="walkXml"></a>
 
 ## walkXml
@@ -86,8 +71,8 @@ Depth-first walk of a parsed XML tree; visits every key/value pair.
 | node | <code>unknown</code> | The parsed XML node (or subtree). |
 | visit | <code>(key: string, value: unknown) &#x3D;&gt; void</code> | Callback per key/value pair; may throw to abort the walk. |
 
-src: packages/backend/src/services/ooxml-xml.ts:48  
-dist: packages/backend/dist/services/ooxml-xml.js:24
+src: packages/backend/src/services/ooxml-xml.ts:50  
+dist: packages/backend/dist/services/ooxml-xml.js:25
 <a name="collectByKey"></a>
 
 ## collectByKey ⇒ <code>unknown[]</code>
@@ -101,8 +86,8 @@ Every element under a given key, anywhere in the tree.
 | node | <code>unknown</code> | The parsed XML node (or subtree). |
 | key | <code>string</code> | The local (namespace-stripped) element name, e.g. `p`, `tbl`, `tr`. |
 
-src: packages/backend/src/services/ooxml-xml.ts:67  
-dist: packages/backend/dist/services/ooxml-xml.js:39
+src: packages/backend/src/services/ooxml-xml.ts:69  
+dist: packages/backend/dist/services/ooxml-xml.js:40
 <a name="collectByLocalName"></a>
 
 ## collectByLocalName ⇒ <code>unknown[]</code>
@@ -116,8 +101,8 @@ Every element under a given local name, ignoring namespace prefixes (any alias).
 | node | <code>unknown</code> | The parsed XML node (or subtree), with prefixes preserved. |
 | localName | <code>string</code> | The element's local name without its prefix. |
 
-src: packages/backend/src/services/ooxml-xml.ts:82  
-dist: packages/backend/dist/services/ooxml-xml.js:49
+src: packages/backend/src/services/ooxml-xml.ts:85  
+dist: packages/backend/dist/services/ooxml-xml.js:51
 <a name="textOf"></a>
 
 ## textOf ⇒ <code>string</code>
@@ -130,8 +115,8 @@ Concatenated text of every <w:t>/<a:t> under a node (attributes ignored).
 | --- | --- | --- |
 | node | <code>unknown</code> | The parsed XML node (or subtree). |
 
-src: packages/backend/src/services/ooxml-xml.ts:111  
-dist: packages/backend/dist/services/ooxml-xml.js:69
+src: packages/backend/src/services/ooxml-xml.ts:115  
+dist: packages/backend/dist/services/ooxml-xml.js:72
 <a name="collectRelationships"></a>
 
 ## collectRelationships ⇒ <code>Map&lt;string, RelationshipInfo&gt;</code>
@@ -144,8 +129,23 @@ Maps r:id to its target for a .rels part.
 | --- | --- | --- |
 | relsXml | <code>string</code> | The raw rels XML, or undefined. |
 
-src: packages/backend/src/services/ooxml-xml.ts:134  
-dist: packages/backend/dist/services/ooxml-xml.js:80
+src: packages/backend/src/services/ooxml-xml.ts:144  
+dist: packages/backend/dist/services/ooxml-xml.js:83
+<a name="attributeOf"></a>
+
+## attributeOf(value, name) ⇒ <code>string</code>
+Reads an attribute (namespace prefixes are stripped before parse).
+
+**Kind**: global function  
+**Returns**: <code>string</code> - The attribute string, or ''.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| value | <code>unknown</code> | The parsed element (or attribute holder). |
+| name | <code>string</code> | The attribute name without its `@_` prefix. |
+
+src: packages/backend/src/services/ooxml-xml.ts:35  
+dist: packages/backend/dist/services/ooxml-xml.js:16
 <a name="textValue"></a>
 
 ## textValue(value) ⇒ <code>string</code>
@@ -158,5 +158,5 @@ A <w:t>/<a:t> node may be a plain string or { '#text': string } when attributes 
 | --- | --- | --- |
 | value | <code>unknown</code> | The text node value. |
 
-src: packages/backend/src/services/ooxml-xml.ts:97  
-dist: packages/backend/dist/services/ooxml-xml.js:59
+src: packages/backend/src/services/ooxml-xml.ts:101  
+dist: packages/backend/dist/services/ooxml-xml.js:62

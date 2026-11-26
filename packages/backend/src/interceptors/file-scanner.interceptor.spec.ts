@@ -89,8 +89,8 @@ describe('FileScannerInterceptor', () => {
     await interceptor.intercept(undefined as never, { handle } as never);
     expect(handle).toHaveBeenCalledOnce();
     expect(antiVirusMock.scan).toHaveBeenCalledOnce();
-    const [arg] = antiVirusMock.scan.mock.calls[0] as [{ stream: unknown }];
-    expect(arg.stream).toBeInstanceOf(Readable);
+    const [argument] = antiVirusMock.scan.mock.calls[0] as [{ stream: unknown }];
+    expect(argument.stream).toBeInstanceOf(Readable);
   });
 
    

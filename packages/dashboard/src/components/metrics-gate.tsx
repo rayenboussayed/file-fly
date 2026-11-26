@@ -4,16 +4,16 @@ import { Card } from '@astryxdesign/core/Card';
 import { Text } from '@astryxdesign/core/Text';
 
 import { useMetricsQuery } from '../lib/metrics-query.js';
-import { MetricsErrorState } from './MetricsErrorState.js';
+import { MetricsErrorState } from './metrics-error-state.js';
 
 type MetricsQueryResult = ReturnType<typeof useMetricsQuery>;
 
 /**
  * Shared loading/error gate for the metrics pages.
  * @param query - The metrics query result.
- * @returns The gate element, or null when data is available.
+ * @returns The gate element, or undefined when data is available.
  */
-export function metricsGate(query: MetricsQueryResult): null | ReactElement {
+export function metricsGate(query: MetricsQueryResult): ReactElement | undefined {
   if (query.isError) {
     return (
       <MetricsErrorState error={query.error} onRefetch={() => { void query.refetch(); }} />
@@ -26,5 +26,5 @@ export function metricsGate(query: MetricsQueryResult): null | ReactElement {
       </Card>
     );
   }
-  return null;
+  return undefined;
 }

@@ -5,7 +5,9 @@ import { guardSignature } from '@/utils/signature-guard.js';
 
 import { FileTypeService } from '../../services/file-type.service.js';
 
-/** Rejects /video requests whose probed signature is not a video mime (runs after the signature scan). */
+/**
+Rejects /video requests whose probed signature is not a video mime (runs after the signature scan).
+ */
 @Injectable()
 export class VideoSignatureInterceptor implements NestInterceptor {
   constructor(

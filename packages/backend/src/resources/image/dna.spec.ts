@@ -12,6 +12,16 @@ const JPEG_PATH = 'assets/images/image-9.jpg';
 const JPEG_SIGNATURE = { ext: '.jpg', mime: 'image/jpeg' };
 
 /**
+ * Yields 21 one-MiB chunks to exceed the 20 MiB cap.
+ * @yields A 1 MiB zero-filled chunk.
+ */
+function* chunks(): Generator<Buffer> {
+  for (let index = 0; index < 21; index += 1) {
+    yield Buffer.alloc(1024 * 1024);
+  }
+}
+
+/**
  * Opens a fresh readable stream over the JPEG fixture.
  * @returns A readable stream of the fixture bytes.
  */
@@ -72,22 +82,15 @@ describe('ImageService.dna', () => {
   it('stays close under JPEG quality-50 recompression', async () => {
     const original = fs.readFileSync(JPEG_PATH);
     const recompressed = await sharp(original).jpeg({ quality: 50 }).toBuffer();
-    const hashA = (await makeService(JPEG_SIGNATURE, () => Readable.from([original])).dna()).hash;
-    const hashB = (await makeService(JPEG_SIGNATURE, () => Readable.from([recompressed])).dna()).hash;
+    const originalDna = await makeService(JPEG_SIGNATURE, () => Readable.from([original])).dna();
+    const recompressedDna = await makeService(JPEG_SIGNATURE, () => Readable.from([recompressed])).dna();
+    const hashA = originalDna.hash;
+    const hashB = recompressedDna.hash;
     const pdq = await loadPdq();
     expect(pdq.hammingDistance(pdq.fromHex(hashA), pdq.fromHex(hashB))).toBeLessThanOrEqual(31);
   });
 
   it('rejects oversize input before decoding', async () => {
-    /**
-     * Yields 21 one-MiB chunks to exceed the 20 MiB cap.
-     * @yields A 1 MiB zero-filled chunk.
-     */
-    function* chunks(): Generator<Buffer> {
-      for (let i = 0; i < 21; i += 1) {
-        yield Buffer.alloc(1024 * 1024);
-      }
-    }
     const service = makeService(JPEG_SIGNATURE, () => Readable.from(chunks()));
     await expect(service.dna()).rejects.toBeInstanceOf(PayloadTooLargeException);
   });

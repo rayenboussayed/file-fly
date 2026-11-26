@@ -105,13 +105,14 @@ export function toDemuxerFormat(
   signature: FileTypeResult | undefined,
 ): string | undefined {
   if (!signature) return undefined;
-  const ext = signature.ext?.toLowerCase();
-  if (ext) {
+  const extension = signature.ext?.toLowerCase();
+  if (extension) {
     // eslint-disable-next-line security/detect-object-injection
-    if (ext in EXT_TO_DEMUXER) return EXT_TO_DEMUXER[ext];
-    if (DEMUXER_FORMATS.has(ext)) return ext;
+    if (Object.hasOwn(EXT_TO_DEMUXER, extension)) return EXT_TO_DEMUXER[extension];
+    if (DEMUXER_FORMATS.has(extension)) return extension;
   }
   const mime = signature.mime?.toLowerCase();
+  if (mime === undefined) return undefined;
   // eslint-disable-next-line security/detect-object-injection
-  return mime in MIME_TO_DEMUXER ? MIME_TO_DEMUXER[mime] : undefined;
+  return Object.hasOwn(MIME_TO_DEMUXER, mime) ? MIME_TO_DEMUXER[mime] : undefined;
 }

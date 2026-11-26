@@ -1,6 +1,10 @@
-/* AUTO-GENERATED — DO NOT EDIT MANUALLY. */
+/*
+AUTO-GENERATED — DO NOT EDIT MANUALLY.
+*/
 
-/** FFmpeg demuxer format names, copied from node-av at generation time. */
+/**
+FFmpeg demuxer format names, copied from node-av at generation time.
+ */
 export const demuxerFormats = [
   '3dostr',
   '3g2',
@@ -324,7 +328,9 @@ export const demuxerFormats = [
   'yuv4mpegpipe',
 ] as const;
 
-/** The MuxerFormat union: the ffmpeg muxer format names (176 values, copied from node-av). */
+/**
+The MuxerFormat union: the ffmpeg muxer format names (176 values, copied from node-av).
+ */
 export type MuxerFormat =
   | '3g2'
   | '3gp'

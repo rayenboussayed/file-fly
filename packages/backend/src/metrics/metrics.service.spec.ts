@@ -7,13 +7,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { type MetricsRecord, MetricsService } from './metrics.service.js';
 
-const tempDirs: string[] = [];
+const temporaryDirectories: string[] = [];
 
 const makeService = (overrides: Record<string, unknown> = {}) => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-  tempDirs.push(dir);
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+  temporaryDirectories.push(directory);
   return new MetricsService({
-    dbPath: path.join(dir, 'metrics.db'),
+    dbPath: path.join(directory, 'metrics.db'),
     flushIntervalMs: 0,
     retentionDays: 35,
     ...overrides,
@@ -39,28 +39,28 @@ const record = (overrides: Partial<MetricsRecord> = {}): MetricsRecord => ({
 
 afterEach(() => {
   vi.useRealTimers();
-  while (tempDirs.length > 0) {
-    const dir = tempDirs.pop();
-    if (dir) fs.rmSync(dir, { force: true, recursive: true });
+  while (temporaryDirectories.length > 0) {
+    const removedDirectory = temporaryDirectories.pop();
+    if (removedDirectory) fs.rmSync(removedDirectory, { force: true, recursive: true });
   }
 });
 
 /**
  * Lists the hot-path indexes present in a metrics database.
- * @param dbPath - Path to the temporary test database.
+ * @param databasePath - Path to the temporary test database.
  * @returns The names of the indexes created by the service.
  */
-const indexNames = (dbPath: string): string[] => {
-  const db = new DatabaseSync(dbPath);
+const indexNames = (databasePath: string): string[] => {
+  const database = new DatabaseSync(databasePath);
   try {
     // node:sqlite types query results as unknown; the selected column is a name string.
     const backslash = String.fromCodePoint(92);
-    const rows = db
+    const rows = database
       .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE ? ESCAPE ?")
       .all(`idx${backslash}_%`, backslash) as Array<{ name: string }>;
     return rows.map((row) => row.name);
   } finally {
-    db.close();
+    database.close();
   }
 };
 
@@ -73,37 +73,37 @@ const HOT_INDEXES = [
 
 /**
  * Returns the plan detail lines for a statement against a temporary store.
- * @param dbPath - Path to the temporary test database.
+ * @param databasePath - Path to the temporary test database.
  * @param sql - Statement to explain.
  * @returns The plan detail lines, in SQLite's order.
  */
-const queryPlan = (dbPath: string, sql: string): string[] => {
-  const db = new DatabaseSync(dbPath);
+const queryPlan = (databasePath: string, sql: string): string[] => {
+  const database = new DatabaseSync(databasePath);
   try {
     // node:sqlite types query results as unknown; EXPLAIN returns detail strings.
     const statement = 'EXPLAIN QUERY PLAN ' + sql;
-    const rows = db.prepare(statement).all() as Array<{ detail: string }>;
+    const rows = database.prepare(statement).all() as Array<{ detail: string }>;
     return rows.map((row) => row.detail);
   } finally {
-    db.close();
+    database.close();
   }
 };
 
 describe('MetricsService open', () => {
   it('creates the hot-path indexes on a fresh store', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'metrics.db');
-    const service = new MetricsService({ dbPath, flushIntervalMs: 0, retentionDays: 35 });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'metrics.db');
+    const service = new MetricsService({ dbPath: databasePath, flushIntervalMs: 0, retentionDays: 35 });
     expect(service.snapshot().metricsDisabled).toBe(false);
-    expect(indexNames(dbPath)).toEqual(expect.arrayContaining(HOT_INDEXES));
+    expect(indexNames(databasePath)).toEqual(expect.arrayContaining(HOT_INDEXES));
   });
 
   it('adds the hot-path indexes to an existing version-1 database', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'metrics.db');
-    const old = new DatabaseSync(dbPath);
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'metrics.db');
+    const old = new DatabaseSync(databasePath);
     old.exec(`
       CREATE TABLE metric_counter (name TEXT NOT NULL, route TEXT NOT NULL, bucket TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, bytes INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (name, route, bucket)) STRICT;
       CREATE TABLE metric_counter_ip (name TEXT NOT NULL, ip TEXT NOT NULL, bucket TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, bytes INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (name, ip, bucket)) STRICT;
@@ -111,43 +111,43 @@ describe('MetricsService open', () => {
       PRAGMA user_version = 1;
     `);
     old.close();
-    expect(indexNames(dbPath)).toEqual([]);
+    expect(indexNames(databasePath)).toEqual([]);
 
-    const service = new MetricsService({ dbPath, flushIntervalMs: 0, retentionDays: 35 });
+    const service = new MetricsService({ dbPath: databasePath, flushIntervalMs: 0, retentionDays: 35 });
     expect(service.snapshot().metricsDisabled).toBe(false);
-    expect(indexNames(dbPath)).toEqual(expect.arrayContaining(HOT_INDEXES));
+    expect(indexNames(databasePath)).toEqual(expect.arrayContaining(HOT_INDEXES));
   });
 
   it('uses the new indexes for the retention sweep and the totals rollup', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'metrics.db');
-    const service = new MetricsService({ dbPath, flushIntervalMs: 0, retentionDays: 35 });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'metrics.db');
+    const service = new MetricsService({ dbPath: databasePath, flushIntervalMs: 0, retentionDays: 35 });
     expect(service.snapshot().metricsDisabled).toBe(false);
 
-    const sweepPlan = queryPlan(dbPath, "DELETE FROM metric_counter WHERE bucket < '2026-01-01T00'");
+    const sweepPlan = queryPlan(databasePath, "DELETE FROM metric_counter WHERE bucket < '2026-01-01T00'");
     expect(sweepPlan.join(' ')).toContain('idx_metric_counter_bucket');
     const totalsPlan = queryPlan(
-      dbPath,
+      databasePath,
       "SELECT name, SUM(count) FROM metric_counter WHERE bucket >= '2026-01-01T00' GROUP BY name",
     );
     expect(totalsPlan.join(' ')).toContain('idx_metric_counter_name_bucket');
   });
 
   it('creates the directory and database file', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'nested', 'metrics.db');
-    const service = new MetricsService({ dbPath, flushIntervalMs: 0, retentionDays: 35 });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'nested', 'metrics.db');
+    const service = new MetricsService({ dbPath: databasePath, flushIntervalMs: 0, retentionDays: 35 });
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- temp directory created by the test itself
-    expect(fs.existsSync(dbPath)).toBe(true);
+    expect(fs.existsSync(databasePath)).toBe(true);
     expect(service.snapshot().metricsDisabled).toBe(false);
   });
 
   it('disables itself when the store cannot be opened', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const blocker = path.join(dir, 'blocker');
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const blocker = path.join(directory, 'blocker');
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- temp directory created by the test itself
     fs.writeFileSync(blocker, 'file');
     const service = makeService({ dbPath: path.join(blocker, 'metrics.db') });
@@ -160,13 +160,13 @@ describe('MetricsService open', () => {
   });
 
   it('disables itself on an unsupported schema version', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'metrics.db');
-    const db = new DatabaseSync(dbPath);
-    db.exec('PRAGMA user_version = 99');
-    db.close();
-    const service = makeService({ dbPath });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'metrics.db');
+    const database = new DatabaseSync(databasePath);
+    database.exec('PRAGMA user_version = 99');
+    database.close();
+    const service = makeService({ dbPath: databasePath });
     expect(service.snapshot().metricsDisabled).toBe(true);
   });
 
@@ -185,13 +185,13 @@ describe('MetricsService open', () => {
   });
 
   it('persists across instances of the store', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'metrics.db');
-    const first = makeService({ dbPath });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'metrics.db');
+    const first = makeService({ dbPath: databasePath });
     first.record(record());
     first.onApplicationShutdown();
-    const second = makeService({ dbPath });
+    const second = makeService({ dbPath: databasePath });
     expect(second.snapshot().totals.requests).toBe(1);
     second.onApplicationShutdown();
   });
@@ -304,14 +304,14 @@ describe('MetricsService record', () => {
   it('sweeps rows older than the retention window', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'metrics.db');
-    const first = makeService({ dbPath });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'metrics.db');
+    const first = makeService({ dbPath: databasePath });
     first.record(record());
     first.flush();
     vi.setSystemTime(new Date('2026-03-01T00:00:00Z'));
-    const later = makeService({ dbPath });
+    const later = makeService({ dbPath: databasePath });
     later.sweep();
     expect(later.snapshot().totals.requests).toBe(0);
     vi.useRealTimers();
@@ -329,9 +329,9 @@ describe('MetricsService record', () => {
   });
 
   it('sweep is a no-op when the store is disabled', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const blocker = path.join(dir, 'blocker');
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const blocker = path.join(directory, 'blocker');
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- temp directory created by the test itself
     fs.writeFileSync(blocker, 'file');
     const service = makeService({ dbPath: path.join(blocker, 'metrics.db') });
@@ -342,7 +342,7 @@ describe('MetricsService record', () => {
   it('drops and refills a full route delta buffer without crashing', () => {
     const service = makeService();
     const internal = service as never as { deltaRoute: Map<string, unknown> };
-    for (let index = 0; index <= 10_000; index += 1) internal.deltaRoute.set(`k${String(index)}`, null);
+    for (let index = 0; index <= 10_000; index += 1) internal.deltaRoute.set(`k${String(index)}`, undefined);
     service.record(record());
     expect(internal.deltaRoute.size).toBe(6); // one cleared refill per counter name
     service.onApplicationShutdown();
@@ -351,7 +351,7 @@ describe('MetricsService record', () => {
   it('drops and refills a full ip delta buffer without crashing', () => {
     const service = makeService();
     const internal = service as never as { deltaIp: Map<string, unknown> };
-    for (let index = 0; index <= 10_000; index += 1) internal.deltaIp.set(`k${String(index)}`, null);
+    for (let index = 0; index <= 10_000; index += 1) internal.deltaIp.set(`k${String(index)}`, undefined);
     service.record(record());
     expect(internal.deltaIp.size).toBe(5); // one cleared refill per counter name
     service.onApplicationShutdown();
@@ -360,7 +360,7 @@ describe('MetricsService record', () => {
   it('drops and refills a full histogram delta buffer without crashing', () => {
     const service = makeService();
     const internal = service as never as { deltaHist: Map<string, unknown> };
-    for (let index = 0; index <= 10_000; index += 1) internal.deltaHist.set(`k${String(index)}`, null);
+    for (let index = 0; index <= 10_000; index += 1) internal.deltaHist.set(`k${String(index)}`, undefined);
     service.record(record());
     expect(internal.deltaHist.size).toBe(1);
     service.onApplicationShutdown();
@@ -375,13 +375,13 @@ describe('MetricsService record', () => {
 
   it('falls back to environment defaults without options', () => {
     // test/results is the unit run's disposable output root (gitignored, wiped by design).
-    const dir = path.resolve('test/results/metrics');
-    fs.rmSync(dir, { force: true, recursive: true });
+    const directory = path.resolve('test/results/metrics');
+    fs.rmSync(directory, { force: true, recursive: true });
     const service = new MetricsService();
     service.record(record());
     service.flush();
     expect(service.snapshot().totals.requests).toBe(1);
-    expect(fs.existsSync(path.join(dir, 'metrics.db'))).toBe(true);
+    expect(fs.existsSync(path.join(directory, 'metrics.db'))).toBe(true);
     service.onApplicationShutdown();
   });
 
@@ -389,12 +389,12 @@ describe('MetricsService record', () => {
     const service = makeService();
     service.record(record());
     const internal = service as never as { deltaRoute: Map<string, unknown> };
-    let logged = false;
+    let isLogged = false;
     const loggerStub = service as never as { logger: { error: (message: string) => void } };
-    loggerStub.logger.error = () => { logged = true; };
-    internal.deltaRoute.set('poison|/image|2026-11-17T00', null);
+    loggerStub.logger.error = () => { isLogged = true; };
+    internal.deltaRoute.set('poison|/image|2026-11-17T00', undefined);
     expect(() => service.flush()).toThrow();
-    expect(logged).toBe(true);
+    expect(isLogged).toBe(true);
     service.onApplicationShutdown();
   });
 
@@ -424,21 +424,21 @@ describe('MetricsService record', () => {
   it('aggregates persisted rows across buckets and days', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
-    tempDirs.push(dir);
-    const dbPath = path.join(dir, 'metrics.db');
-    const first = makeService({ dbPath });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-'));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, 'metrics.db');
+    const first = makeService({ dbPath: databasePath });
     first.record(record({ bytesIn: 10, bytesOut: 100, ip: '127.0.0.1' }));
     first.flush();
     vi.setSystemTime(new Date('2026-01-02T00:00:00Z'));
-    const second = makeService({ dbPath });
+    const second = makeService({ dbPath: databasePath });
     second.record(record({ bytesIn: 20, bytesOut: 200, ip: '127.0.0.2' }));
     second.flush();
     const snapshot = second.snapshot();
     expect(snapshot.totals.requests).toBe(2);
     expect(snapshot.totals.bytesIn).toBe(30);
     expect(snapshot.totals.bytesOut).toBe(300);
-    expect(snapshot.perIp.map((entry) => entry.ip).toSorted()).toEqual(['127.0.0.1', '127.0.0.2']);
+    expect(snapshot.perIp.map((entry) => entry.ip).toSorted((left, right) => left.localeCompare(right))).toEqual(['127.0.0.1', '127.0.0.2']);
     expect(snapshot.perRoute[0]?.route).toBe('/image');
     vi.useRealTimers();
     first.onApplicationShutdown();

@@ -15,5 +15,5 @@ initialization rejects, so a failed attempt is retried on the next call.
 
 **Kind**: global constant  
 **Returns**: The initialized `PDQ` class.  
-src: packages/backend/src/utils/pdq.ts:25  
+src: packages/backend/src/utils/pdq.ts:27  
 dist: packages/backend/dist/utils/pdq.js:4

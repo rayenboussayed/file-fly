@@ -19,7 +19,7 @@ Builds a CLS stub whose request is a GET carrying a source query.
 
 **Kind**: global function  
 **Returns**: <code>Harness</code> - The stub and the backing state.  
-src: packages/backend/src/utils/open-source.spec.ts:26  
+src: packages/backend/src/utils/open-source.spec.ts:28  
 <a name="collect"></a>
 
 ## collect(stream) ⇒ <code>Promise&lt;Buffer&lt;ArrayBufferLike&gt;&gt;</code>
@@ -32,7 +32,7 @@ Reads a stream to EOF, returning its concatenated bytes.
 | --- | --- | --- |
 | stream | <code>Readable</code> | Stream to consume. |
 
-src: packages/backend/src/utils/open-source.spec.ts:56  
+src: packages/backend/src/utils/open-source.spec.ts:58  
 <a name="makeGetHarnessWith"></a>
 
 ## makeGetHarnessWith(source, headers) ⇒ <code>Harness</code>
@@ -46,4 +46,4 @@ Builds a GET CLS stub with a custom source URL and request headers.
 | source | <code>string</code> | The user-supplied source URL under test. |
 | headers | <code>Record&lt;string, string&gt;</code> | Headers a browser client might carry. |
 
-src: packages/backend/src/utils/open-source.spec.ts:72  
+src: packages/backend/src/utils/open-source.spec.ts:74  

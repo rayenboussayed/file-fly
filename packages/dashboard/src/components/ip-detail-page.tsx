@@ -7,17 +7,17 @@ import { VStack } from '@astryxdesign/core/VStack';
 
 import { formatBytes, formatCount, formatPercent } from '../lib/format.js';
 import { useMetricsQuery } from '../lib/metrics-query.js';
-import { KpiCard } from './KpiCard.js';
-import { metricsGate } from './MetricsGate.js';
+import { KpiCard } from './kpi-card.js';
+import { metricsGate } from './metrics-gate.js';
 
 /**
  * Single client IP: its totals plus its share of the fleet's traffic.
- * @param props - Component props.
- * @param props.ip - The client IP to render.
+ * @param properties - Component props.
+ * @param properties.ip - The client IP to render.
  * @returns The IP detail page.
  */
-export function IpDetailPage(props: { ip: string }) {
-  const { ip } = props;
+export function IpDetailPage(properties: { ip: string }) {
+  const { ip } = properties;
   const query = useMetricsQuery();
 
   const gate = metricsGate(query);
@@ -26,7 +26,7 @@ export function IpDetailPage(props: { ip: string }) {
   }
 
   const snapshot = query.data;
-  if (!snapshot) return null;
+  if (!snapshot) return;
   const entry = snapshot.perIp.find((row) => row.ip === ip);
   const fleetBytesOut = snapshot.totals.bytesOut || 1;
 

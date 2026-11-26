@@ -13,18 +13,20 @@ import type { MetricsSnapshot } from '../lib/api.js';
 
 import { formatHourBucket } from '../lib/format.js';
 
-/** Props for the 24-hour traffic charts. */
-export interface TrafficChartsProps {
+/**
+Props for the 24-hour traffic charts.
+ */
+export interface TrafficChartsProperties {
   snapshot: MetricsSnapshot;
 }
 
 /**
  * Renders the requests and bytes traffic charts.
- * @param props - Snapshot supplying the 24-hour series.
+ * @param properties - Snapshot supplying the 24-hour series.
  * @returns The rendered charts.
  */
-export function TrafficCharts(props: TrafficChartsProps) {
-  const { snapshot } = props;
+export function TrafficCharts(properties: TrafficChartsProperties) {
+  const { snapshot } = properties;
   const series = useMemo(
     () =>
       (snapshot.last24h ?? []).map((point) => ({

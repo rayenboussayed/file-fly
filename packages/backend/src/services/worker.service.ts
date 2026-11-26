@@ -45,24 +45,30 @@ const WORKER_ENV_KEYS = [
  * Builds the worker environment from WORKER_ENV_KEYS.
  * @returns A fresh env record; FILE_FLY_WORKER is always set to '1'.
  */
-const workerEnv = (): Record<string, string> => {
-  const env: Record<string, string> = {};
+const workerEnvironment = (): Record<string, string> => {
   const allowlist = new Set<string>(WORKER_ENV_KEYS);
+  const entries: Array<[string, string]> = [];
   for (const [key, value] of Object.entries(process.env)) {
     if (value === undefined || !allowlist.has(key)) continue;
-    env[key] = value;
+    entries.push([key, value]);
   }
-  env.FILE_FLY_WORKER = '1';
-  return env;
+  entries.push(['FILE_FLY_WORKER', '1']);
+  return Object.fromEntries(entries);
 };
 
-/** Options for spawning a worker thread. */
+/**
+Options for spawning a worker thread.
+ */
 export interface CreateWorkerOptions {
-  /** Passed to the worker AND mixed into the cache key (operation, payload...). */
+  /**
+  Passed to the worker AND mixed into the cache key (operation, payload...).
+   */
   workerData?: unknown;
 }
 
-/** Spawns sibling worker threads for CPU-heavy media/document work and serves their output (with a shared stream cache). */
+/**
+Spawns sibling worker threads for CPU-heavy media/document work and serves their output (with a shared stream cache).
+ */
 @Injectable()
 export class WorkerService {
   private readonly cache = new StreamCache({
@@ -71,12 +77,16 @@ export class WorkerService {
     timeToLive: CACHE_TTL_MS,
   });
 
-  /** cache key -> promise resolved (never rejected) when the producer settles. */
+  /**
+  cache key -> promise resolved (never rejected) when the producer settles.
+   */
   private readonly inflight = new Map<string, Promise<void>>();
 
   private readonly logger = new Logger(WorkerService.name);
 
-  /** Upper bound on concurrent worker threads; excess createWorker calls queue instead of forking unboundedly. */
+  /**
+  Upper bound on concurrent worker threads; excess createWorker calls queue instead of forking unboundedly.
+   */
   private readonly maxWorkers = Math.max(2, (os.cpus()?.length ?? 4) - 1);
   private runningWorkers = 0;
   private readonly workerWaiters: Array<() => void> = [];
@@ -94,7 +104,7 @@ export class WorkerService {
     filename: string,
     options: CreateWorkerOptions = {},
   ): Promise<Readable> {
-    const source = this.cls.sourceStream().get() ;
+    const source = this.cls.sourceStream().get();
     const baseKey = this.cls.cacheKey().get();
     const key = baseKey ? this.keyFor(baseKey, filename, options.workerData) : undefined;
 
@@ -123,12 +133,46 @@ export class WorkerService {
   /**
    * Waits until a worker slot is free, then takes it.
    */
-  private async acquireWorkerSlot(): Promise<void> {
+  protected async acquireWorkerSlot(): Promise<void> {
     while (this.runningWorkers >= this.maxWorkers) {
-       
-      await new Promise<void>((resolve) => this.workerWaiters.push(resolve));
+      await new Promise<void>((resolve) => {
+        this.workerWaiters.push(resolve);
+      });
     }
     this.runningWorkers += 1;
+  }
+
+  /**
+   * Waits for the worker and the cache fill, then unlinks failed entries.
+   * Never rejects: a cache failure only destroys the unused tee branch.
+   * @param key Cache key.
+   * @param branch Source stream to persist.
+   * @param succeeded Worker exit status.
+   */
+  protected async finishPersist(
+    key: string,
+    branch: Readable,
+    succeeded: Promise<boolean>,
+  ): Promise<void> {
+    try {
+      const [isSuccessful] = await Promise.all([succeeded, this.cache.flush()]);
+      if (!isSuccessful) {
+        // The worker failed mid-stream: make sure its (possibly partial)
+        // output is never served from the cache. flush() resolved only after
+        // the fill finished, so this cannot delete an entry still being written.
+        try {
+          await this.cache.unlink(key);
+        } catch {
+          void 0;
+        }
+      }
+    } catch (error: unknown) {
+      // The worker has already settled here, so destroying this branch cannot stall the tee's other branch.
+      branch.destroy();
+      this.logger.debug(`not cached (${key}): ${String(error)}`);
+    } finally {
+      this.inflight.delete(key);
+    }
   }
 
   /**
@@ -138,7 +182,7 @@ export class WorkerService {
    * @param workerData - Worker payload mixed into the key.
    * @returns The composite cache key.
    */
-  private keyFor(baseKey: string, filename: string, workerData: unknown): string {
+  protected keyFor(baseKey: string, filename: string, workerData: unknown): string {
     // baseKey already encodes the request payload (file hash, query, body digest);
     // re-serializing the whole workerData here would duplicate it in memory for
     // no extra discrimination. The operation/inputFormat tag is all a consumer needs.
@@ -159,56 +203,25 @@ export class WorkerService {
    * @param branch Source stream to persist.
    * @param succeeded Worker exit status.
    */
-  private persist(key: string, branch: Readable, succeeded: Promise<boolean>): void {
-    // Assigned synchronously by the Promise executor below, before any await.
-    let release!: () => void;
-    const promise = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    this.inflight.set(key, promise);
-
+  protected persist(key: string, branch: Readable, succeeded: Promise<boolean>): void {
     // Hand the branch to the cache immediately: a backpressured tee branch
     // nobody drains until the worker exits would stall `worker.stdout` and
     // deadlock the worker. Completion is gated on `succeeded` below instead,
     // so a failed worker never leaves a servable entry behind.
     this.cache.write({ key, readable: branch });
-
-    const run = async (): Promise<void> => {
-      const [ok] = await Promise.all([succeeded, this.cache.flush()]);
-      if (!ok) {
-        // The worker failed mid-stream: make sure its (possibly partial)
-        // output is never served from the cache. flush() resolved only after
-        // the fill finished, so this cannot delete an entry still being written.
-        try {
-          await this.cache.unlink(key);
-        } catch {
-          void 0;
-        }
-      }
-    };
-
-    void run()
-      .catch((error: unknown) => {
-        // The worker has already settled here, so destroying this branch cannot stall the tee's other branch.
-        branch.destroy();
-        this.logger.debug(`not cached (${key}): ${String(error)}`);
-      })
-      .finally(() => {
-        this.inflight.delete(key);
-        release();
-      });
+    this.inflight.set(key, this.finishPersist(key, branch, succeeded));
   }
 
   /**
    * Releases a worker slot, waking one queued caller if any.
    */
-  private releaseWorkerSlot(): void {
+  protected releaseWorkerSlot(): void {
     this.runningWorkers -= 1;
     const waiter = this.workerWaiters.shift();
     if (waiter) waiter();
   }
 
-  private async spawn(
+  protected async spawn(
     filename: string,
     options: CreateWorkerOptions,
     source: Readable | undefined,
@@ -218,7 +231,7 @@ export class WorkerService {
     let worker: Worker;
     try {
       worker = new Worker(filename, {
-        env: workerEnv(),
+        env: workerEnvironment(),
         stderr: true,
         stdin: true,
         stdout: true,
@@ -246,13 +259,15 @@ export class WorkerService {
       stderrSize += buffer.length;
     });
 
-    /** Resolves true only for a clean exit (code 0, nothing on stderr as error). */
+    /**
+    Resolves true only for a clean exit (code 0, nothing on stderr as error).
+     */
     const succeeded = new Promise<boolean>((resolve) => {
-      let settled = false;
-      const settle = (ok: boolean) => {
-        if (settled) return;
-        settled = true;
-        resolve(ok);
+      let isSettled = false;
+      const settle = (isSuccessful: boolean) => {
+        if (isSettled) return;
+        isSettled = true;
+        resolve(isSuccessful);
       };
       worker.once('error', (error: Error) => {
         fail(error);
@@ -301,7 +316,7 @@ export class WorkerService {
    * Refreshes the entry's mtime so the janitor's LRU eviction keeps hot entries.
    * @param key - Cache key of the entry.
    */
-  private async touch(key: string): Promise<void> {
+  protected async touch(key: string): Promise<void> {
     const now = new Date();
     await fs.promises.utimes(this.cache.createCachePath(key), now, now);
   }

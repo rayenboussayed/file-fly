@@ -32,7 +32,7 @@ Idempotent so an existing version-1 database gains them on the next open.</p>
 ## Functions
 
 <dl>
-<dt><a href="#allRows">allRows(db, sql, ...params)</a> ⇒ <code>T[]</code></dt>
+<dt><a href="#allRows">allRows(database, sql, ...parameters)</a> ⇒ <code>T[]</code></dt>
 <dd><p>Runs a prepared statement and returns every row typed as <code>T</code>.</p>
 <p>node:sqlite types <code>StatementSync.all()</code> as <code>Record&lt;string, SQLOutputValue&gt;[]</code>,
 which is not assignable to a row-specific shape without an intermediate
@@ -52,7 +52,7 @@ the persisted rows, so the payload is always fresh. A failed store logs and
 disables itself; media serving is never affected.
 
 **Kind**: global variable  
-src: packages/backend/src/metrics/metrics.service.ts:237  
+src: packages/backend/src/metrics/metrics.service.ts:307  
 dist: packages/backend/dist/metrics/metrics.service.js:73
 
 * [MetricsService](#MetricsService)
@@ -71,7 +71,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:73
 Drains all pending deltas into a single transaction.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:274  
+src: packages/backend/src/metrics/metrics.service.ts:344  
 dist: packages/backend/dist/metrics/metrics.service.js:99
 <a name="MetricsService+inflightDec"></a>
 
@@ -79,7 +79,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:99
 Decrements the live in-flight counter.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:315  
+src: packages/backend/src/metrics/metrics.service.ts:385  
 dist: packages/backend/dist/metrics/metrics.service.js:135
 <a name="MetricsService+inflightInc"></a>
 
@@ -87,7 +87,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:135
 Increments the live in-flight counter.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:322  
+src: packages/backend/src/metrics/metrics.service.ts:392  
 dist: packages/backend/dist/metrics/metrics.service.js:138
 <a name="MetricsService+onApplicationBootstrap"></a>
 
@@ -95,7 +95,7 @@ dist: packages/backend/dist/metrics/metrics.service.js:138
 Starts the flush and retention timers; never in unit tests.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:329  
+src: packages/backend/src/metrics/metrics.service.ts:399  
 dist: packages/backend/dist/metrics/metrics.service.js:141
 <a name="MetricsService+onApplicationShutdown"></a>
 
@@ -103,8 +103,8 @@ dist: packages/backend/dist/metrics/metrics.service.js:141
 Stops timers, flushes the last deltas and closes the database.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
-src: packages/backend/src/metrics/metrics.service.ts:348  
-dist: packages/backend/dist/metrics/metrics.service.js:157
+src: packages/backend/src/metrics/metrics.service.ts:420  
+dist: packages/backend/dist/metrics/metrics.service.js:158
 <a name="MetricsService+record"></a>
 
 ### metricsService.record(record)
@@ -116,8 +116,8 @@ Records one completed request.
 | --- | --- | --- |
 | record | <code>MetricsRecord</code> | Normalized request data from the interceptor. |
 
-src: packages/backend/src/metrics/metrics.service.ts:359  
-dist: packages/backend/dist/metrics/metrics.service.js:163
+src: packages/backend/src/metrics/metrics.service.ts:431  
+dist: packages/backend/dist/metrics/metrics.service.js:164
 <a name="MetricsService+snapshot"></a>
 
 ### metricsService.snapshot() ⇒ <code>MetricsSnapshot</code>
@@ -127,8 +127,8 @@ stay current without a cache layer that could go stale between polls.
 
 **Kind**: instance method of [<code>MetricsService</code>](#MetricsService)  
 **Returns**: <code>MetricsSnapshot</code> - The current snapshot.  
-src: packages/backend/src/metrics/metrics.service.ts:384  
-dist: packages/backend/dist/metrics/metrics.service.js:188
+src: packages/backend/src/metrics/metrics.service.ts:456  
+dist: packages/backend/dist/metrics/metrics.service.js:189
 <a name="MetricsService+sweep"></a>
 
 ### metricsService.sweep(retentionDays)
@@ -140,15 +140,15 @@ Deletes hourly/daily rows older than `retentionDays`.
 | --- | --- | --- |
 | retentionDays | <code>number</code> | Days to keep; rows older than this are deleted. |
 
-src: packages/backend/src/metrics/metrics.service.ts:411  
-dist: packages/backend/dist/metrics/metrics.service.js:210
+src: packages/backend/src/metrics/metrics.service.ts:483  
+dist: packages/backend/dist/metrics/metrics.service.js:211
 <a name="SCHEMA_VERSION"></a>
 
 ## SCHEMA\_VERSION
 Current schema version; kept in sync with the DDL below.
 
 **Kind**: global constant  
-src: packages/backend/src/metrics/metrics.service.ts:16  
+src: packages/backend/src/metrics/metrics.service.ts:18  
 dist: packages/backend/dist/metrics/metrics.service.js:19
 <a name="HISTOGRAM_LE"></a>
 
@@ -157,7 +157,7 @@ Latency histogram upper bounds, in seconds; 999999 is the open-ended bucket.
 
 **Kind**: global constant  
 **Remarks**: Chosen to stay readable on a linear axis for a media service.  
-src: packages/backend/src/metrics/metrics.service.ts:22  
+src: packages/backend/src/metrics/metrics.service.ts:24  
 dist: packages/backend/dist/metrics/metrics.service.js:20
 <a name="INDEX_DDL"></a>
 
@@ -166,7 +166,7 @@ Indexes for the retention sweep (bucket prefix) and the name-keyed rollups.
 Idempotent so an existing version-1 database gains them on the next open.
 
 **Kind**: global constant  
-src: packages/backend/src/metrics/metrics.service.ts:54  
+src: packages/backend/src/metrics/metrics.service.ts:56  
 dist: packages/backend/dist/metrics/metrics.service.js:46
 <a name="MAX_DELTA_KEYS"></a>
 
@@ -174,11 +174,11 @@ dist: packages/backend/dist/metrics/metrics.service.js:46
 Bounded delta buffers: a persistently failing store drops counts rather than grow memory without limit.
 
 **Kind**: global constant  
-src: packages/backend/src/metrics/metrics.service.ts:198  
+src: packages/backend/src/metrics/metrics.service.ts:266  
 dist: packages/backend/dist/metrics/metrics.service.js:56
 <a name="allRows"></a>
 
-## allRows(db, sql, ...params) ⇒ <code>T[]</code>
+## allRows(database, sql, ...parameters) ⇒ <code>T[]</code>
 Runs a prepared statement and returns every row typed as `T`.
 
 node:sqlite types `StatementSync.all()` as `Record<string, SQLOutputValue>[]`,
@@ -190,9 +190,9 @@ which is not assignable to a row-specific shape without an intermediate
 
 | Param | Type | Description |
 | --- | --- | --- |
-| db | <code>DatabaseSync</code> | Open SQLite database. |
+| database | <code>DatabaseSync</code> | Open SQLite database. |
 | sql | <code>string</code> | SQL text to prepare (passed through verbatim). |
-| ...params | <code>import(&quot;node:sqlite&quot;).SQLInputValue[]</code> | Bound parameters for the statement. |
+| ...parameters | <code>import(&quot;node:sqlite&quot;).SQLInputValue[]</code> | Bound parameters for the statement. |
 
-src: packages/backend/src/metrics/metrics.service.ts:689  
-dist: packages/backend/dist/metrics/metrics.service.js:500
+src: packages/backend/src/metrics/metrics.service.ts:825  
+dist: packages/backend/dist/metrics/metrics.service.js:552

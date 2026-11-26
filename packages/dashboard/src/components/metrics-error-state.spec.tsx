@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '../lib/api.js';
-import { MetricsErrorState } from './MetricsErrorState.js';
+import { MetricsErrorState } from './metrics-error-state.js';
 
 beforeEach(() => {
   sessionStorage.clear();

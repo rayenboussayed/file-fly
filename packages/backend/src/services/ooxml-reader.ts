@@ -1,26 +1,44 @@
 import { unzipSync } from 'fflate';
 
-/** Hard limits applied to every OOXML package read, enforced before inflating. */
+/**
+Hard limits applied to every OOXML package read, enforced before inflating.
+ */
 const OOXML_LIMITS = {
-  /** Maximum number of zip entries inspected (central directory scan). */
+  /**
+  Maximum number of zip entries inspected (central directory scan).
+   */
   maxEntries: 10_000,
-  /** Maximum uncompressed size of a single entry. */
+  /**
+  Maximum uncompressed size of a single entry.
+   */
   maxEntryUncompressed: 32 * 1024 * 1024,
-  /** Maximum uncompressed bytes of the whole package. */
+  /**
+  Maximum uncompressed bytes of the whole package.
+   */
   maxTotalUncompressed: 256 * 1024 * 1024,
 } as const;
 
-/** Override knobs for the readParts caps; defaults are the shared limits. */
+/**
+Override knobs for the readParts caps; defaults are the shared limits.
+ */
 export interface OoxmlReadLimits {
-  /** Maximum number of zip entries inspected. */
+  /**
+  Maximum number of zip entries inspected.
+   */
   maxEntries?: number;
-  /** Maximum uncompressed size of a single entry. */
+  /**
+  Maximum uncompressed size of a single entry.
+   */
   maxEntryUncompressed?: number;
-  /** Maximum uncompressed bytes of the whole package. */
+  /**
+  Maximum uncompressed bytes of the whole package.
+   */
   maxTotalUncompressed?: number;
 }
 
-/** Error thrown for any OOXML structural problem; maps to HTTP 400/415 at the boundary. */
+/**
+Error thrown for any OOXML structural problem; maps to HTTP 400/415 at the boundary.
+ */
 export class OoxmlError extends Error {}
 
 /**

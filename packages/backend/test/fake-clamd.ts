@@ -1,13 +1,21 @@
 import { createServer, type Server, type Socket } from 'node:net';
 
-/** Maximum INSTREAM payload buffered per connection; fixtures are tiny, this is only a guard. */
+/**
+Maximum INSTREAM payload buffered per connection; fixtures are tiny, this is only a guard.
+ */
 const MAX_INSTREAM_BYTES = 64 * 1024 * 1024;
-/** A clamd command line shorter than this; anything longer is treated as garbage. */
+/**
+A clamd command line shorter than this; anything longer is treated as garbage.
+ */
 const COMMAND_BUFFER_LIMIT = 16 * 1024;
-/** ASCII marker the EICAR test file embeds; clamd answers FOUND when it is seen in the payload. */
+/**
+ASCII marker the EICAR test file embeds; clamd answers FOUND when it is seen in the payload.
+ */
 const EICAR_MARKER = Buffer.from('EICAR-STANDARD-ANTIVIRUS-TEST-FILE', 'ascii');
 
-/** Open sockets per server, destroyed on {@link stopFakeClamd} so teardown never hangs. */
+/**
+Open sockets per server, destroyed on {@link stopFakeClamd} so teardown never hangs.
+ */
 const serverSockets = new WeakMap<Server, Set<Socket>>();
 
 /**

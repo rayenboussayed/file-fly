@@ -34,7 +34,7 @@ Media <code>source</code> parameters may embed signed remote URLs, so the query 
 Paths censored from any nested request/response object pino sees.
 
 **Kind**: global constant  
-src: packages/backend/src/logging/pino-options.ts:34  
+src: packages/backend/src/logging/pino-options.ts:40  
 dist: packages/backend/dist/logging/pino-options.js:9
 <a name="stripQuery"></a>
 
@@ -49,7 +49,7 @@ Media `source` parameters may embed signed remote URLs, so the query must never 
 | --- | --- | --- |
 | url | <code>string</code> | The raw request URL. |
 
-src: packages/backend/src/logging/pino-options.ts:25  
+src: packages/backend/src/logging/pino-options.ts:29  
 dist: packages/backend/dist/logging/pino-options.js:2
 <a name="serializeRequest"></a>
 
@@ -63,7 +63,7 @@ Request serializer: id, method and path only. Headers and query strings are drop
 | --- | --- | --- |
 | request | <code>IncomingMessage &amp; { id?: number \| string; }</code> | The raw Node request. |
 
-src: packages/backend/src/logging/pino-options.ts:47  
+src: packages/backend/src/logging/pino-options.ts:53  
 dist: packages/backend/dist/logging/pino-options.js:16
 <a name="serializeResponse"></a>
 
@@ -77,7 +77,7 @@ Response serializer: status code only.
 | --- | --- | --- |
 | response | <code>ServerResponse&lt;IncomingMessage&gt;</code> | The raw Node response. |
 
-src: packages/backend/src/logging/pino-options.ts:60  
+src: packages/backend/src/logging/pino-options.ts:66  
 dist: packages/backend/dist/logging/pino-options.js:21
 <a name="buildPinoHttpOptions"></a>
 
@@ -92,7 +92,7 @@ Builds the pino-http options used by nestjs-pino. Adds request auto-logging
 | --- | --- | --- |
 | environment | <code>PinoEnvironment</code> | Runtime inputs; see [PinoEnvironment](PinoEnvironment). |
 
-src: packages/backend/src/logging/pino-options.ts:73  
+src: packages/backend/src/logging/pino-options.ts:79  
 dist: packages/backend/dist/logging/pino-options.js:25
 <a name="buildPinoOptions"></a>
 
@@ -106,5 +106,5 @@ Builds the base pino options shared by the bootstrap logger and the request logg
 | --- | --- | --- |
 | environment | <code>PinoEnvironment</code> | Runtime inputs; see [PinoEnvironment](PinoEnvironment). |
 
-src: packages/backend/src/logging/pino-options.ts:91  
-dist: packages/backend/dist/logging/pino-options.js:35
+src: packages/backend/src/logging/pino-options.ts:95  
+dist: packages/backend/dist/logging/pino-options.js:33

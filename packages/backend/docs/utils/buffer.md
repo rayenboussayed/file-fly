@@ -37,7 +37,7 @@
 Passes stream chunks through while rejecting anything past a byte budget.
 
 **Kind**: global class  
-src: packages/backend/src/utils/buffer.ts:16  
+src: packages/backend/src/utils/buffer.ts:20  
 dist: packages/backend/dist/utils/buffer.js:7
 <a name="new_ByteCapTransform_new"></a>
 
@@ -53,7 +53,7 @@ dist: packages/backend/dist/utils/buffer.js:7
 Maximum number of bytes buffered from a stream (20 MiB).
 
 **Kind**: global constant  
-src: packages/backend/src/utils/buffer.ts:9  
+src: packages/backend/src/utils/buffer.ts:11  
 dist: packages/backend/dist/utils/buffer.js:5
 <a name="WORKER_JSON_MAX_BYTES"></a>
 
@@ -61,7 +61,7 @@ dist: packages/backend/dist/utils/buffer.js:5
 Maximum JSON payload a worker may write to stdout (8 MiB).
 
 **Kind**: global constant  
-src: packages/backend/src/utils/buffer.ts:11  
+src: packages/backend/src/utils/buffer.ts:15  
 dist: packages/backend/dist/utils/buffer.js:6
 <a name="bufferStream"></a>
 
@@ -76,7 +76,7 @@ Buffers a readable stream into a single Buffer, enforcing a size cap.
 | stream | <code>Readable</code> | The readable stream to buffer. |
 | maxBytes | <code>number</code> | The maximum number of bytes to accept before throwing. |
 
-src: packages/backend/src/utils/buffer.ts:42  
+src: packages/backend/src/utils/buffer.ts:46  
 dist: packages/backend/dist/utils/buffer.js:23
 <a name="parseJsonBuffer"></a>
 
@@ -90,8 +90,8 @@ Parses a small JSON payload emitted by a worker.
 | --- | --- | --- |
 | buffer | <code>Buffer&lt;ArrayBufferLike&gt;</code> | UTF-8 encoded JSON bytes. |
 
-src: packages/backend/src/utils/buffer.ts:66  
-dist: packages/backend/dist/utils/buffer.js:37
+src: packages/backend/src/utils/buffer.ts:71  
+dist: packages/backend/dist/utils/buffer.js:38
 <a name="readWorkerJson"></a>
 
 ## readWorkerJson(stdout) ⇒ <code>Promise&lt;unknown&gt;</code>
@@ -104,5 +104,5 @@ Buffers and parses the small JSON payload a worker writes to stdout.
 | --- | --- | --- |
 | stdout | <code>Readable</code> | The worker's stdout stream. |
 
-src: packages/backend/src/utils/buffer.ts:75  
-dist: packages/backend/dist/utils/buffer.js:40
+src: packages/backend/src/utils/buffer.ts:80  
+dist: packages/backend/dist/utils/buffer.js:41

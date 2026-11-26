@@ -18,10 +18,14 @@ import { openMediaSource } from '@/utils/open-source.js';
 
 import type { CsvBuildType, CsvExtractType, CsvMetadataType } from './schema.js';
 
-/** Hard cap on parsed records; beyond it the response would exhaust memory. */
+/**
+Hard cap on parsed records; beyond it the response would exhaust memory.
+ */
 const MAX_RECORDS = 1_000_000;
 
-/** Error thrown when a record cap is exceeded; maps to 413 at the boundary. */
+/**
+Error thrown when a record cap is exceeded; maps to 413 at the boundary.
+ */
 class RecordCapError extends Error {}
 
 /**
@@ -63,7 +67,9 @@ const readBody = async (cls: NormalizedClsService): Promise<Buffer> => {
   return bufferStream(stream, environment.CLAMAV_MAX_BYTES);
 };
 
-/** CSV feature service: builds CSV from rows and parses/metadata-inspects uploads. */
+/**
+CSV feature service: builds CSV from rows and parses/metadata-inspects uploads.
+ */
 @Injectable()
 export class CsvService {
   constructor(private readonly cls: NormalizedClsService) {}
@@ -120,7 +126,7 @@ export class CsvService {
     const { maxRows, ...parseOptions } = query;
     const options: ParseOptions = {
       bom: true,
-      ...(parseOptions.delimiter === undefined ? { delimiter_auto: true } : {}),
+      ...((parseOptions.delimiter === undefined) && { delimiter_auto: true }),
       ...parseOptions,
     };
     type TypeKey = 'boolean' | 'date' | 'empty' | 'number' | 'string';
@@ -163,6 +169,8 @@ export class CsvService {
   }
 }
 
+const OTHER_EMPTY_CELL_VALUES: ReadonlySet<unknown> = new Set<unknown>(['', undefined]);
+
 /**
  * Classifies a cast csv-parse value. `empty` covers null/undefined and empty strings;
  * exact `true`/`false` strings count as boolean (csv-parse does not cast them).
@@ -170,7 +178,7 @@ export class CsvService {
  * @returns The census key for the value.
  */
 const kindOf = (value: unknown): 'boolean' | 'date' | 'empty' | 'number' | 'string' => {
-  if (value === null || value === undefined || value === '') return 'empty';
+  if (value === null || OTHER_EMPTY_CELL_VALUES.has(value)) return 'empty';
   if (value === 'true' || value === 'false') return 'boolean';
   if (typeof value === 'number' || typeof value === 'bigint') return 'number';
   if (value instanceof Date) return 'date';

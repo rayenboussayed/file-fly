@@ -3,17 +3,14 @@ import { describe, expect, it } from 'vitest';
 
 import { OoxmlError, OoxmlReader } from './ooxml-reader.js';
 
+const asZipEntry = ([name, value]: [string, string | Uint8Array]) =>
+  [name, typeof value === 'string' ? Buffer.from(value, 'utf8') : value] as const;
+
+const asZipEntries = (entries: Record<string, string | Uint8Array>) =>
+  Object.fromEntries(Object.entries(entries).map((entry) => asZipEntry(entry)));
+
 const makeZip = (entries: Record<string, string | Uint8Array>) =>
-  Buffer.from(
-    zipSync(
-      Object.fromEntries(
-        Object.entries(entries).map(([name, value]) => [
-          name,
-          typeof value === 'string' ? Buffer.from(value, 'utf8') : value,
-        ]),
-      ),
-    ),
-  );
+  Buffer.from(zipSync(asZipEntries(entries)));
 
 describe('OoxmlReader.readParts', () => {
   it('extracts the parts of a minimal package', () => {

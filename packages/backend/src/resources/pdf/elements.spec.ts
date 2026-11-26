@@ -93,8 +93,8 @@ describe('buildPdfDocument elements', () => {
       { fieldType: 'checkbox', name: 'form.flag', type: 'field', value: 'true', x: 300, y: 600 },
     ]);
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    const fields = doc.getForm().getFields();
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    const fields = document_.getForm().getFields();
     const textField = fields.find((field) => field.getName() === 'form.name');
     const checkbox = fields.find((field) => field.getName() === 'form.flag');
     expect(textField?.constructor.name).toBe('PDFTextField');
@@ -154,8 +154,8 @@ describe('buildPdfDocument elements', () => {
       PdfBuildSchema.parse({ pages: [{ elements: [], orientation: 'landscape', size: 'tabloid' }] }),
     );
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    const { height, width } = doc.getPages()[0]?.getSize() ?? { height: 0, width: 0 };
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    const { height, width } = document_.getPages()[0]?.getSize() ?? { height: 0, width: 0 };
     expect(width).toBeCloseTo(1224, 2);
     expect(height).toBeCloseTo(792, 2);
   });
@@ -228,8 +228,8 @@ describe('buildPdfDocument elements', () => {
       }),
     );
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    expect(doc.getPageCount()).toBe(1);
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    expect(document_.getPageCount()).toBe(1);
     const text = await extractMarkers(bytes);
     expect(text).toContain('Ω 1 of 1');
   });
@@ -244,8 +244,8 @@ describe('buildPdfDocument elements', () => {
       { type: 'line', x1: 72, x2: 400, y1: 240, y2: 240 },
     ]);
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    expect(doc.getPageCount()).toBe(1);
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    expect(document_.getPageCount()).toBe(1);
   });
 
   it('renders a table without a header row', async () => {
@@ -253,8 +253,8 @@ describe('buildPdfDocument elements', () => {
       { rows: [['plain body cell', '17']], type: 'table', w: 240, x: 72, y: 100 },
     ]);
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    expect(doc.getPageCount()).toBe(1);
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    expect(document_.getPageCount()).toBe(1);
     const text = await extractMarkers(bytes);
     expect(text).toContain('plain body cell');
     expect(text).toContain('17');
@@ -271,12 +271,12 @@ describe('buildPdfDocument elements', () => {
     // No standard Helvetica-Bold pre-embedded: the header row must fall back to the
     // embedded font that shadows the name.
     const { PDFDocument } = await import('pdf-lib');
-    const pdfDoc = await PDFDocument.create();
-    pdfDoc.registerFontkit(fontkit);
-    const page = pdfDoc.addPage([595.28, 841.89]);
-    const defaultFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const embedded = await pdfDoc.embedFont(new Uint8Array(font), { subset: true });
-    const ctx: BuilderContext = {
+    const pdfDocument = await PDFDocument.create();
+    pdfDocument.registerFontkit(fontkit);
+    const page = pdfDocument.addPage([595.28, 841.89]);
+    const defaultFont = await pdfDocument.embedFont(StandardFonts.Helvetica);
+    const embedded = await pdfDocument.embedFont(new Uint8Array(font), { subset: true });
+    const context: BuilderContext = {
       defaultFont,
       fonts: new Map([['Helvetica-Bold', embedded]]),
       standard: new Map(),
@@ -292,10 +292,10 @@ describe('buildPdfDocument elements', () => {
       x: 72,
       y: 100,
     };
-    drawElement(pdfDoc, page, element, ctx, new Map(), 1, 1);
-    const bytes = await pdfDoc.save();
-    const doc = await PDFDocument.load(bytes);
-    expect(doc.getPageCount()).toBe(1);
+    drawElement(pdfDocument, page, element, context, new Map(), 1, 1);
+    const bytes = await pdfDocument.save();
+    const document_ = await PDFDocument.load(bytes);
+    expect(document_.getPageCount()).toBe(1);
     const text = await extractMarkers(bytes);
     expect(text).toContain('Name');
     expect(text).toContain('alpha');
@@ -307,8 +307,8 @@ describe('buildPdfDocument elements', () => {
       { fieldType: 'text', h: 20, name: 'form.explicit', type: 'field', w: 150, x: 72, y: 640 },
     ]);
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    const form = doc.getForm();
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    const form = document_.getForm();
     const plain = form.getTextField('form.plain');
     const explicit = form.getTextField('form.explicit');
     expect(plain.getText()).toBeUndefined();
@@ -326,8 +326,8 @@ describe('buildPdfDocument elements', () => {
       { fieldType: 'checkbox', name: 'form.yes', type: 'field', value: 'true', x: 168, y: 600 },
     ]);
     const { PDFDocument } = await import('pdf-lib');
-    const doc = await PDFDocument.load(new Uint8Array(bytes));
-    const form = doc.getForm();
+    const document_ = await PDFDocument.load(new Uint8Array(bytes));
+    const form = document_.getForm();
     expect(form.getCheckBox('form.no').isChecked()).toBe(false);
     expect(form.getCheckBox('form.unset').isChecked()).toBe(false);
     expect(form.getCheckBox('form.yes').isChecked()).toBe(true);
@@ -335,10 +335,10 @@ describe('buildPdfDocument elements', () => {
 
   it('throws when an image element was not pre-embedded', async () => {
     const { PDFDocument, StandardFonts } = await import('pdf-lib');
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595.28, 841.89]);
-    const defaultFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const ctx: BuilderContext = { defaultFont, fonts: new Map(), standard: new Map() };
+    const pdfDocument = await PDFDocument.create();
+    const page = pdfDocument.addPage([595.28, 841.89]);
+    const defaultFont = await pdfDocument.embedFont(StandardFonts.Helvetica);
+    const context: BuilderContext = { defaultFont, fonts: new Map(), standard: new Map() };
     const element = {
       data: Buffer.from(png).toString('base64'),
       h: 40,
@@ -348,7 +348,7 @@ describe('buildPdfDocument elements', () => {
       x: 10,
       y: 10,
     } as const;
-    expect(() => drawElement(pdfDoc, page, element, ctx, new Map(), 1, 1)).toThrow('image was not pre-embedded');
+    expect(() => drawElement(pdfDocument, page, element, context, new Map(), 1, 1)).toThrow('image was not pre-embedded');
   });
 
   it('rejects an unknown font name with 400', async () => {
@@ -359,12 +359,12 @@ describe('buildPdfDocument elements', () => {
 
   it('throws on an unhandled element type reachable only via a widened union', async () => {
     const { PDFDocument, StandardFonts } = await import('pdf-lib');
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595.28, 841.89]);
-    const defaultFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const ctx: BuilderContext = { defaultFont, fonts: new Map(), standard: new Map() };
+    const pdfDocument = await PDFDocument.create();
+    const page = pdfDocument.addPage([595.28, 841.89]);
+    const defaultFont = await pdfDocument.embedFont(StandardFonts.Helvetica);
+    const context: BuilderContext = { defaultFont, fonts: new Map(), standard: new Map() };
     // The discriminated union covers every real type; widen it to exercise the documented backstop.
     const bogus = { type: 'mystery' } as unknown as Exclude<ElementType, { type: 'pageBreak' }>;
-    expect(() => drawElement(pdfDoc, page, bogus, ctx, new Map(), 1, 1)).toThrow(/unhandled element type/);
+    expect(() => drawElement(pdfDocument, page, bogus, context, new Map(), 1, 1)).toThrow(/unhandled element type/);
   });
 });

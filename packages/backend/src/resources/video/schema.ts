@@ -12,7 +12,9 @@ const seconds = z.coerce
   .min(0)
   .max(24 * 60 * 60);
 
-/** Query parameters for `/video/processor`, `/video/metadata`, `/video/dna` and `/video/stats` uploads. */
+/**
+Query parameters for `/video/processor`, `/video/metadata`, `/video/dna` and `/video/stats` uploads.
+ */
 export const VideoProcessorSchema = SourceSchema.partial().extend({
   audioBitrate: trimmed(z.enum(['96k', '128k', '192k', '256k'])).optional(),
   audioChannels: trimmed(z.enum(['1', '2'])).optional(),
@@ -43,18 +45,24 @@ export const VideoProcessorSchema = SourceSchema.partial().extend({
   width: z.coerce.number().int().min(16).max(7680).optional(),
 });
 
-/** Validated options for the video processor routes. */
+/**
+Validated options for the video processor routes.
+ */
 export type VideoProcessorType = z.infer<typeof VideoProcessorSchema>;
 
 // eslint-disable-next-line security/detect-unsafe-regex
 const FRAME_REGEX = /^\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)*$/;
 
-/** Query parameters for `POST /video/screenshot` (extracted JPEG frames as multipart). */
+/**
+Query parameters for `POST /video/screenshot` (extracted JPEG frames as multipart).
+ */
 export const ScreenshotSchema = SourceSchema.partial().extend({
   frames: trimmed(z.string().regex(FRAME_REGEX, 'Invalid frames format')),
 });
 
-/** Validated options for `/video/screenshot`. */
+/**
+Validated options for `/video/screenshot`.
+ */
 export type ScreenshotType = z.infer<typeof ScreenshotSchema>;
 
 /**
@@ -85,5 +93,7 @@ export const VideoAudioSchema = AudioProcessorSchema.omit({
   trimStart: true,
 });
 
-/** Validated options for `/video/audio`. */
+/**
+Validated options for `/video/audio`.
+ */
 export type VideoAudioType = z.infer<typeof VideoAudioSchema>;

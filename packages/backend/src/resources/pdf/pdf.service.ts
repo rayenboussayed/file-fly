@@ -57,33 +57,35 @@ const loadDocument = async (buffer: Buffer): Promise<PDFDocument> => {
 
 const metadataOf = async (buffer: Buffer) => {
   try {
-    const pdfDoc = await loadDocument(buffer);
-    const keywords = pdfDoc.getKeywords();
-    const firstPage = pdfDoc.getPageCount() > 0 ? pdfDoc.getPage(0) : undefined;
+    const pdfDocument = await loadDocument(buffer);
+    const keywords = pdfDocument.getKeywords();
+    const firstPage = pdfDocument.getPageCount() > 0 ? pdfDocument.getPage(0) : undefined;
     const size = firstPage?.getSize();
     let orientation: 'landscape' | 'portrait' | undefined;
     // width > height => landscape; square pages report portrait.
     if (size !== undefined) orientation = size.width > size.height ? 'landscape' : 'portrait';
     return {
-      author: pdfDoc.getAuthor(),
-      creationDate: pdfDoc.getCreationDate()?.toISOString(),
-      creator: pdfDoc.getCreator(),
-      encrypted: pdfDoc.isEncrypted,
+      author: pdfDocument.getAuthor(),
+      creationDate: pdfDocument.getCreationDate()?.toISOString(),
+      creator: pdfDocument.getCreator(),
+      encrypted: pdfDocument.isEncrypted,
       keywords,
-      modificationDate: pdfDoc.getModificationDate()?.toISOString(),
+      modificationDate: pdfDocument.getModificationDate()?.toISOString(),
       orientation,
-      pageCount: pdfDoc.getPageCount(),
+      pageCount: pdfDocument.getPageCount(),
       pageSize: size === undefined ? undefined : { height: size.height, width: size.width },
-      producer: pdfDoc.getProducer(),
-      subject: pdfDoc.getSubject(),
-      title: pdfDoc.getTitle(),
+      producer: pdfDocument.getProducer(),
+      subject: pdfDocument.getSubject(),
+      title: pdfDocument.getTitle(),
     };
   } catch {
     throw new BadRequestException({ code: 'PDF_UNREADABLE', message: 'the uploaded bytes are not a readable PDF' });
   }
 };
 
-/** Ceiling on extracted pages; plenty for legitimate decks, stops crafted fan-outs. */
+/**
+Ceiling on extracted pages; plenty for legitimate decks, stops crafted fan-outs.
+ */
 const MAX_EXTRACT_PAGES = 500;
 
 /**
@@ -96,7 +98,9 @@ const isoOrString = (value: Date | null | string | undefined): string | undefine
   return value instanceof Date ? value.toISOString() : String(value);
 };
 
-/** PDF feature service: builds documents, extracts text and reads metadata. */
+/**
+PDF feature service: builds documents, extracts text and reads metadata.
+ */
 @Injectable()
 export class PdfService {
   constructor(private readonly cls: NormalizedClsService) {}

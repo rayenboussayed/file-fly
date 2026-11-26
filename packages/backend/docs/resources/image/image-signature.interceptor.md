@@ -4,5 +4,5 @@
 Rejects /image requests whose probed signature is not an image mime (runs after the signature scan).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/image/image-signature.interceptor.ts:10  
+src: packages/backend/src/resources/image/image-signature.interceptor.ts:12  
 dist: packages/backend/dist/resources/image/image-signature.interceptor.js:14

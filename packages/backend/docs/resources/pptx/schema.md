@@ -24,7 +24,7 @@
 <dt><a href="#hyperlinkSchema">hyperlinkSchema</a></dt>
 <dd><p>A hyperlink attached to a text run.</p>
 </dd>
-<dt><a href="#runSchema">runSchema</a></dt>
+<dt><a href="#runBullet">runBullet</a></dt>
 <dd><p>A text run; every run-level pptxgenjs option is mirrored here.</p>
 </dd>
 <dt><a href="#textSchema">textSchema</a></dt>
@@ -68,39 +68,39 @@ Single quote is safe inside double-quoted attributes.</p>
 Spacing in points (spcPts).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:77  
-dist: packages/backend/dist/resources/pptx/schema.js:52
+src: packages/backend/src/resources/pptx/schema.ts:98  
+dist: packages/backend/dist/resources/pptx/schema.js:60
 <a name="data"></a>
 
 ## data
 Base64-encoded image bytes (no data URI prefix).
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:311  
-dist: packages/backend/dist/resources/pptx/schema.js:277
+src: packages/backend/src/resources/pptx/schema.ts:340  
+dist: packages/backend/dist/resources/pptx/schema.js:285
 <a name="notes"></a>
 
 ## notes
 Speaker notes; plain text with newlines.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:367  
-dist: packages/backend/dist/resources/pptx/schema.js:324
+src: packages/backend/src/resources/pptx/schema.ts:402  
+dist: packages/backend/dist/resources/pptx/schema.js:332
 <a name="layout"></a>
 
 ## layout
 Built-in or `wide`/`square`; a custom layout via `defineLayout` is a future extension.
 
 **Kind**: global variable  
-src: packages/backend/src/resources/pptx/schema.ts:385  
-dist: packages/backend/dist/resources/pptx/schema.js:338
+src: packages/backend/src/resources/pptx/schema.ts:424  
+dist: packages/backend/dist/resources/pptx/schema.js:346
 <a name="PPTX_MIME"></a>
 
 ## PPTX\_MIME
 Only the plain OOXML presentation mime; templates, macros and other packages are rejected.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:6  
+src: packages/backend/src/resources/pptx/schema.ts:8  
 dist: packages/backend/dist/resources/pptx/schema.js:3
 <a name="hyperlinkSchema"></a>
 
@@ -108,15 +108,15 @@ dist: packages/backend/dist/resources/pptx/schema.js:3
 A hyperlink attached to a text run.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:25  
+src: packages/backend/src/resources/pptx/schema.ts:29  
 dist: packages/backend/dist/resources/pptx/schema.js:8
-<a name="runSchema"></a>
+<a name="runBullet"></a>
 
-## runSchema
+## runBullet
 A text run; every run-level pptxgenjs option is mirrored here.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:36  
+src: packages/backend/src/resources/pptx/schema.ts:42  
 dist: packages/backend/dist/resources/pptx/schema.js:17
 <a name="textSchema"></a>
 
@@ -124,64 +124,64 @@ dist: packages/backend/dist/resources/pptx/schema.js:17
 A text box with one or more runs.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:69  
-dist: packages/backend/dist/resources/pptx/schema.js:45
+src: packages/backend/src/resources/pptx/schema.ts:88  
+dist: packages/backend/dist/resources/pptx/schema.js:53
 <a name="shapeSchema"></a>
 
 ## shapeSchema
 A shape, optionally with caption text.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:269  
-dist: packages/backend/dist/resources/pptx/schema.js:241
+src: packages/backend/src/resources/pptx/schema.ts:292  
+dist: packages/backend/dist/resources/pptx/schema.js:249
 <a name="tableSchema"></a>
 
 ## tableSchema
 A table with rows of cells.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:301  
-dist: packages/backend/dist/resources/pptx/schema.js:270
+src: packages/backend/src/resources/pptx/schema.ts:326  
+dist: packages/backend/dist/resources/pptx/schema.js:278
 <a name="imageSchema"></a>
 
 ## imageSchema
 A base64-embedded image.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:308  
-dist: packages/backend/dist/resources/pptx/schema.js:275
+src: packages/backend/src/resources/pptx/schema.ts:335  
+dist: packages/backend/dist/resources/pptx/schema.js:283
 <a name="chartSchema"></a>
 
 ## chartSchema
 A chart with one or more series.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:334  
-dist: packages/backend/dist/resources/pptx/schema.js:297
+src: packages/backend/src/resources/pptx/schema.ts:365  
+dist: packages/backend/dist/resources/pptx/schema.js:305
 <a name="PptxBuildSchema"></a>
 
 ## PptxBuildSchema
 Body of `POST /pptx/build`.
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:382  
-dist: packages/backend/dist/resources/pptx/schema.js:336
+src: packages/backend/src/resources/pptx/schema.ts:419  
+dist: packages/backend/dist/resources/pptx/schema.js:344
 <a name="PptxExtractSchema"></a>
 
 ## PptxExtractSchema
 Flat query parameters for `POST /pptx/extract` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:401  
-dist: packages/backend/dist/resources/pptx/schema.js:350
+src: packages/backend/src/resources/pptx/schema.ts:444  
+dist: packages/backend/dist/resources/pptx/schema.js:358
 <a name="PptxMetadataSchema"></a>
 
 ## PptxMetadataSchema
 Flat query parameters for `POST /pptx/metadata` (empty; rejects junk params).
 
 **Kind**: global constant  
-src: packages/backend/src/resources/pptx/schema.ts:404  
-dist: packages/backend/dist/resources/pptx/schema.js:351
+src: packages/backend/src/resources/pptx/schema.ts:449  
+dist: packages/backend/dist/resources/pptx/schema.js:359
 <a name="xmlSafe"></a>
 
 ## xmlSafe(max) ⇒ <code>z.ZodString</code>
@@ -195,5 +195,5 @@ Single quote is safe inside double-quoted attributes.
 | --- | --- | --- |
 | max | <code>number</code> | Maximum length of the string. |
 
-src: packages/backend/src/resources/pptx/schema.ts:20  
+src: packages/backend/src/resources/pptx/schema.ts:22  
 dist: packages/backend/dist/resources/pptx/schema.js:5
