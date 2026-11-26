@@ -1,5 +1,7 @@
 import type { NormalizedClsService } from '@/services/normalized-cls.service.js';
 
+type HeaderValue = string | string[] | undefined;
+
 /**
  * Reads a named header without indexing the headers object with a variable key.
  * @param headers - The request headers.
@@ -7,10 +9,12 @@ import type { NormalizedClsService } from '@/services/normalized-cls.service.js'
  * @returns The header value, or undefined when absent.
  */
 export function headerValue(
-  headers: Record<string, string | string[] | undefined>,
+  headers: Record<string, HeaderValue>,
   name: string,
-): string | string[] | undefined {
-  return Object.entries(headers).find(([key]) => key === name)?.[1];
+): HeaderValue {
+  // Reflect.get keeps the lookup O(1) without indexing with a variable key.
+  const value: HeaderValue = Reflect.get(headers, name);
+  return value;
 }
 
 /**

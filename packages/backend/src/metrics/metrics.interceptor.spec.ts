@@ -190,6 +190,15 @@ describe('MetricsInterceptor', () => {
       routeUrl: '/signature',
     });
     expect(fire(garbage).bytesIn).toBe(0);
+    for (const [header, expected] of [['+42abc', 42], [' 42 ', 42], ['-5', 0]] as const) {
+      const padded = makeStub({
+        bytesIn: undefined,
+        bytesOut: undefined,
+        headers: { 'content-length': header },
+        routeUrl: '/signature',
+      });
+      expect(fire(padded).bytesIn).toBe(expected);
+    }
   });
 
   it('classifies scanner rejections and virus-scan verdicts', () => {

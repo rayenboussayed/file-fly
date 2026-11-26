@@ -348,7 +348,7 @@ and `react` and `nodeVersion` set to `>=24.0.0`. The package applies Playwright 
 all test files; the config scopes that partial to `packages/dashboard/test/e2e` so
 Vitest specs keep their own Vitest rules, with no Playwright rule disabled. The package's
 browser target is applied to dashboard code for browser globals and Node feature checks.
-The only hand-written rule-offs are two narrow file-scoped exceptions for values that cannot change without breaking a contract: `unicorn/no-null` on the Fastify callback, XLSX wire, clamd verdict and worker cache-key tag files, and `security/detect-non-literal-fs-filename` on the code generator CLI.
+The only hand-written rule-offs in the flat config are two narrow file-scoped exceptions for values that cannot change without breaking a contract: `unicorn/no-null` on the Fastify callback, XLSX wire, clamd verdict and worker cache-key tag files, and `security/detect-non-literal-fs-filename` on the code generator CLI.
 
 Generated docs, test results, and the generated router file
 (`packages/dashboard/src/routeTree.gen.ts`) stay ignored, alongside the package defaults

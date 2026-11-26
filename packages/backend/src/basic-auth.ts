@@ -61,6 +61,7 @@ export function isHealthPath(url: string | undefined): boolean {
  * @param instance - The Fastify instance to decorate, passed by the bootstrap.
  */
 export async function registerBasicAuth(instance: FastifyInstance): Promise<void> {
+  // Keep this ahead of createGuard: the package imports the host fallback keys.
   scrubHostAuthEnvironment();
   if (AUTH_CREDENTIALS === undefined) {
     logger.warn('AUTH_USERNAME/AUTH_PASSWORD are not set; basic auth is disabled');

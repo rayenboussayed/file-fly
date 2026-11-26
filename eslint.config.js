@@ -1,4 +1,4 @@
-import { createConfig, playwright } from '@stackrb/eslint-config';
+import { browser, createConfig, playwright } from '@stackrb/eslint-config';
 
 const CODE_FILES = '**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}';
 
@@ -14,10 +14,6 @@ const config = createConfig({
   target: ['node', 'react'],
 });
 
-const browserTarget = createConfig({ target: 'browser' }).find(
-  (block) => block.name === 'stackrb/target-browser',
-);
-
 export default [
   // The package applies Playwright to every test file. Keep those rules on the
   // Playwright suite, where they belong, with every rule still enabled.
@@ -28,7 +24,7 @@ export default [
   })),
   // The dashboard is browser code. Apply the package's own browser target so
   // browser globals are recognised and Node feature checks do not apply to it.
-  { ...browserTarget, files: [`packages/dashboard/${CODE_FILES}`] },
+  ...browser().map((block) => ({ ...block, files: [`packages/dashboard/${CODE_FILES}`] })),
   // Fastify's callback, SheetJS blank cells, the XLSX wire response, clamd's
   // inconclusive verdict and the persisted worker cache-key tag require a real
   // null. undefined changes those contracts.
